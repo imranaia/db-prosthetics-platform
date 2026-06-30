@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest:*)",
+      "Read(//c/Users/LENOVO/AppData/Local/Temp/claude/C--Users-LENOVO-OneDrive-Desktop-db-prosthetics-platform/0917d252-a4d1-4f01-8577-1973d3d2e518/tasks/**)"
+    ]
+  }
+}
