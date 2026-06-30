@@ -315,6 +315,125 @@ body {
   gap: 6px;
 }
 
+/* ─────────────────────────────────────────────
+   FORM ELEMENTS
+   ───────────────────────────────────────────── */
+
+/* Inset input field */
+.skeu-input {
+  width: 100%;
+  padding: 13px 16px;
+  background: linear-gradient(145deg, #b8b3aa, #cac5bc);
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.2),
+    inset -3px -3px 8px rgba(255,255,255,0.35);
+  border-radius: 9px;
+  border: 1px solid rgba(0,0,0,0.12);
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-head);
+  outline: none;
+  transition: box-shadow 0.15s ease;
+  -webkit-appearance: none;
+}
+
+.skeu-input::placeholder {
+  color: rgba(55,65,81,0.45);
+}
+
+.skeu-input:focus {
+  box-shadow:
+    inset 4px 4px 10px rgba(0,0,0,0.22),
+    inset -2px -2px 6px rgba(255,255,255,0.4),
+    0 0 0 3px rgba(27,61,94,0.25);
+}
+
+.skeu-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Select dropdown */
+.skeu-select {
+  width: 100%;
+  padding: 13px 16px;
+  background: linear-gradient(145deg, #b8b3aa, #cac5bc);
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.2),
+    inset -3px -3px 8px rgba(255,255,255,0.35);
+  border-radius: 9px;
+  border: 1px solid rgba(0,0,0,0.12);
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-head);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.skeu-select:focus {
+  box-shadow:
+    inset 4px 4px 10px rgba(0,0,0,0.22),
+    inset -2px -2px 6px rgba(255,255,255,0.4),
+    0 0 0 3px rgba(27,61,94,0.25);
+}
+
+/* Form label */
+.skeu-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 7px;
+}
+
+/* Error message */
+.form-error {
+  font-size: 0.82rem;
+  color: #c0392b;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Auth page background */
+.auth-bg {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0a1e2e 0%, #0f2438 50%, #1a3550 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+/* Auth form card */
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  background: linear-gradient(145deg, var(--bg-white), var(--bg-elevated));
+  box-shadow:
+    20px 20px 60px rgba(0,0,0,0.6),
+    -4px -4px 20px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 44px 40px;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 32px 24px;
+  }
+}
+
 /* Footer links */
 .footer-link {
   color: rgba(240,236,228,0.6);
