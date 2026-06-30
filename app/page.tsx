@@ -1,65 +1,642 @@
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
+import getDb from '@/lib/db';
+import Navbar from '@/components/layout/Navbar';
+import DBLogo from '@/components/ui/DBLogo';
 
-export default function Home() {
+/* ─── types ─── */
+interface TeamMember {
+  id: number;
+  name: string;
+  position: string;
+  photo_url: string | null;
+  bio: string | null;
+  display_order: number;
+}
+
+/* ─── server-side data ─── */
+function getTeamMembers(): TeamMember[] {
+  try {
+    const db = getDb();
+    return db
+      .prepare(
+        `SELECT id, name, position, photo_url, bio, display_order
+         FROM team_members
+         ORDER BY display_order ASC, id ASC`
+      )
+      .all() as TeamMember[];
+  } catch {
+    return [];
+  }
+}
+
+function getOperatingStates(): string[] {
+  try {
+    const db = getDb();
+    const rows = db
+      .prepare(`SELECT DISTINCT state FROM hospitals ORDER BY state ASC`)
+      .all() as { state: string }[];
+    return rows.map((r) => r.state);
+  } catch {
+    return [];
+  }
+}
+
+/* ─── services data ─── */
+const SERVICES = [
+  {
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 12l2 2 4-4" />
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+      </svg>
+    ),
+    title: 'Custom Prosthetics',
+    description:
+      'Precision-fitted upper and lower limb prostheses — from complete limb solutions to partial replacements — crafted to restore natural movement.',
+  },
+  {
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+    title: 'Orthotic Devices',
+    description:
+      'Custom spinal, facial, and limb orthoses designed to support, correct, and protect — built around each patient\'s unique anatomy.',
+  },
+  {
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    title: 'Hospital & Home Visits',
+    description:
+      'Consultations at your partnered hospital or, for complex cases, a specialist visit directly to the patient — fully managed through our platform.',
+  },
+];
+
+/* ─── page ─── */
+export default function LandingPage() {
+  const team = getTeamMembers();
+  const states = getOperatingStates();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+
+      {/* ══════════════════════════════════════
+          HERO
+      ══════════════════════════════════════ */}
+      <section className="section-dark texture-overlay relative" style={{ minHeight: '92vh', display: 'flex', alignItems: 'center' }}>
+        <div className="section-container relative z-10 w-full">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+
+            {/* Left — copy */}
+            <div className="flex-1 text-center lg:text-left">
+              <div className="skeu-badge mb-6" style={{ display: 'inline-flex' }}>
+                Certified Prosthetics &amp; Orthotics · Nigeria
+              </div>
+
+              <h1
+                className="font-display"
+                style={{
+                  fontSize: 'clamp(2.6rem, 5vw, 4.2rem)',
+                  fontWeight: 600,
+                  lineHeight: 1.12,
+                  color: '#f0ece4',
+                  letterSpacing: '-0.01em',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                Restoring Movement.{' '}
+                <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>Rebuilding</em>{' '}
+                Lives.
+              </h1>
+
+              <p
+                style={{
+                  fontSize: '1.1rem',
+                  lineHeight: 1.75,
+                  color: 'rgba(240,236,228,0.75)',
+                  maxWidth: '520px',
+                  marginBottom: '2.5rem',
+                }}
+                className="mx-auto lg:mx-0"
+              >
+                DB Prosthetics and Orthotics Ltd delivers precision prosthetic and
+                orthotic solutions across Nigeria — connecting hospitals, specialists,
+                and patients in one seamless system.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link href="/register" className="skeu-btn-accent">
+                  Book a Consultation
+                </Link>
+                <Link href="/login?role=hospital" className="skeu-btn-ghost">
+                  For Healthcare Providers
+                </Link>
+              </div>
+
+              {/* Trust indicators */}
+              <div className="flex flex-wrap gap-6 mt-10 justify-center lg:justify-start">
+                {[
+                  ['Certified', 'P&O Organisation'],
+                  ['All 36', 'States Coverage'],
+                  ['Hospital &', 'Home Visits'],
+                ].map(([top, bottom]) => (
+                  <div key={top} className="text-center lg:text-left">
+                    <div
+                      className="font-display font-semibold"
+                      style={{ color: '#d08c2a', fontSize: '1.1rem' }}
+                    >
+                      {top}
+                    </div>
+                    <div style={{ color: 'rgba(240,236,228,0.55)', fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                      {bottom}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — visual card */}
+            <div className="flex-shrink-0 w-full max-w-sm lg:max-w-md">
+              <div
+                className="skeu-card relative overflow-hidden"
+                style={{ aspectRatio: '4/5', padding: 0 }}
+              >
+                {/* Placeholder for hero prosthetics image */}
+                <div
+                  style={{
+                    height: '100%',
+                    background: 'linear-gradient(160deg, #1e4a72 0%, #0f2438 100%)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    padding: '40px',
+                  }}
+                >
+                  <DBLogo size={72} />
+                  <p
+                    className="font-display text-center"
+                    style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.9rem', lineHeight: 1.6 }}
+                  >
+                    Prosthetic portfolio photography
+                    <br />
+                    will be placed here
+                  </p>
+                </div>
+
+                {/* Overlay badge */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    background: 'rgba(15,36,56,0.85)',
+                    backdropFilter: 'blur(8px)',
+                    borderRadius: '10px',
+                    padding: '14px 18px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <div style={{ color: '#d08c2a', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    What we offer
+                  </div>
+                  <div style={{ color: '#f0ece4', fontSize: '0.88rem', marginTop: '4px' }}>
+                    Upper limb · Lower limb · Spinal · Facial
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Bottom fade into next section */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '120px',
+            background: 'linear-gradient(to bottom, transparent 0%, #c8c2b6 100%)',
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+      </section>
+
+      {/* ══════════════════════════════════════
+          SERVICES
+      ══════════════════════════════════════ */}
+      <section id="services" className="section-pad" style={{ background: 'var(--bg-base)', paddingTop: '80px' }}>
+        <div className="section-container">
+
+          <div className="text-center mb-14">
+            <div className="skeu-badge mb-4" style={{ display: 'inline-flex' }}>What We Do</div>
+            <h2
+              className="font-display"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 600, color: 'var(--text-head)', letterSpacing: '-0.01em' }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              Comprehensive P&O Care
+            </h2>
+            <p style={{ color: 'var(--text-muted)', marginTop: '12px', fontSize: '1rem', maxWidth: '480px', margin: '12px auto 0' }}>
+              Every solution we deliver is custom-fitted, clinically assessed, and built for long-term mobility.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {SERVICES.map((s) => (
+              <div key={s.title} className="skeu-card p-8">
+                <div
+                  className="skeu-icon-well mb-6"
+                  style={{ color: 'var(--primary)' }}
+                >
+                  {s.icon}
+                </div>
+                <h3
+                  className="font-display font-semibold mb-3"
+                  style={{ fontSize: '1.35rem', color: 'var(--text-head)' }}
+                >
+                  {s.title}
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.75 }}>
+                  {s.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          PORTFOLIO / OUR WORK
+      ══════════════════════════════════════ */}
+      <section id="portfolio" className="section-pad" style={{ background: 'var(--bg-base)' }}>
+        <div className="section-container">
+
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
+            <div>
+              <div className="skeu-badge mb-3" style={{ display: 'inline-flex' }}>Our Work</div>
+              <h2
+                className="font-display"
+                style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 600, color: 'var(--text-head)' }}
+              >
+                Cases & Results
+              </h2>
+            </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '320px', lineHeight: 1.65 }}>
+              A selection of prosthetic fittings and orthotic interventions we have delivered.
+            </p>
+          </div>
+
+          {/* Portfolio grid — placeholder until real photos are added */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { cat: 'Lower Limb', label: 'Below-Knee Prosthesis', sub: 'Transtibial fitting, adult male' },
+              { cat: 'Upper Limb', label: 'Transradial Prosthesis', sub: 'Below-elbow myoelectric' },
+              { cat: 'Lower Limb', label: 'Above-Knee Prosthesis', sub: 'Transfemoral fitting, paediatric' },
+              { cat: 'Spinal', label: 'TLSO Brace', sub: 'Thoracolumbar support' },
+              { cat: 'Upper Limb', label: 'Shoulder Disarticulation', sub: 'Body-powered prosthesis' },
+              { cat: 'Facial', label: 'Auricular Prosthesis', sub: 'Custom-moulded ear prosthetic' },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="skeu-card overflow-hidden"
+                style={{ padding: 0 }}
+              >
+                {/* Image placeholder */}
+                <div
+                  style={{
+                    height: '200px',
+                    background: `linear-gradient(135deg,
+                      hsl(${210 + i * 15}, 35%, ${22 + i * 3}%) 0%,
+                      hsl(${215 + i * 10}, 40%, ${28 + i * 2}%) 100%)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                </div>
+                <div style={{ padding: '20px 22px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'var(--accent)',
+                    marginBottom: '6px',
+                  }}>
+                    {item.cat}
+                  </span>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: '4px' }}>
+                    {item.label}
+                  </h4>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{item.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '32px' }}>
+            Portfolio photography will be added here. Structure is ready.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* ══════════════════════════════════════
+          TEAM
+      ══════════════════════════════════════ */}
+      <section id="team" className="section-pad" style={{ background: 'var(--bg-base)' }}>
+        <div className="section-container">
+
+          <div className="text-center mb-14">
+            <div className="skeu-badge mb-4" style={{ display: 'inline-flex' }}>The People</div>
+            <h2
+              className="font-display"
+              style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 600, color: 'var(--text-head)' }}
+            >
+              Our Specialists
+            </h2>
+          </div>
+
+          {team.length === 0 ? (
+            /* Placeholder shown when DB has no team members yet */
+            <div className="flex justify-center">
+              <div className="skeu-card p-8 text-center" style={{ maxWidth: '360px' }}>
+                <div
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(145deg, #ddd8cf, #ede8df)',
+                    boxShadow: 'inset 3px 3px 8px #c9c4bb, inset -3px -3px 8px #fff',
+                    margin: '0 auto 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  Team members will appear here once added by the Super Admin.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="grid gap-8"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                justifyContent: team.length < 3 ? 'center' : undefined,
+              }}
+            >
+              {team.map((member) => (
+                <div key={member.id} className="skeu-card p-7 flex flex-col items-center text-center">
+                  {/* Photo */}
+                  <div
+                    style={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      marginBottom: '18px',
+                      boxShadow: '4px 4px 12px #c9c4bb, -4px -4px 12px #fff',
+                      border: '3px solid rgba(255,255,255,0.8)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {member.photo_url ? (
+                      <Image
+                        src={member.photo_url}
+                        alt={member.name}
+                        width={96}
+                        height={96}
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(145deg, #254f7a, #1b3d5e)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'rgba(240,236,228,0.6)',
+                          fontSize: '2rem',
+                          fontFamily: 'Cormorant Garamond, serif',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {member.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+
+                  <h3 className="font-display font-semibold" style={{ fontSize: '1.2rem', color: 'var(--text-head)', marginBottom: '4px' }}>
+                    {member.name}
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '12px' }}>
+                    {member.position}
+                  </p>
+                  {member.bio && (
+                    <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                      {member.bio}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
+      </section>
+
+      {/* ══════════════════════════════════════
+          WHERE WE OPERATE
+      ══════════════════════════════════════ */}
+      <section id="coverage" className="section-pad" style={{ background: 'var(--bg-base)' }}>
+        <div className="section-container">
+
+          <div className="text-center mb-12">
+            <div className="skeu-badge mb-4" style={{ display: 'inline-flex' }}>Coverage</div>
+            <h2
+              className="font-display"
+              style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 600, color: 'var(--text-head)' }}
+            >
+              Where We Operate
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '10px' }}>
+              {states.length > 0
+                ? `Active in ${states.length} state${states.length !== 1 ? 's' : ''} — with more being onboarded.`
+                : 'Hospital partners are being onboarded. Check back soon.'}
+            </p>
+          </div>
+
+          {states.length > 0 ? (
+            <div className="flex flex-wrap gap-3 justify-center">
+              {states.map((state) => (
+                <div key={state} className="state-pill">
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style={{ color: 'var(--accent)', flexShrink: 0 }}>
+                    <circle cx="4" cy="4" r="4" />
+                  </svg>
+                  {state}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="skeu-inset inline-flex items-center gap-3 px-8 py-5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  Hospitals are being onboarded — coverage will display here.
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          CTA BANNER
+      ══════════════════════════════════════ */}
+      <section className="section-dark" style={{ padding: '80px 0' }}>
+        <div className="section-container relative z-10 text-center">
+          <h2
+            className="font-display"
+            style={{
+              fontSize: 'clamp(1.8rem, 4vw, 3rem)',
+              fontWeight: 600,
+              color: '#f0ece4',
+              marginBottom: '16px',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Ready to Begin Your Journey?
+          </h2>
+          <p style={{ color: 'rgba(240,236,228,0.65)', fontSize: '1rem', maxWidth: '460px', margin: '0 auto 36px', lineHeight: 1.7 }}>
+            Book a consultation — at a partnered hospital near you, or request a specialist home visit.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/register" className="skeu-btn-accent">
+              Book a Consultation
+            </Link>
+            <Link href="/login" className="skeu-btn-ghost">
+              I Already Have an Account
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════ */}
+      <footer
+        style={{
+          background: '#0a1e2e',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '52px 0 32px',
+        }}
+      >
+        <div className="section-container">
+          <div className="flex flex-col md:flex-row gap-10 justify-between">
+
+            {/* Brand */}
+            <div style={{ maxWidth: '280px' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <DBLogo size={38} />
+                <div>
+                  <div className="font-display font-semibold" style={{ color: '#f0ece4', fontSize: '1rem' }}>
+                    DB Prosthetics
+                  </div>
+                  <div style={{ color: 'rgba(181,117,31,0.8)', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    & Orthotics Ltd
+                  </div>
+                </div>
+              </div>
+              <p style={{ color: 'rgba(240,236,228,0.45)', fontSize: '0.83rem', lineHeight: 1.75 }}>
+                Certified Prosthetics &amp; Orthotics organisation delivering precision care and lifetime support to patients across Nigeria.
+              </p>
+            </div>
+
+            {/* Links */}
+            <div className="flex flex-wrap gap-12">
+              <div>
+                <div style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
+                  Platform
+                </div>
+                {[
+                  ['Patient Login', '/login'],
+                  ['Book Appointment', '/register'],
+                  ['Hospital Login', '/login?role=hospital'],
+                ].map(([label, href]) => (
+                  <div key={label} style={{ marginBottom: '10px' }}>
+                    <Link href={href} className="footer-link">
+                      {label}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <div style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
+                  Organisation
+                </div>
+                {[
+                  ['Our Services', '#services'],
+                  ['Our Work', '#portfolio'],
+                  ['Our Team', '#team'],
+                  ['Coverage', '#coverage'],
+                ].map(([label, href]) => (
+                  <div key={label} style={{ marginBottom: '10px' }}>
+                    <a href={href} className="footer-link">
+                      {label}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div
+            style={{
+              height: '1px',
+              background: 'rgba(255,255,255,0.06)',
+              margin: '36px 0 24px',
+            }}
+          />
+          <div className="flex flex-col sm:flex-row justify-between gap-2">
+            <p style={{ color: 'rgba(240,236,228,0.3)', fontSize: '0.78rem' }}>
+              © {new Date().getFullYear()} DB Prosthetics and Orthotics Ltd. All rights reserved.
+            </p>
+            <p style={{ color: 'rgba(240,236,228,0.3)', fontSize: '0.78rem' }}>
+              Nigeria · Prosthetics & Orthotics
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
