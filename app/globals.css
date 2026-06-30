@@ -70,6 +70,26 @@ body {
     inset 0 1px 0 rgba(255,255,255,0.9);
   border-radius: 16px;
   border: 1px solid var(--border-card);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: default;
+}
+
+/* Lift on hover — card rises off the surface */
+.skeu-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    12px 16px 32px var(--shadow-dark),
+    -8px -8px 20px var(--shadow-light),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Press on click/tap — card sinks into the surface */
+.skeu-card:active {
+  transform: translateY(1px);
+  box-shadow:
+    4px 4px 10px var(--shadow-dark),
+    -4px -4px 10px var(--shadow-light),
+    inset 2px 2px 6px rgba(0,0,0,0.08);
 }
 
 /* Inset well — pressed into the surface */
