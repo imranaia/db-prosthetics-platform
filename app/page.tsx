@@ -92,9 +92,9 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════
           HERO
       ══════════════════════════════════════ */}
-      <section className="section-dark texture-overlay relative" style={{ minHeight: '92vh', display: 'flex', alignItems: 'center' }}>
+      <section className="section-dark texture-overlay relative" style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', paddingTop: '80px', paddingBottom: '80px' }}>
         <div className="section-container relative z-10 w-full">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
 
             {/* Left — copy */}
             <div className="flex-1 text-center lg:text-left">
@@ -143,7 +143,7 @@ export default function LandingPage() {
               </div>
 
               {/* Trust indicators */}
-              <div className="flex flex-wrap gap-6 mt-10 justify-center lg:justify-start">
+              <div className="flex flex-wrap gap-x-8 gap-y-4 mt-8 justify-center lg:justify-start">
                 {[
                   ['Certified', 'P&O Organisation'],
                   ['All 36', 'States Coverage'],
@@ -165,7 +165,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right — visual card */}
-            <div className="flex-shrink-0 w-full max-w-sm lg:max-w-md">
+            <div className="flex-shrink-0 w-full max-w-xs sm:max-w-sm lg:max-w-md">
               <div
                 className="relative overflow-hidden"
                 style={{
@@ -261,7 +261,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {SERVICES.map((s) => (
               <div key={s.title} className="skeu-card p-8">
                 <div
@@ -307,7 +307,7 @@ export default function LandingPage() {
           </div>
 
           {/* Portfolio grid — placeholder until real photos are added */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               { cat: 'Lower Limb', label: 'Below-Knee Prosthesis', sub: 'Transtibial fitting, adult male' },
               { cat: 'Upper Limb', label: 'Transradial Prosthesis', sub: 'Below-elbow myoelectric' },

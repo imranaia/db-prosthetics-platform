@@ -264,12 +264,24 @@ body {
 .section-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
+}
+
+@media (min-width: 640px) {
+  .section-container { padding: 0 24px; }
+}
+
+@media (min-width: 1024px) {
+  .section-container { padding: 0 40px; }
 }
 
 /* Section padding */
 .section-pad {
-  padding: 96px 0;
+  padding: 64px 0;
+}
+
+@media (min-width: 768px) {
+  .section-pad { padding: 96px 0; }
 }
 
 /* Dark section (for hero and CTA) */
@@ -411,7 +423,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px;
+  padding: 80px 16px 40px;
 }
 
 /* Auth form card */
@@ -425,12 +437,22 @@ body {
     inset 0 1px 0 rgba(255,255,255,0.9);
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.12);
-  padding: 44px 40px;
+  padding: 32px 20px;
 }
 
-@media (max-width: 480px) {
+@media (min-width: 480px) {
   .auth-card {
-    padding: 32px 24px;
+    padding: 44px 40px;
+  }
+}
+
+/* Buttons full-width on mobile */
+@media (max-width: 480px) {
+  .skeu-btn-primary,
+  .skeu-btn-accent,
+  .skeu-btn-ghost {
+    width: 100%;
+    justify-content: center;
   }
 }
 

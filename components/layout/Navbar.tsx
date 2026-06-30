@@ -17,12 +17,12 @@ export default function Navbar() {
       }}
       className="sticky top-0 z-50"
     >
-      <nav className="section-container flex items-center justify-between h-18 py-4">
+      <nav className="section-container flex items-center justify-between py-3 sm:py-4">
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 no-underline">
           <DBLogo size={42} />
-          <div className="hidden sm:block">
+          <div className="hidden xs:block sm:block">
             <div
               className="font-display text-lg font-semibold leading-tight"
               style={{ color: '#f0ece4', letterSpacing: '0.02em' }}

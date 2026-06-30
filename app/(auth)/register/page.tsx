@@ -85,7 +85,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-bg" style={{ alignItems: 'flex-start', paddingTop: '40px', paddingBottom: '40px' }}>
+    <div className="auth-bg" style={{ alignItems: 'flex-start' }}>
       <div className="auth-card" style={{ maxWidth: '520px' }}>
 
         {/* Logo */}
