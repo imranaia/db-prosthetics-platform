@@ -129,7 +129,7 @@ export default function LandingPage() {
                 className="mx-auto lg:mx-0"
               >
                 DB Prosthetics and Orthotics Ltd delivers precision prosthetic and
-                orthotic solutions across Nigeria — connecting hospitals, specialists,
+                orthotic solutions across Nigeria, connecting hospitals, specialists,
                 and patients in one seamless system.
               </p>
 
@@ -167,8 +167,16 @@ export default function LandingPage() {
             {/* Right — visual card */}
             <div className="flex-shrink-0 w-full max-w-sm lg:max-w-md">
               <div
-                className="skeu-card relative overflow-hidden"
-                style={{ aspectRatio: '4/5', padding: 0 }}
+                className="relative overflow-hidden"
+                style={{
+                  aspectRatio: '4/5',
+                  padding: 0,
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  /* Dark-appropriate shadow: depth without white glow */
+                  boxShadow:
+                    '12px 16px 40px rgba(0,0,0,0.6), -4px -4px 20px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.1)',
+                }}
               >
                 {/* Placeholder for hero prosthetics image */}
                 <div
@@ -221,15 +229,15 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Bottom fade into next section */}
+        {/* Clean bottom edge — dark shadow line, no bleeding into light section */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            height: '120px',
-            background: 'linear-gradient(to bottom, transparent 0%, #c8c2b6 100%)',
+            height: '3px',
+            background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.4) 20%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.4) 80%, transparent)',
           }}
         />
       </section>
