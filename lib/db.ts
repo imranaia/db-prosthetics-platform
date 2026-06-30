@@ -15,6 +15,13 @@ let db: Database.Database;
 function getDb(): Database.Database {
   if (db) return db;
 
+  // Ensure the directory exists (important for /data/db.sqlite on Railway)
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  console.log(`[db] Opening database at: ${DB_PATH}`);
   db = new Database(DB_PATH);
 
   // Enable WAL mode for better concurrent read performance.
