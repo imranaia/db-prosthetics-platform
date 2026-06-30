@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn, useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DBLogo from '@/components/ui/DBLogo';
@@ -50,7 +50,10 @@ export default function LoginPage() {
       return;
     }
 
-    // Session will update via useEffect above
+    // Fetch the session directly — don't wait for useSession hook to update
+    const session = await getSession();
+    const role = (session?.user as any)?.role as string | undefined;
+    router.replace(ROLE_REDIRECTS[role ?? ''] || '/dashboard/patient');
   }
 
   if (status === 'loading') {
