@@ -5,18 +5,21 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Building2, Package, Users, ShoppingCart,
-  CalendarDays, MessageSquare, Boxes, Menu, X, LogOut, Stethoscope,
+  CalendarDays, Boxes, Menu, X, LogOut, Stethoscope,
+  Layout, UserCircle,
 } from 'lucide-react';
 
 const NAV = [
-  { label: 'Overview',       href: '/dashboard/super-admin',               icon: LayoutDashboard },
-  { label: 'Hospitals',      href: '/dashboard/super-admin/hospitals',      icon: Building2 },
-  { label: 'Products',       href: '/dashboard/super-admin/products',       icon: Package },
-  { label: 'Patients',       href: '/dashboard/super-admin/patients',       icon: Users },
-  { label: 'Consultations',  href: '/dashboard/super-admin/consultations',  icon: Stethoscope },
-  { label: 'Orders',         href: '/dashboard/super-admin/orders',         icon: ShoppingCart },
-  { label: 'Appointments',   href: '/dashboard/super-admin/appointments',   icon: CalendarDays },
-  { label: 'Inventory',      href: '/dashboard/super-admin/inventory',      icon: Boxes },
+  { label: 'Overview',        href: '/dashboard/super-admin',                icon: LayoutDashboard },
+  { label: 'Hospitals',       href: '/dashboard/super-admin/hospitals',       icon: Building2 },
+  { label: 'Products',        href: '/dashboard/super-admin/products',        icon: Package },
+  { label: 'Patients',        href: '/dashboard/super-admin/patients',        icon: Users },
+  { label: 'Consultations',   href: '/dashboard/super-admin/consultations',   icon: Stethoscope },
+  { label: 'Orders',          href: '/dashboard/super-admin/orders',          icon: ShoppingCart },
+  { label: 'Appointments',    href: '/dashboard/super-admin/appointments',    icon: CalendarDays },
+  { label: 'Inventory',       href: '/dashboard/super-admin/inventory',       icon: Boxes },
+  { label: 'Edit Landing Page', href: '/dashboard/super-admin/landing-editor', icon: Layout },
+  { label: 'My Profile',      href: '/dashboard/super-admin/profile',         icon: UserCircle },
 ];
 
 function isActive(href: string, pathname: string) {

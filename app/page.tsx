@@ -14,6 +14,18 @@ interface TeamMember {
   display_order: number;
 }
 
+interface ServiceItem {
+  title: string;
+  description: string;
+}
+
+interface PortfolioItem {
+  cat: string;
+  label: string;
+  sub: string;
+  image_url: string;
+}
+
 /* ─── server-side data ─── */
 function getTeamMembers(): TeamMember[] {
   try {
@@ -42,48 +54,52 @@ function getOperatingStates(): string[] {
   }
 }
 
-/* ─── services data ─── */
-const SERVICES = [
-  {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 12l2 2 4-4" />
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
-      </svg>
-    ),
-    title: 'Custom Prosthetics',
-    description:
-      'Precision-fitted upper and lower limb prostheses — from complete limb solutions to partial replacements — crafted to restore natural movement.',
-  },
-  {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    ),
-    title: 'Orthotic Devices',
-    description:
-      'Custom spinal, facial, and limb orthoses designed to support, correct, and protect — built around each patient\'s unique anatomy.',
-  },
-  {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-    title: 'Hospital & Home Visits',
-    description:
-      'Consultations at your partnered hospital or, for complex cases, a specialist visit directly to the patient — fully managed through our platform.',
-  },
+function getSiteContent(): Record<string, string> {
+  try {
+    const db = getDb();
+    const rows = db.prepare(`SELECT key, value FROM site_content`).all() as { key: string; value: string }[];
+    return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  } catch {
+    return {};
+  }
+}
+
+const SERVICE_ICONS = [
+  <svg key="0" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 12l2 2 4-4" />
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+  </svg>,
+  <svg key="1" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>,
+  <svg key="2" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>,
 ];
 
 /* ─── page ─── */
 export default function LandingPage() {
   const team = getTeamMembers();
   const states = getOperatingStates();
+  const sc = getSiteContent();
+
+  const heroBadge     = sc.hero_badge     || 'Certified Prosthetics & Orthotics · Nigeria';
+  const heroHeading   = sc.hero_heading   || 'Restoring Movement. Rebuilding Lives.';
+  const heroSub       = sc.hero_subheading|| 'DB Prosthetics and Orthotics Ltd delivers precision prosthetic and orthotic solutions across Nigeria.';
+  const heroCtaPrim   = sc.hero_cta_primary   || 'Book a Consultation';
+  const heroCtaSec    = sc.hero_cta_secondary || 'For Healthcare Providers';
+  const heroImageUrl  = sc.hero_image_url || '';
+  const ctaHeading    = sc.cta_heading    || 'Ready to Begin Your Journey?';
+  const ctaSubtext    = sc.cta_subtext    || 'Book a consultation — at a partnered hospital near you, or request a specialist home visit.';
+
+  let services: ServiceItem[] = [];
+  try { services = JSON.parse(sc.services || '[]'); } catch { services = []; }
+
+  let portfolio: PortfolioItem[] = [];
+  try { portfolio = JSON.parse(sc.portfolio || '[]'); } catch { portfolio = []; }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -99,7 +115,7 @@ export default function LandingPage() {
             {/* Left — copy */}
             <div className="flex-1 text-center lg:text-left">
               <div className="skeu-badge mb-6" style={{ display: 'inline-flex' }}>
-                Certified Prosthetics &amp; Orthotics · Nigeria
+                {heroBadge}
               </div>
 
               <h1
@@ -113,9 +129,7 @@ export default function LandingPage() {
                   marginBottom: '1.5rem',
                 }}
               >
-                Restoring Movement.{' '}
-                <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>Rebuilding</em>{' '}
-                Lives.
+                {heroHeading}
               </h1>
 
               <p
@@ -128,17 +142,15 @@ export default function LandingPage() {
                 }}
                 className="mx-auto lg:mx-0"
               >
-                DB Prosthetics and Orthotics Ltd delivers precision prosthetic and
-                orthotic solutions across Nigeria, connecting hospitals, specialists,
-                and patients in one seamless system.
+                {heroSub}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/register" className="skeu-btn-accent">
-                  Book a Consultation
+                  {heroCtaPrim}
                 </Link>
                 <Link href="/login?role=hospital" className="skeu-btn-ghost">
-                  For Healthcare Providers
+                  {heroCtaSec}
                 </Link>
               </div>
 
@@ -173,34 +185,42 @@ export default function LandingPage() {
                   padding: 0,
                   borderRadius: '16px',
                   border: '1px solid rgba(255,255,255,0.12)',
-                  /* Dark-appropriate shadow: depth without white glow */
                   boxShadow:
                     '12px 16px 40px rgba(0,0,0,0.6), -4px -4px 20px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.1)',
                 }}
               >
-                {/* Placeholder for hero prosthetics image */}
-                <div
-                  style={{
-                    height: '100%',
-                    background: 'linear-gradient(160deg, #1e4a72 0%, #0f2438 100%)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '16px',
-                    padding: '40px',
-                  }}
-                >
-                  <DBLogo size={72} />
-                  <p
-                    className="font-display text-center"
-                    style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.9rem', lineHeight: 1.6 }}
+                {heroImageUrl ? (
+                  <Image
+                    src={heroImageUrl}
+                    alt="Hero"
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 400px, 448px"
+                  />
+                ) : (
+                  <div
+                    style={{
+                      height: '100%',
+                      background: 'linear-gradient(160deg, #1e4a72 0%, #0f2438 100%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '16px',
+                      padding: '40px',
+                    }}
                   >
-                    Prosthetic portfolio photography
-                    <br />
-                    will be placed here
-                  </p>
-                </div>
+                    <DBLogo size={72} />
+                    <p
+                      className="font-display text-center"
+                      style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.9rem', lineHeight: 1.6 }}
+                    >
+                      Prosthetic portfolio photography
+                      <br />
+                      will be placed here
+                    </p>
+                  </div>
+                )}
 
                 {/* Overlay badge */}
                 <div
@@ -262,13 +282,13 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {SERVICES.map((s) => (
-              <div key={s.title} className="skeu-card p-8">
+            {services.map((s, i) => (
+              <div key={i} className="skeu-card p-8">
                 <div
                   className="skeu-icon-well mb-6"
                   style={{ color: 'var(--primary)' }}
                 >
-                  {s.icon}
+                  {SERVICE_ICONS[i % SERVICE_ICONS.length]}
                 </div>
                 <h3
                   className="font-display font-semibold mb-3"
@@ -306,25 +326,17 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Portfolio grid — placeholder until real photos are added */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {[
-              { cat: 'Lower Limb', label: 'Below-Knee Prosthesis', sub: 'Transtibial fitting, adult male' },
-              { cat: 'Upper Limb', label: 'Transradial Prosthesis', sub: 'Below-elbow myoelectric' },
-              { cat: 'Lower Limb', label: 'Above-Knee Prosthesis', sub: 'Transfemoral fitting, paediatric' },
-              { cat: 'Spinal', label: 'TLSO Brace', sub: 'Thoracolumbar support' },
-              { cat: 'Upper Limb', label: 'Shoulder Disarticulation', sub: 'Body-powered prosthesis' },
-              { cat: 'Facial', label: 'Auricular Prosthesis', sub: 'Custom-moulded ear prosthetic' },
-            ].map((item, i) => (
+            {portfolio.map((item, i) => (
               <div
                 key={i}
                 className="skeu-card overflow-hidden"
                 style={{ padding: 0 }}
               >
-                {/* Image placeholder */}
                 <div
                   style={{
                     height: '200px',
+                    position: 'relative',
                     background: `linear-gradient(135deg,
                       hsl(${210 + i * 15}, 35%, ${22 + i * 3}%) 0%,
                       hsl(${215 + i * 10}, 40%, ${28 + i * 2}%) 100%)`,
@@ -333,11 +345,21 @@ export default function LandingPage() {
                     justifyContent: 'center',
                   }}
                 >
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="M21 15l-5-5L5 21" />
-                  </svg>
+                  {item.image_url ? (
+                    <Image
+                      src={item.image_url}
+                      alt={item.label}
+                      fill
+                      style={{ objectFit: 'cover' }}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                  )}
                 </div>
                 <div style={{ padding: '20px 22px' }}>
                   <span style={{
@@ -359,10 +381,6 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '32px' }}>
-            Portfolio photography will be added here. Structure is ready.
-          </p>
         </div>
       </section>
 
@@ -541,14 +559,14 @@ export default function LandingPage() {
               letterSpacing: '-0.01em',
             }}
           >
-            Ready to Begin Your Journey?
+            {ctaHeading}
           </h2>
           <p style={{ color: 'rgba(240,236,228,0.65)', fontSize: '1rem', maxWidth: '460px', margin: '0 auto 36px', lineHeight: 1.7 }}>
-            Book a consultation — at a partnered hospital near you, or request a specialist home visit.
+            {ctaSubtext}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register" className="skeu-btn-accent">
-              Book a Consultation
+              {heroCtaPrim}
             </Link>
             <Link href="/login" className="skeu-btn-ghost">
               I Already Have an Account
