@@ -17,126 +17,164 @@ export default function Navbar() {
       }}
       className="sticky top-0 z-50"
     >
-      <nav className="section-container flex items-center justify-between py-3 sm:py-4">
-
+      <nav
+        style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: '0 20px',
+          height: 68,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 no-underline">
-          <DBLogo size={42} />
-          <div className="hidden xs:block sm:block">
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
+          <DBLogo size={38} />
+          <div className="hidden sm:block">
             <div
-              className="font-display text-lg font-semibold leading-tight"
-              style={{ color: '#f0ece4', letterSpacing: '0.02em' }}
+              className="font-display font-semibold"
+              style={{ color: '#f0ece4', fontSize: '1rem', lineHeight: 1.2, letterSpacing: '0.01em' }}
             >
               DB Prosthetics
             </div>
             <div
-              className="text-xs font-medium tracking-widest uppercase"
-              style={{ color: 'rgba(181,117,31,0.9)', fontSize: '0.62rem' }}
+              style={{ color: 'rgba(181,117,31,0.9)', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
             >
-              & Orthotics Ltd
+              &amp; Orthotics Ltd
             </div>
           </div>
         </Link>
 
-        {/* Desktop nav links */}
-        <div className="hidden md:flex items-center gap-8">
+        {/* Desktop nav links — hidden below lg so there's room */}
+        <div
+          className="hidden lg:flex items-center"
+          style={{ gap: 28, flex: 1, justifyContent: 'center' }}
+        >
           {[
-            ['Services', '#services'],
-            ['Our Work', '#portfolio'],
-            ['Team', '#team'],
-            ['Coverage', '#coverage'],
+            ['Services',  '#services'],
+            ['Our Work',  '#portfolio'],
+            ['Team',      '#team'],
+            ['Coverage',  '#coverage'],
           ].map(([label, href]) => (
             <a
               key={label}
               href={href}
-              className="text-sm font-medium transition-colors no-underline"
-              style={{ color: 'rgba(240,236,228,0.75)', letterSpacing: '0.02em' }}
+              style={{ color: 'rgba(240,236,228,0.72)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#f0ece4')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,236,228,0.75)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,236,228,0.72)')}
             >
               {label}
             </a>
           ))}
         </div>
 
-        {/* Desktop CTA buttons */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="skeu-btn-ghost text-sm">
+        {/* Desktop CTA — shown at md+ */}
+        <div className="hidden md:flex items-center" style={{ gap: 10, flexShrink: 0 }}>
+          <Link
+            href="/login"
+            style={{
+              padding: '9px 18px',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.18)',
+              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(240,236,228,0.85)',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.12)')}
+            onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)')}
+          >
             Sign In
           </Link>
-          <Link href="/register" className="skeu-btn-accent text-sm" style={{ padding: '10px 20px' }}>
+          <Link
+            href="/register"
+            className="skeu-btn-accent"
+            style={{ padding: '9px 18px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+          >
             Book Appointment
           </Link>
         </div>
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden flex flex-col gap-1.5 p-2"
+          className="md:hidden"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
-          style={{ color: '#f0ece4' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f0ece4', padding: 8, display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}
         >
-          <span
-            style={{
-              display: 'block', width: 22, height: 2,
-              background: 'currentColor', borderRadius: 2,
-              transition: 'transform 0.2s',
-              transform: open ? 'translateY(6px) rotate(45deg)' : 'none',
-            }}
-          />
-          <span
-            style={{
-              display: 'block', width: 22, height: 2,
-              background: 'currentColor', borderRadius: 2,
-              transition: 'opacity 0.2s',
-              opacity: open ? 0 : 1,
-            }}
-          />
-          <span
-            style={{
-              display: 'block', width: 22, height: 2,
-              background: 'currentColor', borderRadius: 2,
-              transition: 'transform 0.2s',
-              transform: open ? 'translateY(-6px) rotate(-45deg)' : 'none',
-            }}
-          />
+          <span style={{ display: 'block', width: 22, height: 2, background: 'currentColor', borderRadius: 2, transition: 'transform 0.2s', transform: open ? 'translateY(7px) rotate(45deg)' : 'none' }} />
+          <span style={{ display: 'block', width: 22, height: 2, background: 'currentColor', borderRadius: 2, transition: 'opacity 0.2s', opacity: open ? 0 : 1 }} />
+          <span style={{ display: 'block', width: 22, height: 2, background: 'currentColor', borderRadius: 2, transition: 'transform 0.2s', transform: open ? 'translateY(-7px) rotate(-45deg)' : 'none' }} />
         </button>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile drawer */}
       {open && (
         <div
           className="md:hidden"
           style={{
-            background: 'rgba(15,36,56,0.98)',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            padding: '20px 24px 28px',
+            background: 'rgba(12,30,48,0.99)',
+            borderTop: '1px solid rgba(255,255,255,0.07)',
+            padding: '24px 24px 32px',
           }}
         >
-          <div className="flex flex-col gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[
-              ['Services', '#services'],
-              ['Our Work', '#portfolio'],
-              ['Team', '#team'],
-              ['Coverage', '#coverage'],
+              ['Services',  '#services'],
+              ['Our Work',  '#portfolio'],
+              ['Team',      '#team'],
+              ['Coverage',  '#coverage'],
             ].map(([label, href]) => (
               <a
                 key={label}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="text-base font-medium no-underline"
-                style={{ color: 'rgba(240,236,228,0.85)' }}
+                style={{
+                  color: 'rgba(240,236,228,0.8)',
+                  fontSize: '1.05rem',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  padding: '14px 0',
+                  borderBottom: '1px solid rgba(255,255,255,0.07)',
+                  display: 'block',
+                }}
               >
                 {label}
               </a>
             ))}
-            <div className="skeu-divider my-2" style={{ opacity: 0.3 }} />
-            <Link href="/login" className="skeu-btn-ghost text-sm w-full justify-center">
-              Sign In
-            </Link>
-            <Link href="/register" className="skeu-btn-accent text-sm w-full justify-center">
-              Book Appointment
-            </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  padding: '13px',
+                  borderRadius: 9,
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'rgba(240,236,228,0.85)',
+                  fontSize: '0.95rem',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                }}
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setOpen(false)}
+                className="skeu-btn-accent"
+                style={{ display: 'block', textAlign: 'center', padding: '13px', fontSize: '0.95rem' }}
+              >
+                Book Appointment
+              </Link>
+            </div>
           </div>
         </div>
       )}

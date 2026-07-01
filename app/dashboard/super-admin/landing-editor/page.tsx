@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Pencil, Plus, Trash2, Check, X, Camera, Save, ExternalLink } from 'lucide-react';
+import { Pencil, Plus, Trash2, Check, X, Camera, Save, ExternalLink, Layout } from 'lucide-react';
 import DBLogo from '@/components/ui/DBLogo';
 
 /* ─── types ─── */
@@ -464,16 +464,5 @@ export default function LandingEditorPage() {
       </EditSection>
 
     </div>
-  );
-}
-
-// Icon needed inside the file
-function Layout({ size, color }: { size: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-      <line x1="3" y1="9" x2="21" y2="9"/>
-      <line x1="9" y1="21" x2="9" y2="9"/>
-    </svg>
   );
 }
