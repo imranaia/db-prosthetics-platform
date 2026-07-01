@@ -19,7 +19,9 @@
       "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/hospitals/[id]\")",
       "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/products/[id]\")",
       "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/orders/[id]\")",
-      "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/appointments/[id]\")"
+      "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/appointments/[id]\")",
+      "Bash(node -e \"require\\('lucide-react'\\); console.log\\('lucide ok'\\)\")",
+      "Bash(node -e \"require\\('recharts'\\); console.log\\('recharts ok'\\)\")"
     ]
   }
 }

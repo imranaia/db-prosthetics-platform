@@ -2,24 +2,59 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
+import {
+  Building2, Users, Stethoscope, ShoppingCart,
+  CalendarDays, Package, TrendingUp, CircleDollarSign,
+} from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+  LineChart, Line, CartesianGrid,
+} from 'recharts';
 
 interface Stats {
-  hospitals: number;
-  patients: number;
-  doctors: number;
-  pending_orders: number;
-  pending_appointments: number;
-  products: number;
+  hospitals: number; patients: number; doctors: number;
+  pending_orders: number; pending_appointments: number; products: number;
+  total_revenue: number;
+  monthly_revenue: { month: string; revenue: number }[];
+  orders_by_status: { status: string; count: number }[];
+  patient_growth: { month: string; count: number }[];
 }
 
 const STAT_CARDS = [
-  { key: 'hospitals',           label: 'Total Hospitals' },
-  { key: 'patients',            label: 'Total Patients' },
-  { key: 'doctors',             label: 'Total Doctors' },
-  { key: 'pending_orders',      label: 'Pending Orders' },
-  { key: 'pending_appointments', label: 'Pending Appointments' },
-  { key: 'products',            label: 'Total Products' },
+  { key: 'hospitals',            label: 'Hospitals',            icon: Building2,       color: '#1b3d5e' },
+  { key: 'patients',             label: 'Patients',             icon: Users,           color: '#2563eb' },
+  { key: 'doctors',              label: 'Doctors',              icon: Stethoscope,     color: '#7c3aed' },
+  { key: 'pending_orders',       label: 'Pending Orders',       icon: ShoppingCart,    color: '#b5751f' },
+  { key: 'pending_appointments', label: 'Pending Appts',        icon: CalendarDays,    color: '#dc2626' },
+  { key: 'products',             label: 'Products',             icon: Package,         color: '#059669' },
 ] as const;
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:    '#f59e0b',
+  processing: '#3b82f6',
+  fulfilled:  '#10b981',
+  cancelled:  '#ef4444',
+};
+
+function shortMonth(ym: string) {
+  const [y, m] = ym.split('-');
+  return new Date(Number(y), Number(m) - 1).toLocaleString('en', { month: 'short' });
+}
+
+function formatNGN(kobo: number) {
+  return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0 });
+}
+
+const CustomTooltipRevenue = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 14px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.82rem' }}>
+      <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>{label}</div>
+      <div style={{ color: '#1b3d5e' }}>{formatNGN(payload[0].value)}</div>
+    </div>
+  );
+};
 
 export default function SuperAdminOverview() {
   const { user, loading } = useAuth();
@@ -29,66 +64,164 @@ export default function SuperAdminOverview() {
   useEffect(() => {
     if (!user) return;
     fetch('/api/admin/stats')
-      .then((r) => r.json())
-      .then((data) => { setStats(data); setStatsLoading(false); })
+      .then(r => r.json())
+      .then(data => { setStats(data); setStatsLoading(false); })
       .catch(() => setStatsLoading(false));
   }, [user]);
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        Loading...
-      </div>
-    );
-  }
+  if (loading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Loading...</div>
+    </div>
+  );
 
-  if (!user) {
-    if (typeof window !== 'undefined') window.location.href = '/login';
-    return null;
-  }
+  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  const revenueData = (stats?.monthly_revenue || []).map(r => ({
+    month: shortMonth(r.month), revenue: r.revenue,
+  }));
+
+  const statusData = (stats?.orders_by_status || []).map(s => ({
+    name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
+    value: s.count,
+    color: STATUS_COLORS[s.status] || '#9ca3af',
+  }));
+
+  const growthData = (stats?.patient_growth || []).map(g => ({
+    month: shortMonth(g.month), count: g.count,
+  }));
 
   return (
-    <div style={{ padding: '40px 36px' }}>
-      <h1
-        className="font-display"
-        style={{ fontSize: '2rem', color: 'var(--text-head)', marginBottom: '8px', fontWeight: 600 }}
-      >
-        Good morning, Super Admin
-      </h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '36px', fontSize: '0.9rem' }}>
-        Here&apos;s what&apos;s happening on the platform today.
-      </p>
+    <div className="dash-content">
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <h1 className="font-display" style={{ fontSize: '1.9rem', fontWeight: 600, color: 'var(--text-head)', lineHeight: 1.2 }}>
+          Good day, Super Admin
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '6px' }}>
+          Platform overview and live analytics
+        </p>
+      </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '24px',
-        }}
-      >
-        {STAT_CARDS.map(({ key, label }) => (
-          <div
-            key={key}
-            className="skeu-card"
-            style={{ padding: '28px 24px', opacity: statsLoading ? 0.5 : 1, transition: 'opacity 0.3s' }}
-          >
-            <div
-              style={{
-                fontSize: '2.6rem',
-                fontWeight: 700,
-                color: 'var(--primary)',
-                lineHeight: 1,
-                marginBottom: '10px',
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              {statsLoading ? '—' : (stats?.[key] ?? 0).toLocaleString()}
+      {/* Total Revenue banner */}
+      {!statsLoading && stats && (
+        <div style={{
+          background: 'linear-gradient(135deg, var(--primary) 0%, #254f7a 100%)',
+          borderRadius: '14px', padding: '20px 24px', marginBottom: '24px',
+          display: 'flex', alignItems: 'center', gap: '14px',
+          boxShadow: '4px 4px 16px rgba(0,0,0,0.25)',
+        }}>
+          <CircleDollarSign size={28} color="rgba(255,255,255,0.7)" />
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Total Revenue Collected
             </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>
-              {label}
+            <div style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
+              {formatNGN(stats.total_revenue)}
             </div>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* Stat cards */}
+      <div className="stat-grid">
+        {STAT_CARDS.map(({ key, label, icon: Icon, color }) => {
+          const value = stats?.[key] ?? 0;
+          return (
+            <div key={key} className="skeu-card" style={{ padding: '20px', opacity: statsLoading ? 0.5 : 1, transition: 'opacity 0.3s', cursor: 'default' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 10,
+                  background: color + '18',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Icon size={18} color={color} />
+                </div>
+                <TrendingUp size={14} color="var(--text-muted)" style={{ opacity: 0.5 }} />
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 700, color, fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>
+                {statsLoading ? '—' : value.toLocaleString()}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, marginTop: '6px' }}>
+                {label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Charts */}
+      <div className="chart-grid">
+        {/* Revenue bar chart */}
+        <div className="skeu-card" style={{ padding: '24px', cursor: 'default' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)' }}>Monthly Revenue</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>Paid orders — last 6 months</div>
+          </div>
+          {revenueData.length === 0 ? (
+            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No revenue data yet
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={revenueData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltipRevenue />} />
+                <Bar dataKey="revenue" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Orders by status donut */}
+        <div className="skeu-card" style={{ padding: '24px', cursor: 'default' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)' }}>Orders by Status</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>Breakdown</div>
+          </div>
+          {statusData.length === 0 ? (
+            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No orders yet
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={3}>
+                  {statusData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: '0.75rem', color: '#374151' }}>{v}</span>} />
+                <Tooltip formatter={(v) => [v, 'Orders']} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Patient growth line chart */}
+      <div className="skeu-card" style={{ padding: '24px', marginTop: '20px', cursor: 'default' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)' }}>Patient Growth</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>New patients registered — last 6 months</div>
+        </div>
+        {growthData.length === 0 ? (
+          <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            No patient data yet
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={growthData} margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={28} />
+              <Tooltip formatter={(v) => [v, 'Patients']} />
+              <Line type="monotone" dataKey="count" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill: 'var(--accent)', r: 4 }} activeDot={{ r: 6 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

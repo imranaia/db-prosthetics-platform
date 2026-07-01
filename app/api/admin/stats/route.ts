@@ -11,12 +11,43 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
 
-  const hospitals         = (db.prepare('SELECT COUNT(*) as count FROM hospitals').get() as { count: number }).count;
-  const patients          = (db.prepare('SELECT COUNT(*) as count FROM patients').get() as { count: number }).count;
-  const doctors           = (db.prepare('SELECT COUNT(*) as count FROM doctors').get() as { count: number }).count;
-  const pending_orders    = (db.prepare("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get() as { count: number }).count;
-  const pending_appointments = (db.prepare("SELECT COUNT(*) as count FROM appointments WHERE status = 'requested'").get() as { count: number }).count;
-  const products          = (db.prepare('SELECT COUNT(*) as count FROM products').get() as { count: number }).count;
+  const hospitals            = (db.prepare('SELECT COUNT(*) as c FROM hospitals').get() as { c: number }).c;
+  const patients             = (db.prepare('SELECT COUNT(*) as c FROM patients').get() as { c: number }).c;
+  const doctors              = (db.prepare('SELECT COUNT(*) as c FROM doctors').get() as { c: number }).c;
+  const pending_orders       = (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").get() as { c: number }).c;
+  const pending_appointments = (db.prepare("SELECT COUNT(*) as c FROM appointments WHERE status = 'requested'").get() as { c: number }).c;
+  const products             = (db.prepare('SELECT COUNT(*) as c FROM products').get() as { c: number }).c;
+  const total_revenue        = (db.prepare("SELECT COALESCE(SUM(total_amount),0) as s FROM orders WHERE payment_status='paid'").get() as { s: number }).s;
 
-  return NextResponse.json({ hospitals, patients, doctors, pending_orders, pending_appointments, products });
+  // Monthly revenue — last 6 months (in kobo, divide by 100 on client)
+  const monthly_revenue = db.prepare(`
+    SELECT strftime('%Y-%m', created_at) as month,
+           COALESCE(SUM(total_amount),0) as revenue
+    FROM orders
+    WHERE payment_status = 'paid'
+      AND created_at >= date('now', '-6 months')
+    GROUP BY month ORDER BY month ASC
+  `).all() as { month: string; revenue: number }[];
+
+  // Orders by status
+  const orders_by_status = db.prepare(`
+    SELECT status, COUNT(*) as count FROM orders GROUP BY status
+  `).all() as { status: string; count: number }[];
+
+  // New patients per month — last 6 months
+  const patient_growth = db.prepare(`
+    SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count
+    FROM patients
+    WHERE created_at >= date('now', '-6 months')
+    GROUP BY month ORDER BY month ASC
+  `).all() as { month: string; count: number }[];
+
+  return NextResponse.json({
+    hospitals, patients, doctors,
+    pending_orders, pending_appointments, products,
+    total_revenue,
+    monthly_revenue,
+    orders_by_status,
+    patient_growth,
+  });
 }
