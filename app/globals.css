@@ -477,3 +477,18 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Super Admin sidebar nav link */
+.sidebar-nav-link {
+  display: block;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sidebar-nav-link:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}

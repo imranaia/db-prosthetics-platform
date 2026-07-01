@@ -15,7 +15,11 @@
       "Bash(npx rimraf:*)",
       "Bash(npx next:*)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/hospitals/[id]\")",
+      "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/products/[id]\")",
+      "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/orders/[id]\")",
+      "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/appointments/[id]\")"
     ]
   }
 }
