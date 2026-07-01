@@ -1,14 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DBLogo from '@/components/ui/DBLogo';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 
+const ROLE_REDIRECTS: Record<string, string> = {
+  super_admin:    '/dashboard/super-admin',
+  hospital_admin: '/dashboard/hospital-admin',
+  doctor:         '/dashboard/doctor',
+  po_specialist:  '/dashboard/po-specialist',
+  patient:        '/dashboard/patient',
+};
+
 export default function RegisterPage() {
-  const router = useRouter();
 
   const [form, setForm] = useState({
     full_name: '',
@@ -68,19 +73,23 @@ export default function RegisterPage() {
     }
 
     // Auto sign-in after successful registration
-    const result = await signIn('credentials', {
-      email:    form.email.trim().toLowerCase(),
-      password: form.password,
-      redirect: false,
+    const loginRes = await fetch('/api/auth/login', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        email:    form.email.trim().toLowerCase(),
+        password: form.password,
+      }),
     });
 
     setLoading(false);
 
-    if (result?.ok) {
-      router.replace('/dashboard/patient');
+    if (loginRes.ok) {
+      const loginData = await loginRes.json();
+      window.location.href = ROLE_REDIRECTS[loginData.role] || '/dashboard/patient';
     } else {
       // Registered but sign-in failed — just send to login
-      router.replace('/login');
+      window.location.href = '/login';
     }
   }
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 const ROLE_REDIRECTS: Record<string, string> = {
   super_admin:    '/dashboard/super-admin',
@@ -13,15 +13,14 @@ const ROLE_REDIRECTS: Record<string, string> = {
 };
 
 export default function DashboardIndex() {
-  const { data: session, status } = useSession();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'loading') return;
-    if (status === 'unauthenticated') { router.replace('/login'); return; }
-    const role = (session?.user as any)?.role as string;
-    router.replace(ROLE_REDIRECTS[role] || '/login');
-  }, [status, session, router]);
+    if (loading) return;
+    if (!user) { router.replace('/login'); return; }
+    router.replace(ROLE_REDIRECTS[user.role] || '/login');
+  }, [loading, user, router]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f2438', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

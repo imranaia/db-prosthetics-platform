@@ -1,5 +1,5 @@
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 
 const ROLE_PATHS: Record<string, string> = {
   super_admin:    '/dashboard/super-admin',
@@ -9,33 +9,34 @@ const ROLE_PATHS: Record<string, string> = {
   patient:        '/dashboard/patient',
 };
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const role  = token?.role as string | undefined;
-    const path  = req.nextUrl.pathname;
+export async function proxy(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
 
-    if (!role) return NextResponse.redirect(new URL('/login', req.url));
-
-    const allowedRoot = ROLE_PATHS[role];
-
-    // If a user tries to access another role's dashboard, redirect them to their own
-    if (path.startsWith('/dashboard') && allowedRoot && !path.startsWith(allowedRoot)) {
-      return NextResponse.redirect(new URL(allowedRoot, req.url));
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      // Any valid JWT token is enough to pass the gate;
-      // role-level access is checked in the middleware function above
-      authorized: ({ token }) => !!token,
-    },
+  // No token — send to login
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
-);
 
-// Protect all dashboard routes
+  const user = await verifyToken(token);
+
+  // Invalid or expired token — clear cookie and send to login
+  if (!user) {
+    const res = NextResponse.redirect(new URL('/login', req.url));
+    res.cookies.set({ name: SESSION_COOKIE, value: '', maxAge: 0, path: '/' });
+    return res;
+  }
+
+  const allowedRoot = ROLE_PATHS[user.role];
+  const path        = req.nextUrl.pathname;
+
+  // User accessing a dashboard that isn't theirs — redirect to their own
+  if (allowedRoot && !path.startsWith(allowedRoot)) {
+    return NextResponse.redirect(new URL(allowedRoot, req.url));
+  }
+
+  return NextResponse.next();
+}
+
 export const config = {
   matcher: ['/dashboard/:path*'],
 };
