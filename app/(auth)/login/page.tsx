@@ -1,54 +1,54 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import DBLogo from '@/components/ui/DBLogo';
 
-/* Reads ?error= from URL — must be in its own component wrapped in Suspense */
-function LoginError() {
-  const params = useSearchParams();
-  const error  = params.get('error');
-  if (!error) return null;
-  return (
-    <div style={{
-      background: '#fef2f2', border: '1px solid #fecaca',
-      borderRadius: '8px', padding: '12px 14px', marginBottom: '20px',
-      display: 'flex', alignItems: 'center', gap: '8px',
-    }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2" style={{ flexShrink: 0 }}>
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <span style={{ fontSize: '0.85rem', color: '#c0392b' }}>
-        Incorrect email or password. Please try again.
-      </span>
-    </div>
-  );
-}
+const ROLE_REDIRECTS: Record<string, string> = {
+  super_admin:    '/dashboard/super-admin',
+  hospital_admin: '/dashboard/hospital-admin',
+  doctor:         '/dashboard/doctor',
+  po_specialist:  '/dashboard/po-specialist',
+  patient:        '/dashboard/patient',
+};
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
-    // redirect: true — NextAuth handles the redirect server-side after auth.
-    // On success → goes to /dashboard (which redirects to the right role dashboard).
-    // On failure → goes to /login?error=CredentialsSignin (caught by LoginError above).
-    await signIn('credentials', {
-      email:       email.trim().toLowerCase(),
-      password,
-      redirect:    true,
-      callbackUrl: '/dashboard',
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          email:    email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
-    // Only reached if signIn itself throws — reset the button
-    setLoading(false);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Incorrect email or password. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Hard navigate so the cookie is picked up fresh by the browser
+      window.location.href = ROLE_REDIRECTS[data.role] || '/dashboard';
+
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -69,25 +69,29 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Error from URL param (server-side redirect on failed login) */}
-        <Suspense fallback={null}>
-          <LoginError />
-        </Suspense>
+        {/* Error */}
+        {error && (
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: '8px', padding: '12px 14px', marginBottom: '20px',
+            display: 'flex', alignItems: 'center', gap: '8px',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span style={{ fontSize: '0.85rem', color: '#c0392b' }}>{error}</span>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate>
           <div style={{ marginBottom: '20px' }}>
             <label className="skeu-label" htmlFor="email">Email address</label>
             <input
-              id="email"
-              type="email"
-              className="skeu-input"
+              id="email" type="email" className="skeu-input"
               placeholder="you@example.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              disabled={loading}
+              value={email} onChange={e => setEmail(e.target.value)}
+              required autoComplete="email" disabled={loading}
             />
           </div>
 
@@ -95,26 +99,14 @@ export default function LoginPage() {
             <label className="skeu-label" htmlFor="password">Password</label>
             <div style={{ position: 'relative' }}>
               <input
-                id="password"
-                type={showPass ? 'text' : 'password'}
-                className="skeu-input"
-                placeholder="Enter your password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                disabled={loading}
+                id="password" type={showPass ? 'text' : 'password'}
+                className="skeu-input" placeholder="Enter your password"
+                value={password} onChange={e => setPassword(e.target.value)}
+                required autoComplete="current-password" disabled={loading}
                 style={{ paddingRight: '44px' }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPass(p => !p)}
-                style={{
-                  position: 'absolute', right: '12px', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
-                  padding: '4px', display: 'flex',
-                }}
+              <button type="button" onClick={() => setShowPass(p => !p)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', display: 'flex' }}
                 aria-label={showPass ? 'Hide password' : 'Show password'}
               >
                 {showPass
@@ -125,9 +117,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="skeu-btn-primary"
+          <button type="submit" className="skeu-btn-primary"
             style={{ width: '100%', justifyContent: 'center', padding: '15px' }}
             disabled={loading}
           >
@@ -148,14 +138,11 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <Link
-        href="/"
-        style={{
-          position: 'fixed', top: '20px', left: '24px',
-          display: 'flex', alignItems: 'center', gap: '6px',
-          color: 'rgba(240,236,228,0.6)', fontSize: '0.85rem', textDecoration: 'none',
-        }}
-      >
+      <Link href="/" style={{
+        position: 'fixed', top: '20px', left: '24px',
+        display: 'flex', alignItems: 'center', gap: '6px',
+        color: 'rgba(240,236,228,0.6)', fontSize: '0.85rem', textDecoration: 'none',
+      }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
