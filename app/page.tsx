@@ -4,6 +4,8 @@ import getDb from '@/lib/db';
 import Navbar from '@/components/layout/Navbar';
 import DBLogo from '@/components/ui/DBLogo';
 
+export const dynamic = 'force-dynamic';
+
 /* ─── types ─── */
 interface TeamMember {
   id: number;
