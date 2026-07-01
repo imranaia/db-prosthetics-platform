@@ -129,7 +129,18 @@ export default function LandingPage() {
                   marginBottom: '1.5rem',
                 }}
               >
-                {heroHeading}
+                {(() => {
+                  const dot = heroHeading.indexOf('. ');
+                  if (dot === -1) return heroHeading;
+                  return (
+                    <>
+                      {heroHeading.slice(0, dot + 1)}{' '}
+                      <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>
+                        {heroHeading.slice(dot + 2)}
+                      </em>
+                    </>
+                  );
+                })()}
               </h1>
 
               <p

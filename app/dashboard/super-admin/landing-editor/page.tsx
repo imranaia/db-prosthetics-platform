@@ -9,7 +9,7 @@ import DBLogo from '@/components/ui/DBLogo';
 /* ─── types ─── */
 interface ServiceCard  { title: string; description: string; }
 interface PortfolioCard { cat: string; label: string; sub: string; image_url: string; }
-interface TeamMember   { id?: number; name: string; position: string; bio: string; photo_url: string; }
+interface TeamMember   { id?: number; name: string; position: string; bio: string; photo_url: string; display_order?: number; }
 interface SiteContent {
   hero_badge: string; hero_heading: string; hero_subheading: string;
   hero_cta_primary: string; hero_cta_secondary: string; hero_image_url: string;
@@ -149,6 +149,11 @@ export default function LandingEditorPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Team state (separate from site_content — stored in team_members table)
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [teamDraft, setTeamDraft] = useState<TeamMember[]>([]);
+  const [savingTeam, setSavingTeam] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     fetch('/api/admin/site-content').then(r => r.json()).then((d: Record<string, string>) => {
@@ -166,6 +171,10 @@ export default function LandingEditorPage() {
       };
       setContent(parsed);
       setDraft(parsed);
+    });
+    fetch('/api/admin/team').then(r => r.json()).then(d => {
+      setTeam(d.members || []);
+      setTeamDraft(d.members || []);
     });
   }, [user]);
 
@@ -190,6 +199,33 @@ export default function LandingEditorPage() {
     });
     setContent(prev => ({ ...prev, ...updates }));
     setSaving(false);
+    setEditing(null);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  async function saveTeam() {
+    setSavingTeam(true);
+    // Delete removed members
+    const removedIds = team
+      .filter(m => m.id && !teamDraft.find(d => d.id === m.id))
+      .map(m => m.id!);
+    for (const id of removedIds) {
+      await fetch('/api/admin/team', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    }
+    // Update existing / insert new
+    for (let i = 0; i < teamDraft.length; i++) {
+      const m = { ...teamDraft[i], display_order: i };
+      if (m.id) {
+        await fetch('/api/admin/team', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(m) });
+      } else {
+        const res = await fetch('/api/admin/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(m) });
+        const data = await res.json();
+        teamDraft[i] = { ...m, id: data.id };
+      }
+    }
+    setTeam([...teamDraft]);
+    setSavingTeam(false);
     setEditing(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -262,26 +298,46 @@ export default function LandingEditorPage() {
             <div style={{ flex: 1, minWidth: 280 }}>
               <div className="skeu-badge" style={{ display: 'inline-flex', marginBottom: '20px' }}>{content.hero_badge}</div>
               <h1 className="font-display" style={{ fontSize: 'clamp(2rem,4vw,3.5rem)', fontWeight: 600, color: '#f0ece4', lineHeight: 1.15, marginBottom: '20px' }}>
-                {content.hero_heading}
+                {(() => {
+                  const dot = content.hero_heading.indexOf('. ');
+                  if (dot === -1) return content.hero_heading;
+                  return <>{content.hero_heading.slice(0, dot + 1)} <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>{content.hero_heading.slice(dot + 2)}</em></>;
+                })()}
               </h1>
               <p style={{ color: 'rgba(240,236,228,0.75)', fontSize: '1rem', lineHeight: 1.75, maxWidth: 480, marginBottom: '28px' }}>
                 {content.hero_subheading}
               </p>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '28px' }}>
                 <span className="skeu-btn-accent">{content.hero_cta_primary}</span>
                 <span className="skeu-btn-ghost">{content.hero_cta_secondary}</span>
               </div>
+              {/* Trust indicators */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px' }}>
+                {[['Certified','P&O Organisation'],['All 36','States Coverage'],['Hospital &','Home Visits']].map(([top,bot]) => (
+                  <div key={top}>
+                    <div className="font-display" style={{ color: '#d08c2a', fontSize: '1rem', fontWeight: 600 }}>{top}</div>
+                    <div style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.75rem', letterSpacing: '0.04em' }}>{bot}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ flexShrink: 0, width: 280, height: 340, borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '12px 16px 40px rgba(0,0,0,0.6)', background: 'linear-gradient(160deg, #1e4a72 0%, #0f2438 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div style={{ flexShrink: 0, width: 280, height: 340, borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '12px 16px 40px rgba(0,0,0,0.6)', position: 'relative' }}>
               {content.hero_image_url
                 ? <Image src={content.hero_image_url} alt="Hero" fill style={{ objectFit: 'cover' }} />
                 : (
-                  <div style={{ textAlign: 'center', padding: 24 }}>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(160deg, #1e4a72 0%, #0f2438 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
                     <DBLogo size={56} />
-                    <p className="font-display" style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.85rem', marginTop: 12 }}>Click "Edit Hero" to upload a photo</p>
+                    <p className="font-display" style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.6 }}>
+                      Prosthetic portfolio photography<br />will be placed here
+                    </p>
                   </div>
                 )
               }
+              {/* Overlay badge */}
+              <div style={{ position: 'absolute', bottom: 14, left: 14, right: 14, background: 'rgba(15,36,56,0.85)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ color: '#d08c2a', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>What we offer</div>
+                <div style={{ color: '#f0ece4', fontSize: '0.82rem', marginTop: 3 }}>Upper limb · Lower limb · Spinal · Facial</div>
+              </div>
             </div>
           </div>
         </section>
@@ -425,6 +481,86 @@ export default function LandingEditorPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      </EditSection>
+
+      {/* ── TEAM SECTION ── */}
+      <EditSection
+        label="Team"
+        editing={editing === 'team'}
+        onEdit={() => { setTeamDraft([...team]); setEditing('team'); }}
+        onSave={saveTeam}
+        onCancel={() => setEditing(null)}
+        saving={savingTeam}
+        editForm={
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+              {teamDraft.map((m, i) => (
+                <div key={i} style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 10, padding: '16px', border: '1px solid rgba(0,0,0,0.07)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase' }}>Member {i + 1}</span>
+                    <button onClick={() => setTeamDraft(teamDraft.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b91c1c' }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <label className="skeu-label">Full Name</label>
+                    <input className="skeu-input" value={m.name} onChange={e => { const t = [...teamDraft]; t[i] = { ...t[i], name: e.target.value }; setTeamDraft(t); }} placeholder="e.g. Dr. Amaka Okafor" />
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <label className="skeu-label">Position / Title</label>
+                    <input className="skeu-input" value={m.position} onChange={e => { const t = [...teamDraft]; t[i] = { ...t[i], position: e.target.value }; setTeamDraft(t); }} placeholder="e.g. Lead P&O Specialist" />
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label className="skeu-label">Bio (optional)</label>
+                    <textarea className="skeu-input" value={m.bio} onChange={e => { const t = [...teamDraft]; t[i] = { ...t[i], bio: e.target.value }; setTeamDraft(t); }} rows={2} style={{ resize: 'vertical' }} />
+                  </div>
+                  <ImageUploader
+                    value={m.photo_url}
+                    onChange={url => { const t = [...teamDraft]; t[i] = { ...t[i], photo_url: url }; setTeamDraft(t); }}
+                    folder="db-prosthetics/team"
+                    label="Photo"
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setTeamDraft([...teamDraft, { name: '', position: '', bio: '', photo_url: '' }])}
+              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--accent)', background: 'rgba(181,117,31,0.06)', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center' }}
+            >
+              <Plus size={15} /> Add Team Member
+            </button>
+          </div>
+        }
+      >
+        <section style={{ background: 'var(--bg-base)', padding: '60px 24px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+              <div className="skeu-badge" style={{ display: 'inline-flex', marginBottom: '12px' }}>The People</div>
+              <h2 className="font-display" style={{ fontSize: 'clamp(1.8rem,3.5vw,2.6rem)', fontWeight: 600, color: 'var(--text-head)' }}>Our Specialists</h2>
+            </div>
+            {team.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)', border: '2px dashed var(--border-card)', borderRadius: 12 }}>
+                No team members yet. Click "Edit Team" to add specialists.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
+                {team.map((m, i) => (
+                  <div key={m.id ?? i} className="skeu-card" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                    <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', marginBottom: 16, border: '3px solid rgba(255,255,255,0.8)', boxShadow: '4px 4px 12px #c9c4bb, -4px -4px 12px #fff', flexShrink: 0, position: 'relative', background: 'linear-gradient(145deg,#254f7a,#1b3d5e)' }}>
+                      {m.photo_url
+                        ? <Image src={m.photo_url} alt={m.name} fill style={{ objectFit: 'cover' }} />
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(240,236,228,0.6)', fontSize: '2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>{m.name.charAt(0) || '?'}</div>
+                      }
+                    </div>
+                    <h3 className="font-display font-semibold" style={{ fontSize: '1.1rem', color: 'var(--text-head)', marginBottom: 3 }}>{m.name || 'Name'}</h3>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>{m.position || 'Position'}</p>
+                    {m.bio && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>{m.bio}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </EditSection>

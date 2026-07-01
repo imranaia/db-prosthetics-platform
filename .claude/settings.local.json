@@ -22,7 +22,9 @@
       "Bash(mkdir -p \"C:/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/appointments/[id]\")",
       "Bash(node -e \"require\\('lucide-react'\\); console.log\\('lucide ok'\\)\")",
       "Bash(node -e \"require\\('recharts'\\); console.log\\('recharts ok'\\)\")",
-      "Bash(ls \"/c/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/next.config\"*)"
+      "Bash(ls \"/c/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/next.config\"*)",
+      "Bash(kill %1)",
+      "Bash(wait)"
     ]
   }
 }
