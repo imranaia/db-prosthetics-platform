@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import DBLogo from '@/components/ui/DBLogo';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
+import { getLGAs } from '@/lib/nigeria-lgas';
 
 const ROLE_REDIRECTS: Record<string, string> = {
   super_admin:    '/dashboard/super-admin',
@@ -23,6 +24,7 @@ export default function RegisterPage() {
     phone: '',
     dob: '',
     state: '',
+    lga: '',
     address: '',
   });
 
@@ -60,6 +62,7 @@ export default function RegisterPage() {
         phone:     form.phone.trim(),
         dob:       form.dob || null,
         state:     form.state,
+        lga:       form.lga,
         address:   form.address.trim(),
       }),
     });
@@ -245,13 +248,22 @@ export default function RegisterPage() {
               id="state"
               className="skeu-select"
               value={form.state}
-              onChange={e => update('state', e.target.value)}
+              onChange={e => { setForm(prev => ({ ...prev, state: e.target.value, lga: '' })); setError(''); }}
               disabled={loading}
             >
               <option value="">Select your state</option>
               {NIGERIA_STATES.map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
+            </select>
+          </div>
+
+          {/* LGA */}
+          <div style={{ marginBottom: '18px' }}>
+            <label className="skeu-label" htmlFor="lga">Local Government Area <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-muted)', opacity: 0.7 }}>(optional)</span></label>
+            <select id="lga" className="skeu-select" value={form.lga} onChange={e => update('lga', e.target.value)} disabled={loading || !form.state}>
+              <option value="">Select LGA</option>
+              {getLGAs(form.state).map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </div>
 

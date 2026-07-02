@@ -4,7 +4,7 @@ import getDb from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    const { full_name, email, password, phone, dob, state, address } = await req.json();
+    const { full_name, email, password, phone, dob, state, lga, address } = await req.json();
 
     // Basic validation
     if (!full_name || !email || !password) {
@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
       const userId = userResult.lastInsertRowid;
 
       db.prepare(
-        `INSERT INTO patients (user_id, full_name, phone, dob, state, address)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      ).run(userId, full_name, phone || null, dob || null, state || null, address || null);
+        `INSERT INTO patients (user_id, full_name, phone, dob, state, lga, address)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).run(userId, full_name, phone || null, dob || null, state || null, lga || null, address || null);
 
       return userId;
     });

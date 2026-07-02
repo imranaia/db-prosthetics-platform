@@ -1,13 +1,167 @@
-export default function Dashboard() {
+'use client';
+
+import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
+import { Users, Stethoscope, CalendarDays, Clock, Users2 } from 'lucide-react';
+
+interface Hospital {
+  id: number;
+  name: string;
+  state: string;
+  lga: string;
+  address: string;
+}
+
+interface Stats {
+  patients: number;
+  consultations: number;
+  doctors: number;
+  po_specialists: number;
+  upcoming_appointments: number;
+  this_month_consultations: number;
+}
+
+interface Consultation {
+  id: number;
+  patient_name: string;
+  patient_phone: string;
+  chief_complaint: string;
+  assessor_name: string;
+  recommended_device: string;
+  created_at: string;
+}
+
+export default function HospitalAdminPage() {
+  const { user, loading } = useAuth();
+  const [hospital, setHospital] = useState<Hospital | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      fetch('/api/hospital-admin/stats').then(r => r.json()),
+      fetch('/api/hospital-admin/consultations').then(r => r.json()),
+    ]).then(([statsData, consData]) => {
+      if (statsData.hospital) setHospital(statsData.hospital);
+      if (statsData.stats) setStats(statsData.stats);
+      if (consData.consultations) setConsultations(consData.consultations);
+      setDataLoading(false);
+    }).catch(() => setDataLoading(false));
+  }, [user]);
+
+  if (loading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      Loading...
+    </div>
+  );
+  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'hospital_admin') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  const STAT_CARDS = [
+    { label: 'Patients Seen',         value: stats?.patients ?? 0,                                          icon: Users,        color: '#2563eb' },
+    { label: 'Total Consultations',   value: stats?.consultations ?? 0,                                    icon: Stethoscope,  color: 'var(--primary)' },
+    { label: 'This Month',            value: stats?.this_month_consultations ?? 0,                         icon: CalendarDays, color: '#d08c2a' },
+    { label: 'Upcoming Appointments', value: stats?.upcoming_appointments ?? 0,                            icon: Clock,        color: '#059669' },
+    { label: 'Staff',                 value: (stats?.doctors ?? 0) + (stats?.po_specialists ?? 0),        icon: Users2,       color: '#7c3aed' },
+  ];
+
+  function formatDate(dt: string) {
+    return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  const recentConsultations = consultations.slice(0, 10);
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="skeu-card" style={{ padding: '48px', textAlign: 'center', maxWidth: '400px' }}>
-        <h1 className="font-display" style={{ fontSize: '1.8rem', color: 'var(--text-head)', marginBottom: '12px' }}>
-          Hospital Admin Dashboard
+    <div className="dash-content">
+      {/* Header */}
+      <div className="dash-page-header" style={{ marginBottom: '28px' }}>
+        <h1 className="font-display" style={{ fontSize: '1.9rem', fontWeight: 600, color: 'var(--text-head)', lineHeight: 1.2 }}>
+          {dataLoading ? 'Loading...' : (hospital?.name ?? 'Hospital Admin')}
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          This dashboard is being built. Check back soon.
-        </p>
+        {hospital && (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '6px' }}>
+            {hospital.state}{hospital.lga ? ` \u00b7 ${hospital.lga}` : ''}{hospital.address ? ` \u2014 ${hospital.address}` : ''}
+          </p>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+        gap: '16px',
+        marginBottom: '28px',
+        opacity: dataLoading ? 0.5 : 1,
+        transition: 'opacity 0.3s',
+      }}>
+        {STAT_CARDS.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: `${color}18`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon size={20} color={color} />
+            </div>
+            <div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-head)', lineHeight: 1 }}>
+                {dataLoading ? '\u2014' : value}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Consultations */}
+      <div className="skeu-card" style={{ padding: '24px' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)' }}>Recent Consultations</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>Last 10 consultations at this hospital</div>
+        </div>
+
+        {dataLoading ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            Loading...
+          </div>
+        ) : recentConsultations.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            No consultations recorded yet.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-card)' }}>
+                  {['Patient', 'Chief Complaint', 'Assessor', 'Device', 'Date'].map(h => (
+                    <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentConsultations.map((c, i) => (
+                  <tr key={c.id} style={{ borderBottom: i < recentConsultations.length - 1 ? '1px solid var(--border-card)' : 'none' }}>
+                    <td style={{ padding: '12px', color: 'var(--text-head)', fontWeight: 500 }}>{c.patient_name}</td>
+                    <td style={{ padding: '12px', color: 'var(--text-body)' }}>{c.chief_complaint || '\u2014'}</td>
+                    <td style={{ padding: '12px', color: 'var(--text-body)' }}>{c.assessor_name || '\u2014'}</td>
+                    <td style={{ padding: '12px', color: 'var(--text-body)' }}>
+                      {c.recommended_device ? (
+                        <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500 }}>
+                          {c.recommended_device}
+                        </span>
+                      ) : '\u2014'}
+                    </td>
+                    <td style={{ padding: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -9,7 +9,20 @@ import {
   Layout, UserCircle,
 } from 'lucide-react';
 
-const NAV = [
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+}
+
+interface DashboardShellProps {
+  children: React.ReactNode;
+  navItems?: NavItem[];
+  brandLabel?: string;
+  overviewHref?: string;
+}
+
+const DEFAULT_NAV: NavItem[] = [
   { label: 'Overview',        href: '/dashboard/super-admin',                icon: LayoutDashboard },
   { label: 'Hospitals',       href: '/dashboard/super-admin/hospitals',       icon: Building2 },
   { label: 'Products',        href: '/dashboard/super-admin/products',        icon: Package },
@@ -22,9 +35,11 @@ const NAV = [
   { label: 'My Profile',      href: '/dashboard/super-admin/profile',         icon: UserCircle },
 ];
 
-function isActive(href: string, pathname: string) {
-  if (href === '/dashboard/super-admin') return pathname === href;
-  return pathname.startsWith(href);
+function makeIsActive(overviewHref: string) {
+  return function isActive(href: string, pathname: string) {
+    if (href === overviewHref) return pathname === href;
+    return pathname.startsWith(href);
+  };
 }
 
 async function logout() {
@@ -32,10 +47,15 @@ async function logout() {
   window.location.href = '/login';
 }
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
+export default function DashboardShell({ children, navItems, brandLabel, overviewHref }: DashboardShellProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLElement>(null);
+
+  const NAV = navItems ?? DEFAULT_NAV;
+  const resolvedBrandLabel = brandLabel ?? 'Admin Panel';
+  const resolvedOverviewHref = overviewHref ?? '/dashboard/super-admin';
+  const isActive = makeIsActive(resolvedOverviewHref);
 
   // Close on route change
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -84,7 +104,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               DB Prosthetics
             </div>
             <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '4px' }}>
-              Admin Panel
+              {resolvedBrandLabel}
             </div>
           </div>
           <button
