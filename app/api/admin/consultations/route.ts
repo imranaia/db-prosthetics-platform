@@ -10,14 +10,29 @@ export async function GET(req: NextRequest) {
   const db = getDb();
   const consultations = db.prepare(`
     SELECT
-      c.id, c.notes, c.conducted_by_role, c.created_at,
-      c.body_parts, c.photos,
+      c.id,
+      c.notes,
+      c.conducted_by_role,
+      c.created_at,
+      c.body_parts,
+      c.photos,
+      c.assessor_name,
+      c.chief_complaint,
+      c.medical_history,
+      c.physical_assessment,
+      c.patient_goals,
+      c.recommended_device,
+      c.followup_date,
+      c.consent_given,
       p.full_name AS patient_name,
-      u.email    AS doctor_email
+      u.email     AS doctor_email,
+      h.name      AS hospital_name,
+      h.state     AS hospital_state
     FROM consultations c
-    LEFT JOIN patients p ON c.patient_id = p.id
-    LEFT JOIN doctors d  ON c.doctor_id = d.id
-    LEFT JOIN users u    ON d.user_id = u.id
+    LEFT JOIN patients p   ON c.patient_id  = p.id
+    LEFT JOIN doctors d    ON c.doctor_id   = d.id
+    LEFT JOIN users u      ON d.user_id     = u.id
+    LEFT JOIN hospitals h  ON c.hospital_id = h.id
     ORDER BY c.created_at DESC
   `).all();
 
@@ -29,22 +44,91 @@ export async function POST(req: NextRequest) {
   const user = token ? await verifyToken(token) : null;
   if (!user || user.role !== 'super_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { patient_id, notes, body_parts, photos } = await req.json();
-  if (!patient_id || !notes?.trim()) return NextResponse.json({ error: 'Patient and notes are required.' }, { status: 400 });
+  const body = await req.json() as {
+    patient_id: number;
+    hospital_id?: number | null;
+    assessor_name?: string;
+    chief_complaint?: string;
+    medical_history?: string;
+    physical_assessment?: Record<string, unknown> | string;
+    patient_goals?: string;
+    recommended_device?: string;
+    followup_date?: string | null;
+    notes?: string;
+    consent_given?: number;
+    body_parts?: unknown;
+    photos?: unknown;
+  };
 
-  // Normalise body_parts and photos to JSON strings (accept array or string)
+  const {
+    patient_id,
+    hospital_id,
+    assessor_name,
+    chief_complaint,
+    medical_history,
+    physical_assessment,
+    patient_goals,
+    recommended_device,
+    followup_date,
+    notes,
+    consent_given,
+    body_parts,
+    photos,
+  } = body;
+
+  // Require at least patient_id and (chief_complaint or notes)
+  if (!patient_id) {
+    return NextResponse.json({ error: 'Patient is required.' }, { status: 400 });
+  }
+  if (!chief_complaint?.trim() && !notes?.trim()) {
+    return NextResponse.json({ error: 'Chief complaint or notes is required.' }, { status: 400 });
+  }
+
+  // Normalise JSON fields to strings
   const bodyPartsStr = body_parts
     ? (typeof body_parts === 'string' ? body_parts : JSON.stringify(body_parts))
     : null;
   const photosStr = photos
     ? (typeof photos === 'string' ? photos : JSON.stringify(photos))
     : null;
+  const physicalAssessmentStr = physical_assessment
+    ? (typeof physical_assessment === 'string' ? physical_assessment : JSON.stringify(physical_assessment))
+    : null;
 
   const db = getDb();
   db.prepare(`
-    INSERT INTO consultations (patient_id, doctor_id, conducted_by_role, notes, body_parts, photos)
-    VALUES (?, NULL, 'super_admin', ?, ?, ?)
-  `).run(patient_id, notes.trim(), bodyPartsStr, photosStr);
+    INSERT INTO consultations (
+      patient_id,
+      doctor_id,
+      conducted_by_role,
+      hospital_id,
+      assessor_name,
+      chief_complaint,
+      medical_history,
+      physical_assessment,
+      patient_goals,
+      recommended_device,
+      followup_date,
+      notes,
+      consent_given,
+      body_parts,
+      photos
+    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    patient_id,
+    hospital_id ?? null,
+    assessor_name?.trim() || null,
+    chief_complaint?.trim() || null,
+    medical_history?.trim() || null,
+    physicalAssessmentStr,
+    patient_goals?.trim() || null,
+    recommended_device?.trim() || null,
+    followup_date || null,
+    notes?.trim() || null,
+    consent_given ?? 0,
+    bodyPartsStr,
+    photosStr,
+  );
 
   return NextResponse.json({ success: true });
 }
