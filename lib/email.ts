@@ -1,6 +1,9 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy — only instantiated at call time, not at module load (avoids build-time crash)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY || 'placeholder');
+}
 const FROM = process.env.EMAIL_FROM || 'DB Prosthetics <noreply@dbprosthetics.com>';
 
 function baseTemplate(content: string): string {
@@ -102,7 +105,7 @@ export async function sendWelcomeHospitalAdmin(opts: {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to,
       subject: `Welcome to DB Prosthetics — Your Admin Account for ${hospitalName}`,
@@ -148,7 +151,7 @@ export async function sendWelcomePatient(opts: {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to,
       subject: 'Welcome to DB Prosthetics — Your Patient Portal Account',
