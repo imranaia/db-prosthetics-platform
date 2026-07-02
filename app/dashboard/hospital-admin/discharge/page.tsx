@@ -6,6 +6,7 @@ import { ClipboardCheck, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DischargeForm {
   id: number;
+  patient_name: string | null;
   hospital_name: string | null;
   device_fit: string | null;
   alignment_function: string | null;
@@ -123,15 +124,15 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
   );
 }
 
-export default function PatientDischargePage() {
+export default function HospitalAdminDischargePage() {
   const { user, loading } = useAuth();
   const [forms, setForms] = useState<DischargeForm[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'patient') return;
-    fetch('/api/patient/discharge')
+    if (!user || user.role !== 'hospital_admin') return;
+    fetch('/api/hospital-admin/discharge')
       .then(r => r.json())
       .then(data => {
         setForms(data.forms || []);
@@ -142,7 +143,7 @@ export default function PatientDischargePage() {
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'patient') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'hospital_admin') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   return (
     <div className="dash-content">
@@ -150,7 +151,12 @@ export default function PatientDischargePage() {
         <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <ClipboardCheck size={22} color="var(--primary)" />
         </div>
-        <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>Discharge Records</h1>
+        <div>
+          <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>Discharge Records</h1>
+          {!dataLoading && (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>{forms.length} record{forms.length !== 1 ? 's' : ''}</div>
+          )}
+        </div>
       </div>
 
       {dataLoading ? (
@@ -159,7 +165,7 @@ export default function PatientDischargePage() {
         <div className="skeu-card" style={{ padding: '60px 24px', textAlign: 'center' }}>
           <ClipboardCheck size={40} color="var(--text-muted)" style={{ margin: '0 auto 16px' }} />
           <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 8 }}>No discharge records yet</div>
-          <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Your discharge records will appear here after a fitting.</div>
+          <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Discharge records for patients at your hospital will appear here.</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -172,7 +178,7 @@ export default function PatientDischargePage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-head)' }}>
-                      Discharge — {formatDate(df.discharge_date)}
+                      {df.patient_name || 'Unknown Patient'} — {formatDate(df.discharge_date)}
                     </span>
                     {df.followup_recommended ? (
                       <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>Follow-up recommended</span>
