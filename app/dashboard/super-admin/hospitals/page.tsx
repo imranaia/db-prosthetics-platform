@@ -3,14 +3,17 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
+import { getLGAs } from '@/lib/nigeria-lgas';
 import { Building2, Plus, Trash2, X } from 'lucide-react';
 
 interface Hospital {
-  id: number; name: string; state: string;
-  address: string; admin_email: string; created_at: string;
+  id: number; name: string; state: string; lga?: string;
+  landmark?: string; address: string; admin_email: string; created_at: string;
 }
 
-const emptyForm = { name: '', state: '', address: '', admin_email: '', admin_password: '' };
+const emptyForm = { name: '', state: '', lga: '', landmark: '', address: '', admin_email: '', admin_password: '' };
+
+const optionalStyle: React.CSSProperties = { fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '4px' };
 
 export default function HospitalsPage() {
   const { user, loading } = useAuth();
@@ -77,14 +80,25 @@ export default function HospitalsPage() {
               </div>
               <div>
                 <label className="skeu-label">State</label>
-                <select className="skeu-select" value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} required>
+                <select className="skeu-select" value={form.state} onChange={e => setForm({ ...form, state: e.target.value, lga: '' })} required>
                   <option value="">Select state</option>
                   {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              <div>
+                <label className="skeu-label">LGA<span style={optionalStyle}>(optional)</span></label>
+                <select className="skeu-select" value={form.lga} onChange={e => setForm({ ...form, lga: e.target.value })} disabled={!form.state}>
+                  <option value="">Select LGA</option>
+                  {getLGAs(form.state).map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label className="skeu-label">Address</label>
+                <label className="skeu-label">Address<span style={optionalStyle}>(optional)</span></label>
                 <input className="skeu-input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Full street address" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="skeu-label">Landmark<span style={optionalStyle}>(optional)</span></label>
+                <input className="skeu-input" value={form.landmark} onChange={e => setForm({ ...form, landmark: e.target.value })} placeholder="e.g. Near Central Mosque, opposite Shoprite" />
               </div>
               <div>
                 <label className="skeu-label">Admin Email</label>
@@ -93,6 +107,9 @@ export default function HospitalsPage() {
               <div>
                 <label className="skeu-label">Admin Password</label>
                 <input className="skeu-input" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} required placeholder="Temporary login password" />
+                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  The hospital admin will receive a login email and be prompted to change this password on first login.
+                </p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
@@ -113,7 +130,7 @@ export default function HospitalsPage() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>State</th>
+                <th>State / LGA</th>
                 <th>Admin Email</th>
                 <th>Date Added</th>
                 <th></th>
@@ -124,8 +141,16 @@ export default function HospitalsPage() {
                 <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No hospitals yet. Add your first one above.</td></tr>
               ) : hospitals.map(h => (
                 <tr key={h.id}>
-                  <td style={{ fontWeight: 600, color: 'var(--text-head)' }}><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Building2 size={14} color="var(--primary)" style={{ flexShrink: 0 }} />{h.name}</div></td>
-                  <td>{h.state}</td>
+                  <td style={{ fontWeight: 600, color: 'var(--text-head)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={14} color="var(--primary)" style={{ flexShrink: 0 }} />
+                      {h.name}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 500, color: 'var(--text-body)' }}>{h.state}</div>
+                    {h.lga && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{h.lga}</div>}
+                  </td>
                   <td style={{ color: 'var(--text-muted)' }}>{h.admin_email || '—'}</td>
                   <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(h.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                   <td>

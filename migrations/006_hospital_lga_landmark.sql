@@ -1,0 +1,2 @@
+ALTER TABLE hospitals ADD COLUMN lga TEXT;
+ALTER TABLE hospitals ADD COLUMN landmark TEXT;

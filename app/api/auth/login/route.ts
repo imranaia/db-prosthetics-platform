@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const user = db
-      .prepare('SELECT id, email, password_hash, role FROM users WHERE email = ?')
+      .prepare('SELECT id, email, password_hash, role, must_change_password FROM users WHERE email = ?')
       .get(email.trim().toLowerCase()) as any;
 
     if (!user) {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     const token = await signToken({ id: user.id, email: user.email, role: user.role });
 
-    const res = NextResponse.json({ success: true, role: user.role });
+    const res = NextResponse.json({ success: true, role: user.role, must_change_password: user.must_change_password === 1 });
     res.cookies.set(cookieOptions(token));
 
     console.log(`[login] Success: ${user.email} (${user.role})`);

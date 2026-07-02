@@ -43,7 +43,11 @@ export default function LoginPage() {
       }
 
       // Hard navigate so the cookie is picked up fresh by the browser
-      window.location.href = ROLE_REDIRECTS[data.role] || '/dashboard';
+      if (data.must_change_password) {
+        window.location.href = '/change-password';
+      } else {
+        window.location.href = ROLE_REDIRECTS[data.role] || '/dashboard';
+      }
 
     } catch {
       setError('Something went wrong. Please try again.');
