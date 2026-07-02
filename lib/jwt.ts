@@ -8,6 +8,7 @@ export interface SessionPayload {
   id: number;
   email: string;
   role: string;
+  hasDoctorProfile?: boolean;
 }
 
 export const SESSION_COOKIE  = 'dbp_session';

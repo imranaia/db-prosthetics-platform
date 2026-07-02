@@ -16,6 +16,7 @@ interface Appointment {
   created_at: string;
   patient_name: string;
   patient_phone: string;
+  assigned_doctor_id: number | null;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -41,24 +42,38 @@ type Tab = typeof TABS[number];
 export default function DoctorAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [doctorId, setDoctorId] = useState<number | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [expanded, setExpanded] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
+  function load() {
     fetch('/api/doctor/appointments')
       .then(r => r.json())
       .then(data => {
         if (data.appointments) setAppointments(data.appointments);
+        if (data.doctorId) setDoctorId(data.doctorId);
         setDataLoading(false);
       })
       .catch(() => setDataLoading(false));
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    load();
   }, [user]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  async function markComplete(id: number) {
+    await fetch('/api/doctor/appointments', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: 'completed' }),
+    });
+    load();
+  }
 
   const filtered = activeTab === 'all'
     ? appointments
@@ -108,7 +123,7 @@ export default function DoctorAppointmentsPage() {
             <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
-                  {['Patient', 'Type', 'Status', 'Date', 'Notes', ''].map(h => (
+                  {['Patient', 'Type', 'Status', 'Date', 'Notes', 'Actions', ''].map(h => (
                     <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       {h}
                     </th>
@@ -141,13 +156,23 @@ export default function DoctorAppointmentsPage() {
                         <td style={{ padding: '14px 16px', color: 'var(--text-body)', maxWidth: 180 }}>
                           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.notes || '—'}</div>
                         </td>
+                        <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
+                          {a.status === 'confirmed' && a.assigned_doctor_id === doctorId && (
+                            <button
+                              onClick={() => markComplete(a.id)}
+                              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #059669', background: '#05966912', color: '#059669', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap' }}
+                            >
+                              Mark Complete
+                            </button>
+                          )}
+                        </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                           {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
                         </td>
                       </tr>
                       {isExp && (
                         <tr key={`${a.id}-exp`} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                          <td colSpan={6} style={{ padding: '20px 24px', background: 'rgba(27,61,94,0.02)' }}>
+                          <td colSpan={7} style={{ padding: '20px 24px', background: 'rgba(27,61,94,0.02)' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem' }}>
                               {[
                                 { label: 'Patient', value: a.patient_name || '—' },

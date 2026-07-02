@@ -3,6 +3,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { UserCircle, Pencil, X } from 'lucide-react';
+import { NIGERIA_STATES } from '@/lib/nigeria-states';
+import { getLGAs } from '@/lib/nigeria-lgas';
 
 interface DoctorProfile {
   id: number;
@@ -79,7 +81,7 @@ export default function DoctorProfilePage() {
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   function startEdit() {
     if (!doctor) return;
@@ -183,8 +185,20 @@ export default function DoctorProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Specialization</label><input className="skeu-input" value={editForm.specialization ?? ''} onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Years Experience</label><input type="number" min="0" className="skeu-input" value={editForm.years_experience ?? ''} onChange={e => setEditForm({ ...editForm, years_experience: parseInt(e.target.value) || 0 })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input className="skeu-input" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input className="skeu-input" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} /></div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
+                <select className="skeu-select" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value, lga: '' })}>
+                  <option value="">Select state</option>
+                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
+                <select className="skeu-select" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} disabled={!editForm.state}>
+                  <option value="">Select LGA</option>
+                  {getLGAs(editForm.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Qualifications</label><textarea className="skeu-input" rows={3} value={editForm.qualifications ?? ''} onChange={e => setEditForm({ ...editForm, qualifications: e.target.value })} style={{ resize: 'vertical' }} /></div>
             </div>

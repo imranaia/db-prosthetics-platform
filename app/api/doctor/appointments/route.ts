@@ -5,7 +5,7 @@ import getDb from '@/lib/db';
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || user.role !== 'doctor') {
+  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -29,5 +29,41 @@ export async function GET(req: NextRequest) {
     )
     .all(doctor.hospital_id);
 
-  return NextResponse.json({ appointments });
+  return NextResponse.json({ appointments, doctorId: doctor.id });
+}
+
+export async function PATCH(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const user = token ? await verifyToken(token) : null;
+  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const db = getDb();
+
+  const doctor = db
+    .prepare('SELECT id FROM doctors WHERE user_id = ?')
+    .get(user.id) as { id: number } | undefined;
+
+  if (!doctor) {
+    return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
+  }
+
+  const body = await req.json() as { id: number; status?: string };
+  if (!body.id) return NextResponse.json({ error: 'Appointment id required' }, { status: 400 });
+
+  const appointment = db
+    .prepare('SELECT assigned_doctor_id FROM appointments WHERE id = ?')
+    .get(body.id) as { assigned_doctor_id: number | null } | undefined;
+
+  if (!appointment) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+  if (appointment.assigned_doctor_id !== doctor.id) {
+    return NextResponse.json({ error: 'Only the assigned doctor can update this appointment.' }, { status: 403 });
+  }
+
+  if (body.status === undefined) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+
+  db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(body.status, body.id);
+
+  return NextResponse.json({ success: true });
 }

@@ -185,7 +185,7 @@ export default function AppointmentsPage() {
                             </button>
                           )
                         )}
-                        {(a.status === 'quoted' || a.status === 'confirmed') && (
+                        {(a.status === 'quoted' || a.status === 'confirmed') && a.assigned_to_admin === 1 && (
                           <button onClick={() => updateStatus(a.id, 'completed')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
                             Mark Complete
                           </button>

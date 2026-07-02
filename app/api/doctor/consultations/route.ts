@@ -5,7 +5,7 @@ import getDb from '@/lib/db';
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || user.role !== 'doctor') {
+  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || user.role !== 'doctor') {
+  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || user.role !== 'doctor') {
+  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

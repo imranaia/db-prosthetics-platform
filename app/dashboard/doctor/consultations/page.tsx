@@ -231,7 +231,7 @@ export default function DoctorConsultationsPage() {
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   function updatePA(key: keyof PhysicalAssessment, field: 'findings' | 'notes', value: string) {
     setPhysicalAssessment(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));

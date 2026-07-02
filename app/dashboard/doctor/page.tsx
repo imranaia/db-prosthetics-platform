@@ -29,7 +29,7 @@ export default function DoctorPage() {
     </div>
   );
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   const STAT_CARDS = [
     { label: 'My Patients',          value: stats?.patients ?? 0,              icon: Users,        color: '#2563eb' },

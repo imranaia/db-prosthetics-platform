@@ -22,6 +22,15 @@ export async function PATCH(
   };
 
   const db = getDb();
+
+  if (body.status === 'completed') {
+    const appointment = db.prepare('SELECT assigned_to_admin FROM appointments WHERE id = ?').get(id) as { assigned_to_admin: number } | undefined;
+    if (!appointment) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+    if (!appointment.assigned_to_admin) {
+      return NextResponse.json({ error: 'Only the doctor running this appointment can mark it complete.' }, { status: 403 });
+    }
+  }
+
   const setClauses: string[] = [];
   const values: (string | number | null)[] = [];
 

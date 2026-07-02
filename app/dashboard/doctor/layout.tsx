@@ -1,6 +1,7 @@
 'use client';
 
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import { useAuth } from '@/hooks/useAuth';
 import { LayoutDashboard, Users, Stethoscope, CalendarDays, UserCircle, ClipboardCheck, ShoppingCart } from 'lucide-react';
 
 const NAV = [
@@ -14,8 +15,13 @@ const NAV = [
 ];
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const switchLink = user?.role === 'super_admin'
+    ? { label: 'Switch to Admin Dashboard', href: '/dashboard/super-admin' }
+    : undefined;
+
   return (
-    <DashboardShell navItems={NAV} brandLabel="Doctor Portal" overviewHref="/dashboard/doctor">
+    <DashboardShell navItems={NAV} brandLabel="Doctor Portal" overviewHref="/dashboard/doctor" switchLink={switchLink}>
       {children}
     </DashboardShell>
   );

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Building2, Package, Users, ShoppingCart,
   CalendarDays, Boxes, Menu, X, LogOut, Stethoscope,
-  Layout, UserCircle, ClipboardCheck,
+  Layout, UserCircle, ClipboardCheck, Repeat,
 } from 'lucide-react';
 
 interface NavItem {
@@ -15,11 +15,17 @@ interface NavItem {
   icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
 }
 
+interface SwitchLink {
+  label: string;
+  href: string;
+}
+
 interface DashboardShellProps {
   children: React.ReactNode;
   navItems?: NavItem[];
   brandLabel?: string;
   overviewHref?: string;
+  switchLink?: SwitchLink;
 }
 
 const DEFAULT_NAV: NavItem[] = [
@@ -48,7 +54,7 @@ async function logout() {
   window.location.href = '/login';
 }
 
-export default function DashboardShell({ children, navItems, brandLabel, overviewHref }: DashboardShellProps) {
+export default function DashboardShell({ children, navItems, brandLabel, overviewHref, switchLink }: DashboardShellProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLElement>(null);
@@ -132,8 +138,23 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
           ))}
         </nav>
 
-        {/* Logout */}
-        <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        {/* Switch link + Logout */}
+        <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {switchLink && (
+            <Link
+              href={switchLink.href}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 14px', borderRadius: '8px',
+                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', fontWeight: 500,
+                textDecoration: 'none', boxSizing: 'border-box',
+              }}
+            >
+              <Repeat size={15} />
+              {switchLink.label}
+            </Link>
+          )}
           <button
             onClick={logout}
             style={{

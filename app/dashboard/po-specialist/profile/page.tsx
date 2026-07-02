@@ -3,6 +3,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { UserCircle, Pencil, X } from 'lucide-react';
+import { NIGERIA_STATES } from '@/lib/nigeria-states';
+import { getLGAs } from '@/lib/nigeria-lgas';
 
 interface POSpecialistProfile {
   id: number;
@@ -196,8 +198,20 @@ export default function POSpecialistProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('phone')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Specialization</label><input {...inp('specialization')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Years Experience</label><input type="number" min="0" className="skeu-input" value={ef.years_experience ?? ''} onChange={e => setEditForm({ ...ef, years_experience: parseInt(e.target.value) || 0 })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input {...inp('state')} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input {...inp('lga')} /></div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
+                <select className="skeu-select" value={ef.state ?? ''} onChange={e => setEditForm({ ...ef, state: e.target.value, lga: '' })}>
+                  <option value="">Select state</option>
+                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
+                <select className="skeu-select" value={ef.lga ?? ''} onChange={e => setEditForm({ ...ef, lga: e.target.value })} disabled={!ef.state}>
+                  <option value="">Select LGA</option>
+                  {getLGAs(ef.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input {...inp('address')} /></div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Qualifications</label><textarea className="skeu-input" rows={3} value={ef.qualifications ?? ''} onChange={e => setEditForm({ ...ef, qualifications: e.target.value })} style={{ resize: 'vertical' }} /></div>
             </div>

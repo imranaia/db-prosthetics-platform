@@ -3,6 +3,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { UserCircle, Pencil, X } from 'lucide-react';
+import { NIGERIA_STATES } from '@/lib/nigeria-states';
+import { getLGAs } from '@/lib/nigeria-lgas';
 
 interface PatientProfile {
   id: number;
@@ -195,8 +197,20 @@ export default function PatientProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input className="skeu-input" value={editForm.gender ?? ''} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input className="skeu-input" value={editForm.marital_status ?? ''} onChange={e => setEditForm({ ...editForm, marital_status: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input className="skeu-input" value={editForm.occupation ?? ''} onChange={e => setEditForm({ ...editForm, occupation: e.target.value })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input className="skeu-input" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input className="skeu-input" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} /></div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
+                <select className="skeu-select" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value, lga: '' })}>
+                  <option value="">Select state</option>
+                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
+                <select className="skeu-select" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} disabled={!editForm.state}>
+                  <option value="">Select LGA</option>
+                  {getLGAs(editForm.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Next of Kin Name</label><input className="skeu-input" value={editForm.next_of_kin_name ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_name: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Next of Kin Relationship</label><input className="skeu-input" value={editForm.next_of_kin_relationship ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_relationship: e.target.value })} /></div>

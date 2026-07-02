@@ -24,7 +24,26 @@
       "Bash(node -e \"require\\('recharts'\\); console.log\\('recharts ok'\\)\")",
       "Bash(ls \"/c/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/next.config\"*)",
       "Bash(kill %1)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(xargs grep:*)",
+      "Bash(ls /c/Users/LENOVO/OneDrive/Desktop/db-prosthetics-platform/app/api/admin/consultations/[id]/)",
+      "Bash(findstr /n \"sortOrder\\\\|expandedPatient\\\\|expandedConsult\\\\|dateFrom\\\\|dateTo\" \"C:\\\\Users\\\\LENOVO\\\\OneDrive\\\\Desktop\\\\db-prosthetics-platform\\\\app\\\\dashboard\\\\doctor\\\\consultations\\\\page.tsx\")",
+      "Bash(findstr /n \"sortOrder\\\\|expandedPatient\\\\|expandedConsult\\\\|dateFrom\\\\|dateTo\" \"C:\\\\Users\\\\LENOVO\\\\OneDrive\\\\Desktop\\\\db-prosthetics-platform\\\\app\\\\dashboard\\\\super-admin\\\\consultations\\\\page.tsx\")",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"Select-String -Pattern 'sortOrder' -Path 'app\\\\dashboard\\\\doctor\\\\consultations\\\\page.tsx' | Select-Object LineNumber, Line\")",
+      "Bash(powershell -Command \"Select-String -Pattern 'sortOrder' -Path 'app\\\\dashboard\\\\super-admin\\\\consultations\\\\page.tsx' | Select-Object LineNumber, Line\")",
+      "Bash(powershell -Command \"Select-String -Pattern 'if \\\\\\(loading\\\\\\)|if \\\\\\(!user\\\\\\)' -Path 'app\\\\dashboard\\\\super-admin\\\\consultations\\\\page.tsx' | Select-Object LineNumber, Line\")",
+      "Bash(powershell -Command \"Test-Path 'app/api/orders/[id]/route.ts'; Test-Path 'app/api/doctor/profile/route.ts'; Test-Path 'app/api/po-specialist/profile/route.ts'; Test-Path 'migrations/011_order_fulfillment.sql'\")",
+      "Bash(powershell -Command \"Get-ChildItem 'app/api/orders' -Recurse | Select-Object FullName\")",
+      "Bash(node _browsertest.js)",
+      "Bash(curl -sv http://localhost:3000/login -o /dev/null)",
+      "PowerShell(Get-Process *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/login)",
+      "Bash(find hooks *)",
+      "Bash(cat hooks/useAuth.ts)",
+      "Bash(cat hooks/useAuth.tsx)",
+      "PowerShell($sw = [System.Diagnostics.Stopwatch]::StartNew\\(\\); try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/dashboard/super-admin\" -TimeoutSec 30 -MaximumRedirection 0 -ErrorAction Stop; \"STATUS: $\\($r.StatusCode\\) TIME: $\\($sw.ElapsedMilliseconds\\)ms\" } catch { \"ERROR: $\\($_.Exception.Message\\) TIME: $\\($sw.ElapsedMilliseconds\\)ms\" })",
+      "Bash(node -e ' *)"
     ]
   }
 }

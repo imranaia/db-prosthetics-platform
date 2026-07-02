@@ -3,6 +3,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { UserCircle, Pencil, X } from 'lucide-react';
+import { NIGERIA_STATES } from '@/lib/nigeria-states';
+import { getLGAs } from '@/lib/nigeria-lgas';
 
 interface HospitalAdminProfile {
   id: number;
@@ -193,8 +195,20 @@ export default function HospitalAdminProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input {...inp('marital_status')} placeholder="e.g. Single, Married" /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Religion</label><input {...inp('religion')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input {...inp('occupation')} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input {...inp('state')} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input {...inp('lga')} /></div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
+                <select className="skeu-select" value={ef.state ?? ''} onChange={e => setEditForm({ ...ef, state: e.target.value, lga: '' })}>
+                  <option value="">Select state</option>
+                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
+                <select className="skeu-select" value={ef.lga ?? ''} onChange={e => setEditForm({ ...ef, lga: e.target.value })} disabled={!ef.state}>
+                  <option value="">Select LGA</option>
+                  {getLGAs(ef.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input {...inp('address')} /></div>
             </div>
 
