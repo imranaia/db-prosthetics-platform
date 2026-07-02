@@ -8,6 +8,7 @@ interface OrderItem { product_name: string; quantity: number; price_at_order: nu
 interface Order {
   id: number; patient_name: string; status: string;
   total_amount: number; payment_status: string; payment_method: string;
+  fulfillment_status: string | null; fulfillment_notes: string | null;
   created_at: string; items: OrderItem[];
 }
 
@@ -30,6 +31,16 @@ interface CustomOrder {
 
 const STATUS_OPTIONS = ['pending', 'processing', 'fulfilled', 'cancelled'];
 const FILTERS = ['all', ...STATUS_OPTIONS];
+
+const FULFILLMENT_STYLE: Record<string, { bg: string; color: string }> = {
+  pending:            { bg: '#fef3c7', color: '#b45309' },
+  confirmed:          { bg: '#dbeafe', color: '#1d4ed8' },
+  manufacturing:      { bg: '#f3e8ff', color: '#6d28d9' },
+  dispatched:         { bg: '#fed7aa', color: '#c2410c' },
+  delivered:          { bg: '#ccfbf1', color: '#0f766e' },
+  received_by_doctor: { bg: '#ccfbf1', color: '#0f766e' },
+  received_by_patient:{ bg: '#d1fae5', color: '#065f46' },
+};
 
 const S_STYLE: Record<string, { bg: string; color: string }> = {
   pending:    { bg: 'rgba(234,179,8,0.12)',  color: '#a16207' },
@@ -98,6 +109,11 @@ export default function OrdersPage() {
     loadOrders();
   }
 
+  async function updateFulfillment(id: number, fulfillment_status: string) {
+    await fetch(`/api/admin/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fulfillment_status }) });
+    loadOrders();
+  }
+
   async function submitQuote(id: number) {
     if (!quoteAmount) return;
     setQuoting(true);
@@ -155,12 +171,14 @@ export default function OrdersPage() {
           <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div className="table-scroll">
               <table className="dash-table">
-                <thead><tr><th>#</th><th>Patient</th><th>Status</th><th>Total</th><th>Payment</th><th>Date</th><th>Update Status</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Patient</th><th>Status</th><th>Total</th><th>Payment</th><th>Fulfillment</th><th>Date</th><th>Update Status</th><th></th></tr></thead>
                 <tbody>
                   {visible.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No orders in this category.</td></tr>
+                    <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No orders in this category.</td></tr>
                   ) : visible.flatMap(o => {
                     const ss = S_STYLE[o.status] || { bg: '#f3f4f6', color: '#6b7280' };
+                    const fs = o.fulfillment_status || 'pending';
+                    const fStyle = FULFILLMENT_STYLE[fs] || { bg: '#f3f4f6', color: '#6b7280' };
                     const rows: React.ReactElement[] = [(
                       <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}>
                         <td style={{ color: 'var(--text-muted)', fontFamily: 'monospace' }}>#{o.id}</td>
@@ -172,6 +190,7 @@ export default function OrdersPage() {
                             {o.payment_status}
                           </span>
                         </td>
+                        <td><span className="status-badge" style={{ background: fStyle.bg, color: fStyle.color }}>{fs.replace(/_/g, ' ')}</span></td>
                         <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                         <td onClick={e => e.stopPropagation()}>
                           <select value={o.status} onChange={e => updateStatus(o.id, e.target.value)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--border-card)', background: '#fff', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-body)' }}>
@@ -181,20 +200,35 @@ export default function OrdersPage() {
                         <td>{expandedId === o.id ? <ChevronUp size={15} color="var(--text-muted)" /> : <ChevronDown size={15} color="var(--text-muted)" />}</td>
                       </tr>
                     )];
-                    if (expandedId === o.id && o.items?.length > 0) {
+                    if (expandedId === o.id) {
                       rows.push(
                         <tr key={`${o.id}-items`}>
-                          <td colSpan={8} style={{ padding: 0, background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
+                          <td colSpan={9} style={{ padding: 0, background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
                             <div style={{ padding: '14px 20px 14px 40px' }}>
-                              <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: '10px' }}>Order Items</div>
-                              {o.items.map((item, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
-                                  <Package size={13} color="var(--primary)" style={{ flexShrink: 0 }} />
-                                  <span style={{ fontSize: '0.875rem', fontWeight: 500, flex: 1 }}>{item.product_name}</span>
-                                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>x{item.quantity}</span>
-                                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
-                                </div>
-                              ))}
+                              {o.items?.length > 0 && (
+                                <>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: '10px' }}>Order Items</div>
+                                  {o.items.map((item, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                                      <Package size={13} color="var(--primary)" style={{ flexShrink: 0 }} />
+                                      <span style={{ fontSize: '0.875rem', fontWeight: 500, flex: 1 }}>{item.product_name}</span>
+                                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>x{item.quantity}</span>
+                                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                              <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                                {fs === 'pending' && (
+                                  <button onClick={() => updateFulfillment(o.id, 'confirmed')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #1d4ed8', background: '#dbeafe', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Confirm Order</button>
+                                )}
+                                {fs === 'confirmed' && (
+                                  <button onClick={() => updateFulfillment(o.id, 'manufacturing')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #6d28d9', background: '#f3e8ff', color: '#6d28d9', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Mark Manufacturing</button>
+                                )}
+                                {fs === 'manufacturing' && (
+                                  <button onClick={() => updateFulfillment(o.id, 'dispatched')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #c2410c', background: '#fed7aa', color: '#c2410c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Mark Dispatched</button>
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>

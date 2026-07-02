@@ -8,7 +8,7 @@ interface Appointment {
   id: number; patient_name: string; type: string; status: string;
   scheduled_date: string | null; notes: string | null;
   quoted_price: number | null; assigned_hospital_id: number | null;
-  assigned_doctor_id: number | null; created_at: string;
+  assigned_doctor_id: number | null; assigned_to_admin: number; created_at: string;
 }
 interface Hospital { id: number; name: string; }
 interface Doctor { id: number; full_name: string | null; email: string; specialization: string | null; state: string | null; }
@@ -71,9 +71,12 @@ export default function AppointmentsPage() {
 
   async function submitAssignDoctor(id: number) {
     if (!assignDoctor) return;
+    const payload = assignDoctor === 'self'
+      ? { assigned_doctor_id: null, assigned_to_admin: true }
+      : { assigned_doctor_id: parseInt(assignDoctor), assigned_to_admin: false };
     await fetch(`/api/admin/appointments/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assigned_doctor_id: parseInt(assignDoctor) }),
+      body: JSON.stringify(payload),
     });
     setAssignDoctorApptId(null); setAssignDoctor(''); load();
   }
@@ -153,7 +156,8 @@ export default function AppointmentsPage() {
                           assignDoctorApptId === a.id ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <select value={assignDoctor} onChange={e => setAssignDoctor(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }}>
-                                <option value="">Select doctor</option>
+                                <option value="">Select assignee</option>
+                                <option value="self">Super Admin (Self)</option>
                                 {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name || d.email}{d.specialization ? ` — ${d.specialization}` : ''}</option>)}
                               </select>
                               <button onClick={() => submitAssignDoctor(a.id)} disabled={!assignDoctor} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Assign</button>
@@ -187,7 +191,7 @@ export default function AppointmentsPage() {
                           </button>
                         )}
                         {a.quoted_price && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Quote: {fmt(a.quoted_price)}</div>}
-                        {a.assigned_doctor_id && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Doctor assigned</div>}
+                        {a.assigned_to_admin ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Assigned to Super Admin</div> : a.assigned_doctor_id ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Doctor assigned</div> : null}
                       </div>
                     </td>
                   </tr>

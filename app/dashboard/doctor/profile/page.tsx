@@ -2,7 +2,20 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Pencil, X } from 'lucide-react';
+
+interface DoctorProfile {
+  id: number;
+  full_name: string | null;
+  email: string;
+  phone: string | null;
+  specialization: string | null;
+  state: string | null;
+  lga: string | null;
+  address: string | null;
+  years_experience: number | null;
+  qualifications: string | null;
+}
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
@@ -14,25 +27,89 @@ function SectionHeader({ number, title }: { number: string; title: string }) {
   );
 }
 
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{value || '—'}</div>
+    </div>
+  );
+}
+
 export default function DoctorProfilePage() {
   const { user, loading } = useAuth();
-  const [profileData, setProfileData] = useState<{ email: string; role: string } | null>(null);
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Edit form
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<DoctorProfile>>({});
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+
+  // Password form
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
   const [pwSubmitting, setPwSubmitting] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
 
+  async function loadProfile() {
+    try {
+      const r = await fetch('/api/doctor/profile');
+      const data = await r.json();
+      if (data.doctor) setDoctor(data.doctor);
+    } finally {
+      setDataLoading(false);
+    }
+  }
+
   useEffect(() => {
-    if (!user) return;
-    fetch('/api/profile')
-      .then(r => r.json())
-      .then(data => setProfileData(data))
-      .catch(() => {});
-  }, [user]);
+    if (!user || loading) return;
+    loadProfile();
+  }, [user, loading]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  function startEdit() {
+    if (!doctor) return;
+    setEditForm({
+      full_name: doctor.full_name || '',
+      phone: doctor.phone || '',
+      specialization: doctor.specialization || '',
+      state: doctor.state || '',
+      lga: doctor.lga || '',
+      address: doctor.address || '',
+      years_experience: doctor.years_experience ?? undefined,
+      qualifications: doctor.qualifications || '',
+    });
+    setEditing(true);
+    setEditError('');
+    setEditSuccess('');
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setEditSubmitting(true);
+    setEditError('');
+    try {
+      const res = await fetch('/api/doctor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'Failed to update profile.'); }
+      else {
+        setEditSuccess('Profile updated successfully.');
+        setEditing(false);
+        loadProfile();
+      }
+    } catch { setEditError('Network error. Please try again.'); }
+    setEditSubmitting(false);
+  }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,21 +142,56 @@ export default function DoctorProfilePage() {
         </div>
       </div>
 
-      {/* Account Info */}
+      {/* Professional Info */}
       <div className="skeu-card" style={{ padding: 24, marginBottom: 20 }}>
-        <SectionHeader number="1" title="Account Information" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>Email Address</div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{profileData?.email || user.email || '—'}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>Role</div>
-            <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '3px 12px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600 }}>
-              Doctor
-            </span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader number="1" title="Professional Information" />
+          {doctor && !editing && (
+            <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, marginTop: -8 }}>
+              <Pencil size={13} /> Edit Profile
+            </button>
+          )}
         </div>
+
+        {editSuccess && !editing && (
+          <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editSuccess}</div>
+        )}
+
+        {dataLoading ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem', padding: '20px 0' }}>Loading profile...</div>
+        ) : editing ? (
+          <form onSubmit={handleEditSubmit}>
+            {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Specialization</label><input className="skeu-input" value={editForm.specialization ?? ''} onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Years Experience</label><input type="number" min="0" className="skeu-input" value={editForm.years_experience ?? ''} onChange={e => setEditForm({ ...editForm, years_experience: parseInt(e.target.value) || 0 })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input className="skeu-input" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input className="skeu-input" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Qualifications</label><textarea className="skeu-input" rows={3} value={editForm.qualifications ?? ''} onChange={e => setEditForm({ ...editForm, qualifications: e.target.value })} style={{ resize: 'vertical' }} /></div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="submit" className="skeu-btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save Changes'}</button>
+              <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}><X size={14} />Cancel</button>
+            </div>
+          </form>
+        ) : doctor ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+            <Field label="Full Name" value={doctor.full_name || ''} />
+            <Field label="Email" value={doctor.email} />
+            <Field label="Phone" value={doctor.phone || ''} />
+            <Field label="Specialization" value={doctor.specialization || ''} />
+            <Field label="Years Experience" value={doctor.years_experience != null ? String(doctor.years_experience) : ''} />
+            <Field label="State" value={doctor.state || ''} />
+            <Field label="LGA" value={doctor.lga || ''} />
+            <Field label="Address" value={doctor.address || ''} />
+            <div style={{ gridColumn: '1 / -1' }}><Field label="Qualifications" value={doctor.qualifications || ''} /></div>
+          </div>
+        ) : (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No profile data found.</div>
+        )}
       </div>
 
       {/* Change Password */}

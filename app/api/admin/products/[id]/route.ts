@@ -23,6 +23,7 @@ export async function PATCH(
     image_url?: string | null;
     dimensions?: string;
     material?: string;
+    quantity?: number;
   };
 
   const db = getDb();
@@ -38,6 +39,7 @@ export async function PATCH(
   if (body.image_url !== undefined)   { setClauses.push('image_url = ?');   values.push(body.image_url); }
   if (body.dimensions !== undefined)  { setClauses.push('dimensions = ?');  values.push(body.dimensions); }
   if (body.material !== undefined)    { setClauses.push('material = ?');    values.push(body.material); }
+  if (body.quantity !== undefined)    { setClauses.push('quantity = ?');    values.push(body.quantity); }
 
   if (setClauses.length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

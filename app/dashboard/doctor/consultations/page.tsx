@@ -183,7 +183,6 @@ export default function DoctorConsultationsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [expanded, setExpanded] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -208,6 +207,11 @@ export default function DoctorConsultationsPage() {
   const [physicalAssessment, setPhysicalAssessment] = useState<PhysicalAssessment>(EMPTY_PA);
   const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
+  const [expandedConsult, setExpandedConsult] = useState<number | null>(null);
 
   const injuryInputRef   = useRef<HTMLInputElement>(null);
   const existingInputRef = useRef<HTMLInputElement>(null);
@@ -289,10 +293,27 @@ export default function DoctorConsultationsPage() {
   }
 
   const q = search.toLowerCase();
-  const filtered = consultations.filter(c =>
+  let filtered = consultations.filter(c =>
     c.patient_name?.toLowerCase().includes(q) ||
     (c.chief_complaint || '').toLowerCase().includes(q)
   );
+  if (dateFrom) filtered = filtered.filter(c => c.created_at >= dateFrom);
+  if (dateTo)   filtered = filtered.filter(c => c.created_at <= dateTo + 'T23:59:59');
+
+  const sorted = [...filtered].sort((a, b) =>
+    sortOrder === 'newest'
+      ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+
+  // Group by patient name
+  const patientMap = new Map<string, Consultation[]>();
+  for (const c of sorted) {
+    const key = c.patient_name || 'Unknown';
+    if (!patientMap.has(key)) patientMap.set(key, []);
+    patientMap.get(key)!.push(c);
+  }
+  const patientGroups = Array.from(patientMap.entries());
 
   return (
     <div className="dash-content">
@@ -314,7 +335,7 @@ export default function DoctorConsultationsPage() {
             placeholder="Search patient or complaint..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ width: 240 }}
+            style={{ width: 200 }}
           />
           <button
             className="skeu-btn-primary"
@@ -491,61 +512,85 @@ export default function DoctorConsultationsPage() {
         </div>
       )}
 
-      {/* List */}
-      <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {dataLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading consultations...</div>
-        ) : (
-          <div className="table-scroll">
-            <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
-                  {['Patient', 'Chief Complaint', 'Recommended Device', 'Date', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    {consultations.length === 0 ? 'No consultations recorded yet. Use the button above to create the first one.' : 'No consultations match your search.'}
-                  </td></tr>
-                ) : filtered.map(c => {
-                  const isExp = expanded === c.id;
-                  return (
-                    <>
-                      <tr
-                        key={c.id}
-                        style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer', background: isExp ? 'rgba(27,61,94,0.04)' : undefined }}
-                        onClick={() => setExpanded(isExp ? null : c.id)}
-                      >
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-head)' }}>{c.patient_name || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)', maxWidth: 220 }}>{c.chief_complaint ? c.chief_complaint.slice(0, 60) + (c.chief_complaint.length > 60 ? '…' : '') : '—'}</td>
-                        <td style={{ padding: '14px 16px' }}>
-                          {c.recommended_device ? (
-                            <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500 }}>{c.recommended_device}</span>
-                          ) : '—'}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
-                        </td>
-                      </tr>
-                      {isExp && (
-                        <tr key={`${c.id}-exp`} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                          <td colSpan={5} style={{ padding: 0 }}>
-                            <ConsultationDetail c={c} />
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+      {/* Sort & Filter controls */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+          <button onClick={() => setSortOrder('newest')} style={{ padding: '7px 16px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', border: 'none', background: sortOrder === 'newest' ? 'var(--primary)' : 'var(--bg-base)', color: sortOrder === 'newest' ? '#fff' : 'var(--text-muted)' }}>Newest First</button>
+          <button onClick={() => setSortOrder('oldest')} style={{ padding: '7px 16px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', border: 'none', background: sortOrder === 'oldest' ? 'var(--primary)' : 'var(--bg-base)', color: sortOrder === 'oldest' ? '#fff' : 'var(--text-muted)' }}>Oldest First</button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>From</label>
+          <input type="date" className="skeu-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ width: 150 }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>To</label>
+          <input type="date" className="skeu-input" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ width: 150 }} />
+        </div>
+        {(dateFrom || dateTo) && (
+          <button onClick={() => { setDateFrom(''); setDateTo(''); }} style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Clear Dates</button>
         )}
       </div>
+
+      {/* Patient-grouped list */}
+      {dataLoading ? (
+        <div className="skeu-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading consultations...</div>
+      ) : patientGroups.length === 0 ? (
+        <div className="skeu-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          {consultations.length === 0 ? 'No consultations recorded yet. Use the button above to create the first one.' : 'No consultations match your search.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {patientGroups.map(([patientName, pConsults]) => {
+            const isPatientExpanded = expandedPatient === patientName;
+            return (
+              <div key={patientName} className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
+                {/* Patient card header */}
+                <div
+                  style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', background: isPatientExpanded ? 'rgba(27,61,94,0.04)' : undefined }}
+                  onClick={() => { setExpandedPatient(isPatientExpanded ? null : patientName); setExpandedConsult(null); }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0 }}>
+                    {patientName.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-head)', fontSize: '0.95rem' }}>{patientName}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{pConsults.length} consultation{pConsults.length !== 1 ? 's' : ''}</div>
+                  </div>
+                  {isPatientExpanded ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                </div>
+
+                {/* Date list */}
+                {isPatientExpanded && (
+                  <div style={{ borderTop: '1px solid var(--border-card)' }}>
+                    {pConsults.map(c => {
+                      const isConsultExpanded = expandedConsult === c.id;
+                      return (
+                        <div key={c.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <div
+                            style={{ padding: '12px 20px 12px 56px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', background: isConsultExpanded ? 'rgba(27,61,94,0.03)' : undefined }}
+                            onClick={() => setExpandedConsult(isConsultExpanded ? null : c.id)}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)' }}>{formatDate(c.created_at)}</span>
+                              {c.chief_complaint && (
+                                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginLeft: 10 }}>
+                                  — {c.chief_complaint.slice(0, 55)}{c.chief_complaint.length > 55 ? '…' : ''}
+                                </span>
+                              )}
+                            </div>
+                            {isConsultExpanded ? <ChevronUp size={14} color="var(--text-muted)" /> : <ChevronDown size={14} color="var(--text-muted)" />}
+                          </div>
+                          {isConsultExpanded && <ConsultationDetail c={c} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

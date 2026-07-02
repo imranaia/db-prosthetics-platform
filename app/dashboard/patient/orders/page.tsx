@@ -9,6 +9,7 @@ interface StdOrder {
   total_amount: number;
   status: string;
   payment_status: string;
+  fulfillment_status: string | null;
   created_at: string;
   items: Array<{ product_name: string; quantity: number; price_at_order: number }>;
 }
@@ -56,6 +57,7 @@ export default function PatientOrdersPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payErr, setPayErr] = useState('');
+  const [confirmingReceipt, setConfirmingReceipt] = useState<number | null>(null);
 
   async function load() {
     try {
@@ -79,6 +81,20 @@ export default function PatientOrdersPage() {
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'patient') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  async function confirmReceipt(orderId: number) {
+    setConfirmingReceipt(orderId);
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillment_status: 'received_by_patient' }),
+      });
+      load();
+    } finally {
+      setConfirmingReceipt(null);
+    }
+  }
 
   async function handlePay(type: 'order' | 'custom_order', id: number) {
     setPayErr('');
@@ -159,17 +175,28 @@ export default function PatientOrdersPage() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Total: {fmt(o.total_amount)}</div>
-                      {o.payment_status !== 'paid' && (
-                        <button
-                          className="skeu-btn-accent"
-                          onClick={() => handlePay('order', o.id)}
-                          disabled={payingId === `order-${o.id}`}
-                        >
-                          {payingId === `order-${o.id}` ? 'Processing...' : 'Pay Now'}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {(o.fulfillment_status === 'dispatched' || o.fulfillment_status === 'received_by_doctor') && o.fulfillment_status !== 'received_by_patient' && (
+                          <button
+                            onClick={() => confirmReceipt(o.id)}
+                            disabled={confirmingReceipt === o.id}
+                            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #065f46', background: '#d1fae5', color: '#065f46', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            {confirmingReceipt === o.id ? 'Confirming...' : "Confirm I've Received This"}
+                          </button>
+                        )}
+                        {o.payment_status !== 'paid' && (
+                          <button
+                            className="skeu-btn-accent"
+                            onClick={() => handlePay('order', o.id)}
+                            disabled={payingId === `order-${o.id}`}
+                          >
+                            {payingId === `order-${o.id}` ? 'Processing...' : 'Pay Now'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

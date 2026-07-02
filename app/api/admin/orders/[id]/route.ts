@@ -13,14 +13,26 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = await req.json() as { status: string };
-
-  if (!body.status) {
-    return NextResponse.json({ error: 'status is required' }, { status: 400 });
-  }
+  const body = await req.json() as {
+    status?: string;
+    fulfillment_status?: string;
+    fulfillment_notes?: string;
+  };
 
   const db = getDb();
-  db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(body.status, id);
+  const setClauses: string[] = [];
+  const values: (string | number)[] = [];
+
+  if (body.status !== undefined)              { setClauses.push('status = ?');              values.push(body.status); }
+  if (body.fulfillment_status !== undefined)  { setClauses.push('fulfillment_status = ?');  values.push(body.fulfillment_status); }
+  if (body.fulfillment_notes !== undefined)   { setClauses.push('fulfillment_notes = ?');   values.push(body.fulfillment_notes); }
+
+  if (setClauses.length === 0) {
+    return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+  }
+
+  values.push(id);
+  db.prepare(`UPDATE orders SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
 
   return NextResponse.json({ success: true });
 }

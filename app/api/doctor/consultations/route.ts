@@ -44,6 +44,45 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ consultations, patients });
 }
 
+export async function PATCH(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const user = token ? await verifyToken(token) : null;
+  if (!user || user.role !== 'doctor') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const db = getDb();
+  const doctor = db
+    .prepare('SELECT id FROM doctors WHERE user_id = ?')
+    .get(user.id) as { id: number } | undefined;
+
+  if (!doctor) return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
+
+  const body = await req.json() as { id: number; status?: string };
+  if (!body.id) return NextResponse.json({ error: 'Consultation id required' }, { status: 400 });
+
+  if (body.status === 'completed') {
+    const consultation = db
+      .prepare('SELECT doctor_id, conducted_by_role FROM consultations WHERE id = ?')
+      .get(body.id) as { doctor_id: number | null; conducted_by_role: string } | undefined;
+    if (!consultation) return NextResponse.json({ error: 'Consultation not found' }, { status: 404 });
+    if (consultation.conducted_by_role !== 'doctor' || consultation.doctor_id !== doctor.id) {
+      return NextResponse.json({ error: 'Only the consulting practitioner can mark this complete.' }, { status: 403 });
+    }
+  }
+
+  const setClauses: string[] = [];
+  const values: (string | number)[] = [];
+  if (body.status !== undefined) { setClauses.push('status = ?'); values.push(body.status); }
+
+  if (setClauses.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+
+  values.push(body.id);
+  db.prepare(`UPDATE consultations SET ${setClauses.join(', ')} WHERE id = ? AND doctor_id = ?`).run(...values, doctor.id);
+
+  return NextResponse.json({ success: true });
+}
+
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;

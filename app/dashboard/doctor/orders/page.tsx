@@ -44,6 +44,7 @@ interface StdOrder {
   status: string;
   payment_status: string;
   payment_target: string;
+  fulfillment_status: string | null;
   created_at: string;
   items: Array<{ product_name: string; quantity: number; price_at_order: number }>;
 }
@@ -93,6 +94,7 @@ export default function DoctorOrdersPage() {
   const [stdMsg, setStdMsg] = useState('');
   const [stdErr, setStdErr] = useState('');
   const [expandedStd, setExpandedStd] = useState<number | null>(null);
+  const [confirmingReceipt, setConfirmingReceipt] = useState<number | null>(null);
 
   // Custom order state
   const [custCategory, setCustCategory] = useState('');
@@ -188,6 +190,20 @@ export default function DoctorOrdersPage() {
       setStdErr('Network error. Please try again.');
     }
     setStdSubmitting(false);
+  }
+
+  async function confirmReceipt(orderId: number) {
+    setConfirmingReceipt(orderId);
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillment_status: 'received_by_doctor' }),
+      });
+      load();
+    } finally {
+      setConfirmingReceipt(null);
+    }
   }
 
   async function handleCustOrder(e: React.FormEvent) {
@@ -361,10 +377,10 @@ export default function DoctorOrdersPage() {
                           <td style={{ padding: '10px 12px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>{expandedStd === o.id ? <ChevronUp size={14} color="var(--text-muted)" /> : <ChevronDown size={14} color="var(--text-muted)" />}</td>
                         </tr>
-                        {expandedStd === o.id && o.items?.length > 0 && (
+                        {expandedStd === o.id && (
                           <tr key={`${o.id}-exp`}>
                             <td colSpan={7} style={{ padding: '12px 20px 12px 32px', background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-card)' }}>
-                              {o.items.map((item, i) => (
+                              {o.items?.map((item, i) => (
                                 <div key={i} style={{ display: 'flex', gap: 10, padding: '4px 0', fontSize: '0.85rem', color: 'var(--text-body)' }}>
                                   <Package size={12} color="var(--primary)" style={{ marginTop: 2, flexShrink: 0 }} />
                                   <span style={{ flex: 1 }}>{item.product_name}</span>
@@ -372,6 +388,17 @@ export default function DoctorOrdersPage() {
                                   <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
                                 </div>
                               ))}
+                              {o.fulfillment_status === 'dispatched' && (
+                                <div style={{ marginTop: 12 }}>
+                                  <button
+                                    onClick={() => confirmReceipt(o.id)}
+                                    disabled={confirmingReceipt === o.id}
+                                    style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #0f766e', background: '#ccfbf1', color: '#0f766e', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                                  >
+                                    {confirmingReceipt === o.id ? 'Confirming...' : 'Confirm Receipt (Device With Me)'}
+                                  </button>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         )}

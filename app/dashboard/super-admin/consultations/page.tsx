@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useRef, useState } from 'react';
-import { Stethoscope, Plus, X, ChevronDown, ChevronUp, User, Search, Upload, Trash2 } from 'lucide-react';
+import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Search, Upload, Trash2 } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
 
 /* ─── Types ─── */
@@ -236,11 +236,15 @@ export default function ConsultationsPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients]           = useState<Patient[]>([]);
   const [hospitals, setHospitals]         = useState<Hospital[]>([]);
-  const [expandedId, setExpandedId]       = useState<number | null>(null);
   const [showForm, setShowForm]           = useState(false);
   const [submitting, setSubmitting]       = useState(false);
   const [error, setError]                 = useState('');
   const [search, setSearch]               = useState('');
+  const [sortOrder, setSortOrder]         = useState<'newest' | 'oldest'>('newest');
+  const [dateFrom, setDateFrom]           = useState('');
+  const [dateTo, setDateTo]               = useState('');
+  const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
+  const [expandedConsult, setExpandedConsult] = useState<number | null>(null);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -375,11 +379,27 @@ export default function ConsultationsPage() {
     }
   }
 
-  const filtered = consultations.filter(c =>
+  let filtered = consultations.filter(c =>
     c.patient_name.toLowerCase().includes(search.toLowerCase()) ||
     (c.chief_complaint || '').toLowerCase().includes(search.toLowerCase()) ||
     (c.notes || '').toLowerCase().includes(search.toLowerCase())
   );
+  if (dateFrom) filtered = filtered.filter(c => c.created_at >= dateFrom);
+  if (dateTo)   filtered = filtered.filter(c => c.created_at <= dateTo + 'T23:59:59');
+
+  const sorted = [...filtered].sort((a, b) =>
+    sortOrder === 'newest'
+      ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+
+  const patientMap = new Map<string, Consultation[]>();
+  for (const c of sorted) {
+    const key = c.patient_name || 'Unknown';
+    if (!patientMap.has(key)) patientMap.set(key, []);
+    patientMap.get(key)!.push(c);
+  }
+  const patientGroups = Array.from(patientMap.entries());
 
   return (
     <div className="dash-content">
@@ -724,78 +744,84 @@ export default function ConsultationsPage() {
         </div>
       )}
 
-      {/* ── Table ── */}
-      <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-scroll">
-          <table className="dash-table">
-            <thead>
-              <tr>
-                <th>Patient</th>
-                <th>Hospital</th>
-                <th>Assessor</th>
-                <th>Chief Complaint</th>
-                <th>Date</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No consultations yet.</td></tr>
-              ) : filtered.flatMap(c => {
-                const rows: React.ReactElement[] = [
-                  <tr
-                    key={c.id}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
-                  >
-                    <td style={{ fontWeight: 600, color: 'var(--text-head)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <User size={12} color="#fff" />
-                        </div>
-                        {c.patient_name}
-                      </div>
-                    </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {c.hospital_name || '—'}
-                    </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {c.assessor_name || (c.conducted_by_role === 'super_admin' ? 'Super Admin' : (c.doctor_email || '—'))}
-                    </td>
-                    <td style={{ color: 'var(--text-muted)', maxWidth: 220 }}>
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
-                        {c.chief_complaint
-                          ? c.chief_complaint.slice(0, 70) + (c.chief_complaint.length > 70 ? '…' : '')
-                          : (c.notes ? c.notes.slice(0, 70) + (c.notes.length > 70 ? '…' : '') : '—')}
-                      </span>
-                    </td>
-                    <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {new Date(c.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td>
-                      {expandedId === c.id
-                        ? <ChevronUp size={15} color="var(--text-muted)" />
-                        : <ChevronDown size={15} color="var(--text-muted)" />}
-                    </td>
-                  </tr>,
-                ];
-
-                if (expandedId === c.id) {
-                  rows.push(
-                    <tr key={`${c.id}-exp`}>
-                      <td colSpan={6} style={{ padding: 0, background: 'rgba(37,79,122,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
-                        <ConsultationDetail c={c} />
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return rows;
-              })}
-            </tbody>
-          </table>
+      {/* Sort & Filter controls */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+          <button onClick={() => setSortOrder('newest')} style={{ padding: '7px 16px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', border: 'none', background: sortOrder === 'newest' ? 'var(--primary)' : 'var(--bg-base)', color: sortOrder === 'newest' ? '#fff' : 'var(--text-muted)' }}>Newest First</button>
+          <button onClick={() => setSortOrder('oldest')} style={{ padding: '7px 16px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', border: 'none', background: sortOrder === 'oldest' ? 'var(--primary)' : 'var(--bg-base)', color: sortOrder === 'oldest' ? '#fff' : 'var(--text-muted)' }}>Oldest First</button>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>From</label>
+          <input type="date" className="skeu-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ width: 150 }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>To</label>
+          <input type="date" className="skeu-input" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ width: 150 }} />
+        </div>
+        {(dateFrom || dateTo) && (
+          <button onClick={() => { setDateFrom(''); setDateTo(''); }} style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Clear Dates</button>
+        )}
       </div>
+
+      {/* Patient-grouped list */}
+      {patientGroups.length === 0 ? (
+        <div className="skeu-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>No consultations yet.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {patientGroups.map(([patientName, pConsults]) => {
+            const isPatientExpanded = expandedPatient === patientName;
+            return (
+              <div key={patientName} className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div
+                  style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', background: isPatientExpanded ? 'rgba(27,61,94,0.04)' : undefined }}
+                  onClick={() => { setExpandedPatient(isPatientExpanded ? null : patientName); setExpandedConsult(null); }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#7c3aed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0 }}>
+                    {patientName.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-head)', fontSize: '0.95rem' }}>{patientName}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{pConsults.length} consultation{pConsults.length !== 1 ? 's' : ''}</div>
+                  </div>
+                  {isPatientExpanded ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                </div>
+
+                {isPatientExpanded && (
+                  <div style={{ borderTop: '1px solid var(--border-card)' }}>
+                    {pConsults.map(c => {
+                      const isConsultExpanded = expandedConsult === c.id;
+                      return (
+                        <div key={c.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <div
+                            style={{ padding: '12px 20px 12px 56px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', background: isConsultExpanded ? 'rgba(27,61,94,0.03)' : undefined }}
+                            onClick={() => setExpandedConsult(isConsultExpanded ? null : c.id)}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)' }}>
+                                {new Date(c.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                              {c.chief_complaint && (
+                                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginLeft: 10 }}>
+                                  — {c.chief_complaint.slice(0, 60)}{c.chief_complaint.length > 60 ? '…' : ''}
+                                </span>
+                              )}
+                              {c.hospital_name && (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>({c.hospital_name})</span>
+                              )}
+                            </div>
+                            {isConsultExpanded ? <ChevronUp size={14} color="var(--text-muted)" /> : <ChevronDown size={14} color="var(--text-muted)" />}
+                          </div>
+                          {isConsultExpanded && <ConsultationDetail c={c} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

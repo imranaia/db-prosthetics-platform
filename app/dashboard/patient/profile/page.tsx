@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Pencil, X } from 'lucide-react';
 
 interface PatientProfile {
   id: number;
@@ -55,6 +55,13 @@ export default function PatientProfilePage() {
   const [patient, setPatient] = useState<PatientProfile | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
+  // Edit form
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<PatientProfile>>({});
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+
   // Password form
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
   const [pwSubmitting, setPwSubmitting] = useState(false);
@@ -75,6 +82,52 @@ export default function PatientProfilePage() {
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'patient') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  function startEdit() {
+    if (!patient) return;
+    setEditForm({
+      full_name: patient.full_name,
+      phone: patient.phone,
+      dob: patient.dob,
+      address: patient.address,
+      state: patient.state,
+      lga: patient.lga,
+      gender: patient.gender,
+      marital_status: patient.marital_status,
+      occupation: patient.occupation,
+      next_of_kin_name: patient.next_of_kin_name,
+      next_of_kin_relationship: patient.next_of_kin_relationship,
+      next_of_kin_phone: patient.next_of_kin_phone,
+    });
+    setEditing(true);
+    setEditError('');
+    setEditSuccess('');
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setEditSubmitting(true);
+    setEditError('');
+    setEditSuccess('');
+    try {
+      const res = await fetch('/api/patient/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'Failed to update profile.'); }
+      else {
+        setEditSuccess('Profile updated successfully.');
+        setEditing(false);
+        // Reload profile
+        const r = await fetch('/api/patient/profile');
+        const d = await r.json();
+        if (d.patient) setPatient(d.patient);
+      }
+    } catch { setEditError('Network error. Please try again.'); }
+    setEditSubmitting(false);
+  }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -117,10 +170,43 @@ export default function PatientProfilePage() {
 
       {/* Personal Information */}
       <div className="skeu-card" style={{ padding: 24, marginBottom: 20 }}>
-        <SectionHeader number="1" title="Personal Information" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader number="1" title="Personal Information" />
+          {patient && !editing && (
+            <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, marginTop: -8 }}>
+              <Pencil size={13} /> Edit Profile
+            </button>
+          )}
+        </div>
+
+        {editSuccess && !editing && (
+          <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editSuccess}</div>
+        )}
 
         {dataLoading ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem', padding: '20px 0' }}>Loading profile...</div>
+        ) : editing ? (
+          <form onSubmit={handleEditSubmit}>
+            {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input type="date" className="skeu-input" value={editForm.dob ?? ''} onChange={e => setEditForm({ ...editForm, dob: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input className="skeu-input" value={editForm.gender ?? ''} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input className="skeu-input" value={editForm.marital_status ?? ''} onChange={e => setEditForm({ ...editForm, marital_status: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input className="skeu-input" value={editForm.occupation ?? ''} onChange={e => setEditForm({ ...editForm, occupation: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input className="skeu-input" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input className="skeu-input" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Next of Kin Name</label><input className="skeu-input" value={editForm.next_of_kin_name ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_name: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Next of Kin Relationship</label><input className="skeu-input" value={editForm.next_of_kin_relationship ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_relationship: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Next of Kin Phone</label><input className="skeu-input" value={editForm.next_of_kin_phone ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_phone: e.target.value })} /></div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="submit" className="skeu-btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save Changes'}</button>
+              <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}><X size={14} />Cancel</button>
+            </div>
+          </form>
         ) : patient ? (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
