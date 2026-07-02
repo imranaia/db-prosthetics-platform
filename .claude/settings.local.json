@@ -43,7 +43,13 @@
       "Bash(cat hooks/useAuth.ts)",
       "Bash(cat hooks/useAuth.tsx)",
       "PowerShell($sw = [System.Diagnostics.Stopwatch]::StartNew\\(\\); try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/dashboard/super-admin\" -TimeoutSec 30 -MaximumRedirection 0 -ErrorAction Stop; \"STATUS: $\\($r.StatusCode\\) TIME: $\\($sw.ElapsedMilliseconds\\)ms\" } catch { \"ERROR: $\\($_.Exception.Message\\) TIME: $\\($sw.ElapsedMilliseconds\\)ms\" })",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npx tsc *)",
+      "PowerShell(Get-CimInstance *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(npx --yes better-sqlite3-tools)",
+      "Bash(curl -s -o /dev/null -w \"landing-editor asset check: %{http_code}\\\\n\" http://localhost:3000/dashboard/super-admin/landing-editor -H \"Cookie: dbp_session=invalid\")"
     ]
   }
 }

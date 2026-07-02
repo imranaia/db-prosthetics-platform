@@ -237,8 +237,7 @@ export default function LandingEditorPage() {
     <div style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
 
       {/* Editor top bar */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 200,
+      <div className="page-sticky-topbar" style={{
         background: 'var(--primary)', color: '#fff',
         padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         boxShadow: '0 2px 12px rgba(0,0,0,0.3)',

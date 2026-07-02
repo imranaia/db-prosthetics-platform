@@ -518,6 +518,21 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
+/* In-page sticky sub-headers (e.g. the landing editor toolbar) must stay
+   below the shell's mobile topbar (z-index 50) and sidebar drawer
+   (z-index 100), or they cover the hamburger menu and strand mobile users
+   with no way back to navigation once scrolled. */
+.page-sticky-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+@media (max-width: 767px) {
+  .page-sticky-topbar {
+    top: 52px; /* sit below .mobile-topbar instead of fighting it for the same spot */
+  }
+}
+
 /* Sidebar overlay (mobile only) */
 .sidebar-overlay {
   display: none;

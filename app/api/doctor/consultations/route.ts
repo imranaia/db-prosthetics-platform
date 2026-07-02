@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
   const db = getDb();
 
   const doctor = db
-    .prepare('SELECT id, hospital_id FROM doctors WHERE user_id = ?')
-    .get(user.id) as { id: number; hospital_id: number } | undefined;
+    .prepare('SELECT id FROM doctors WHERE user_id = ?')
+    .get(user.id) as { id: number } | undefined;
 
   if (!doctor) {
     return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
@@ -29,19 +29,28 @@ export async function GET(req: NextRequest) {
     )
     .all(doctor.id);
 
-  // All patients at this hospital (for the new-consultation form dropdown)
-  const patients = db
-    .prepare(
-      `SELECT DISTINCT p.id, p.full_name
-       FROM patients p
-       LEFT JOIN consultations c ON p.id = c.patient_id
-       LEFT JOIN appointments a ON p.id = a.patient_id
-       WHERE c.hospital_id = ? OR a.assigned_hospital_id = ?
-       ORDER BY p.full_name ASC`
-    )
-    .all(doctor.hospital_id, doctor.hospital_id);
+  // Patients for the new-consultation form dropdown. If a hospital is picked
+  // in the form, scope to patients associated with that hospital; if
+  // Personal (no hospital_id param), show every patient.
+  const hospitalIdParam = req.nextUrl.searchParams.get('hospital_id');
+  const hospitalId = hospitalIdParam ? parseInt(hospitalIdParam) : null;
 
-  return NextResponse.json({ consultations, patients });
+  const patients = hospitalId
+    ? db
+        .prepare(
+          `SELECT DISTINCT p.id, p.full_name
+           FROM patients p
+           LEFT JOIN consultations c ON p.id = c.patient_id
+           LEFT JOIN appointments a ON p.id = a.patient_id
+           WHERE c.hospital_id = ? OR a.assigned_hospital_id = ?
+           ORDER BY p.full_name ASC`
+        )
+        .all(hospitalId, hospitalId)
+    : db.prepare(`SELECT id, full_name FROM patients ORDER BY full_name ASC`).all();
+
+  const hospitals = db.prepare('SELECT id, name FROM hospitals ORDER BY name ASC').all();
+
+  return NextResponse.json({ consultations, patients, hospitals });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -93,8 +102,8 @@ export async function POST(req: NextRequest) {
   const db = getDb();
 
   const doctor = db
-    .prepare('SELECT id, hospital_id FROM doctors WHERE user_id = ?')
-    .get(user.id) as { id: number; hospital_id: number } | undefined;
+    .prepare('SELECT id FROM doctors WHERE user_id = ?')
+    .get(user.id) as { id: number } | undefined;
 
   if (!doctor) {
     return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
@@ -102,6 +111,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as {
     patient_id: number;
+    hospital_id?: number | null;
     assessor_name?: string;
     chief_complaint?: string;
     medical_history?: string;
@@ -142,7 +152,7 @@ export async function POST(req: NextRequest) {
   `).run(
     body.patient_id,
     doctor.id,
-    doctor.hospital_id,
+    body.hospital_id ?? null,
     body.assessor_name?.trim() || null,
     body.chief_complaint?.trim() || null,
     body.medical_history?.trim() || null,

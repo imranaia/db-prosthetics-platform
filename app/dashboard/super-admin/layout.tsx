@@ -5,8 +5,20 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const switchLink = user?.hasDoctorProfile
-    ? { label: 'Switch to Doctor Dashboard', href: '/dashboard/doctor' }
+
+  async function switchToDoctor() {
+    if (!user?.hasDoctorProfile) {
+      await fetch('/api/admin/doctor-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+    }
+    window.location.href = '/dashboard/doctor';
+  }
+
+  const switchLink = user
+    ? { label: 'Switch to Doctor Dashboard', onClick: switchToDoctor }
     : undefined;
 
   return <DashboardShell switchLink={switchLink}>{children}</DashboardShell>;

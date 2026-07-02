@@ -2,20 +2,10 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { UserCircle, Pencil, X, Stethoscope } from 'lucide-react';
+import { UserCircle, Pencil, X } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
-
-interface DoctorProfile {
-  id: number;
-  hospital_id: number;
-  hospital_name: string | null;
-}
-
-interface Hospital {
-  id: number;
-  name: string;
-}
+import SkeuSelect from '@/components/ui/SkeuSelect';
 
 interface AdminProfile {
   id: number;
@@ -72,29 +62,6 @@ export default function SuperAdminProfilePage() {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
 
-  // Doctor mode
-  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null);
-  const [doctorLoading, setDoctorLoading] = useState(true);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [hospitalPick, setHospitalPick] = useState('');
-  const [changingHospital, setChangingHospital] = useState(false);
-  const [doctorSubmitting, setDoctorSubmitting] = useState(false);
-  const [doctorError, setDoctorError] = useState('');
-  const [doctorSuccess, setDoctorSuccess] = useState('');
-
-  async function loadDoctorProfile() {
-    try {
-      const [dr, hr] = await Promise.all([
-        fetch('/api/admin/doctor-profile').then(r => r.json()),
-        fetch('/api/admin/hospitals').then(r => r.json()),
-      ]);
-      setDoctorProfile(dr.doctorProfile ?? null);
-      setHospitals(Array.isArray(hr) ? hr : []);
-    } finally {
-      setDoctorLoading(false);
-    }
-  }
-
   async function loadProfile() {
     try {
       const r = await fetch('/api/admin/profile');
@@ -108,7 +75,6 @@ export default function SuperAdminProfilePage() {
   useEffect(() => {
     if (!user || loading) return;
     loadProfile();
-    loadDoctorProfile();
   }, [user, loading]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
@@ -177,30 +143,6 @@ export default function SuperAdminProfilePage() {
     setPwSubmitting(false);
   }
 
-  async function handleDoctorModeSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!hospitalPick) return;
-    setDoctorSubmitting(true);
-    setDoctorError('');
-    setDoctorSuccess('');
-    try {
-      const res = await fetch('/api/admin/doctor-profile', {
-        method: doctorProfile ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hospital_id: parseInt(hospitalPick) }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setDoctorError(data.error || 'Failed to save.'); }
-      else {
-        setDoctorSuccess(doctorProfile ? 'Hospital updated.' : 'Doctor Mode enabled — you can now switch to the Doctor Dashboard.');
-        setChangingHospital(false);
-        setHospitalPick('');
-        loadDoctorProfile();
-      }
-    } catch { setDoctorError('Network error. Please try again.'); }
-    setDoctorSubmitting(false);
-  }
-
   const ef = editForm;
   const inp = (field: keyof typeof ef) => ({
     className: 'skeu-input' as const,
@@ -256,17 +198,22 @@ export default function SuperAdminProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input {...inp('occupation')} /></div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
-                <select className="skeu-select" value={ef.state ?? ''} onChange={e => setEditForm({ ...ef, state: e.target.value, lga: '' })}>
-                  <option value="">Select state</option>
-                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <SkeuSelect
+                  value={ef.state ?? ''}
+                  onChange={v => setEditForm({ ...ef, state: v, lga: '' })}
+                  options={NIGERIA_STATES.map(s => ({ value: s, label: s }))}
+                  placeholder="Select state"
+                />
               </div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
-                <select className="skeu-select" value={ef.lga ?? ''} onChange={e => setEditForm({ ...ef, lga: e.target.value })} disabled={!ef.state}>
-                  <option value="">Select LGA</option>
-                  {getLGAs(ef.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
+                <SkeuSelect
+                  value={ef.lga ?? ''}
+                  onChange={v => setEditForm({ ...ef, lga: v })}
+                  options={getLGAs(ef.state ?? '').map(l => ({ value: l, label: l }))}
+                  placeholder="Select LGA"
+                  disabled={!ef.state}
+                />
               </div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input {...inp('address')} /></div>
             </div>
@@ -313,65 +260,9 @@ export default function SuperAdminProfilePage() {
         )}
       </div>
 
-      {/* Doctor Mode */}
-      <div className="skeu-card" style={{ padding: 24, marginBottom: 20 }}>
-        <SectionHeader number="3" title="Doctor Mode" />
-        {doctorLoading ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Loading...</div>
-        ) : doctorProfile && !changingHospital ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <Stethoscope size={16} color="var(--primary)" />
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>
-                You can also act as a doctor at <strong>{doctorProfile.hospital_name || 'this hospital'}</strong>.
-              </span>
-            </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <a href="/dashboard/doctor" className="skeu-btn-primary" style={{ padding: '10px 18px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                Switch to Doctor Dashboard
-              </a>
-              <button
-                type="button"
-                onClick={() => { setChangingHospital(true); setHospitalPick(String(doctorProfile.hospital_id)); setDoctorError(''); setDoctorSuccess(''); }}
-                style={{ padding: '10px 18px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}
-              >
-                Change Hospital
-              </button>
-            </div>
-          </>
-        ) : (
-          <form onSubmit={handleDoctorModeSubmit}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 14 }}>
-              {doctorProfile
-                ? 'Choose which hospital your doctor identity is attached to.'
-                : 'Enable Doctor Mode to gain full doctor-dashboard capability alongside your admin account. Pick which hospital you’ll operate from as a doctor.'}
-            </p>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 220 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Hospital</label>
-                <select className="skeu-select" value={hospitalPick} onChange={e => setHospitalPick(e.target.value)} required>
-                  <option value="">Select hospital</option>
-                  {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                </select>
-              </div>
-              <button type="submit" className="skeu-btn-primary" disabled={doctorSubmitting || !hospitalPick} style={{ padding: '10px 20px' }}>
-                {doctorSubmitting ? 'Saving...' : doctorProfile ? 'Save' : 'Enable Doctor Mode'}
-              </button>
-              {doctorProfile && (
-                <button type="button" onClick={() => { setChangingHospital(false); setHospitalPick(''); }} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
-        )}
-        {doctorError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginTop: 14 }}>{doctorError}</div>}
-        {doctorSuccess && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginTop: 14 }}>{doctorSuccess}</div>}
-      </div>
-
       {/* Change Password */}
       <div className="skeu-card" style={{ padding: 24 }}>
-        <SectionHeader number="4" title="Change Password" />
+        <SectionHeader number="3" title="Change Password" />
         <form onSubmit={handlePasswordSubmit} style={{ maxWidth: 480 }}>
           <div style={{ marginBottom: 14 }}>
             <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Current Password</label>

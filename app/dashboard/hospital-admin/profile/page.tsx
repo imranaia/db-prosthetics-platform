@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { UserCircle, Pencil, X } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
+import SkeuSelect from '@/components/ui/SkeuSelect';
 
 interface HospitalAdminProfile {
   id: number;
@@ -197,17 +198,22 @@ export default function HospitalAdminProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input {...inp('occupation')} /></div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
-                <select className="skeu-select" value={ef.state ?? ''} onChange={e => setEditForm({ ...ef, state: e.target.value, lga: '' })}>
-                  <option value="">Select state</option>
-                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <SkeuSelect
+                  value={ef.state ?? ''}
+                  onChange={v => setEditForm({ ...ef, state: v, lga: '' })}
+                  options={NIGERIA_STATES.map(s => ({ value: s, label: s }))}
+                  placeholder="Select state"
+                />
               </div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
-                <select className="skeu-select" value={ef.lga ?? ''} onChange={e => setEditForm({ ...ef, lga: e.target.value })} disabled={!ef.state}>
-                  <option value="">Select LGA</option>
-                  {getLGAs(ef.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
+                <SkeuSelect
+                  value={ef.lga ?? ''}
+                  onChange={v => setEditForm({ ...ef, lga: v })}
+                  options={getLGAs(ef.state ?? '').map(l => ({ value: l, label: l }))}
+                  placeholder="Select LGA"
+                  disabled={!ef.state}
+                />
               </div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input {...inp('address')} /></div>
             </div>

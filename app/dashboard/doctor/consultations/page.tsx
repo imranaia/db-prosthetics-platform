@@ -35,6 +35,7 @@ const PA_ROWS: { key: keyof PhysicalAssessment; label: string }[] = [
 ];
 
 interface Patient { id: number; full_name: string; }
+interface Hospital { id: number; name: string; }
 
 interface Consultation {
   id: number;
@@ -181,6 +182,7 @@ export default function DoctorConsultationsPage() {
   const { user, loading } = useAuth();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -193,6 +195,7 @@ export default function DoctorConsultationsPage() {
 
   const [form, setForm] = useState({
     patient_id: '',
+    hospital_id: '',
     assessor_name: '',
     chief_complaint: '',
     medical_history: '',
@@ -222,10 +225,20 @@ export default function DoctorConsultationsPage() {
       .then(data => {
         if (data.consultations) setConsultations(data.consultations);
         if (data.patients) setPatients(data.patients);
+        if (data.hospitals) setHospitals(data.hospitals);
         setDataLoading(false);
       })
       .catch(() => setDataLoading(false));
   };
+
+  async function handleHospitalChange(value: string) {
+    setForm(prev => ({ ...prev, hospital_id: value, patient_id: '' }));
+    const qs = value ? `?hospital_id=${value}` : '';
+    try {
+      const data = await fetch(`/api/doctor/consultations${qs}`).then(r => r.json());
+      if (data.patients) setPatients(data.patients);
+    } catch { /* keep existing patient list on failure */ }
+  }
 
   useEffect(() => { if (user) load(); }, [user]);
 
@@ -257,7 +270,7 @@ export default function DoctorConsultationsPage() {
   function removePhoto(url: string) { setPhotos(prev => prev.filter(p => p.url !== url)); }
 
   function resetForm() {
-    setForm({ patient_id: '', assessor_name: '', chief_complaint: '', medical_history: '', patient_goals: '', recommended_device: '', followup_date: '', notes: '', consent_given: false, assessment_date: today });
+    setForm({ patient_id: '', hospital_id: '', assessor_name: '', chief_complaint: '', medical_history: '', patient_goals: '', recommended_device: '', followup_date: '', notes: '', consent_given: false, assessment_date: today });
     setPhysicalAssessment(EMPTY_PA);
     setBodyParts([]);
     setPhotos([]);
@@ -274,6 +287,7 @@ export default function DoctorConsultationsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         patient_id:          parseInt(form.patient_id),
+        hospital_id:         form.hospital_id ? parseInt(form.hospital_id) : null,
         assessor_name:       form.assessor_name,
         chief_complaint:     form.chief_complaint,
         medical_history:     form.medical_history,
@@ -363,8 +377,15 @@ export default function DoctorConsultationsPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Patient + Assessor + Date */}
+            {/* Hospital + Patient */}
             <div className="form-grid-2" style={{ marginBottom: 20 }}>
+              <div>
+                <label className="skeu-label">Consulting As</label>
+                <select className="skeu-select" value={form.hospital_id} onChange={e => handleHospitalChange(e.target.value)}>
+                  <option value="">Personal (not hospital-affiliated)</option>
+                  {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+              </div>
               <div>
                 <label className="skeu-label">Patient <span style={{ color: '#dc2626' }}>*</span></label>
                 <select className="skeu-select" value={form.patient_id} onChange={e => setForm({ ...form, patient_id: e.target.value })} required>
@@ -372,10 +393,12 @@ export default function DoctorConsultationsPage() {
                   {patients.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="skeu-label">Assessor Name</label>
-                <input className="skeu-input" value={form.assessor_name} onChange={e => setForm({ ...form, assessor_name: e.target.value })} placeholder="Full name of assessor…" />
-              </div>
+            </div>
+
+            {/* Assessor */}
+            <div style={{ marginBottom: 20 }}>
+              <label className="skeu-label">Assessor Name</label>
+              <input className="skeu-input" value={form.assessor_name} onChange={e => setForm({ ...form, assessor_name: e.target.value })} placeholder="Full name of assessor…" />
             </div>
 
             {/* Section 1 */}

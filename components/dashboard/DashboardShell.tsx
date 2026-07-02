@@ -17,7 +17,8 @@ interface NavItem {
 
 interface SwitchLink {
   label: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
 interface DashboardShellProps {
@@ -124,6 +125,40 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
           </button>
         </div>
 
+        {/* Switch (top, high-visibility) */}
+        {switchLink && (
+          <div style={{ padding: '12px 16px 4px' }}>
+            {switchLink.href ? (
+              <Link
+                href={switchLink.href}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '8px',
+                  background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
+                  color: '#f0d9b5', fontSize: '0.875rem', fontWeight: 600,
+                  textDecoration: 'none', boxSizing: 'border-box',
+                }}
+              >
+                <Repeat size={15} />
+                {switchLink.label}
+              </Link>
+            ) : (
+              <button
+                onClick={switchLink.onClick}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                  background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
+                  color: '#f0d9b5', fontSize: '0.875rem', fontWeight: 600,
+                }}
+              >
+                <Repeat size={15} />
+                {switchLink.label}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Nav */}
         <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto' }}>
           {NAV.map(({ label, href, icon: Icon }) => (
@@ -138,23 +173,8 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
           ))}
         </nav>
 
-        {/* Switch link + Logout */}
+        {/* Logout */}
         <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {switchLink && (
-            <Link
-              href={switchLink.href}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 14px', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', fontWeight: 500,
-                textDecoration: 'none', boxSizing: 'border-box',
-              }}
-            >
-              <Repeat size={15} />
-              {switchLink.label}
-            </Link>
-          )}
           <button
             onClick={logout}
             style={{

@@ -22,8 +22,7 @@ export async function POST(req: NextRequest) {
   const user = token ? await verifyToken(token) : null;
   if (!user || user.role !== 'super_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json() as { hospital_id?: number };
-  if (!body.hospital_id) return NextResponse.json({ error: 'hospital_id is required' }, { status: 400 });
+  const body = await req.json().catch(() => ({})) as { hospital_id?: number | null };
 
   const db = getDb();
 
@@ -32,9 +31,12 @@ export async function POST(req: NextRequest) {
 
   const admin = db.prepare('SELECT full_name, phone FROM users WHERE id = ?').get(user.id) as { full_name: string | null; phone: string | null } | undefined;
 
+  // hospital_id is optional — a super admin can switch into Doctor Mode
+  // instantly, as a personal/independent practitioner, and pick a hospital
+  // later on a per-consultation basis.
   const result = db.prepare(
     'INSERT INTO doctors (user_id, hospital_id, full_name, phone) VALUES (?, ?, ?, ?)'
-  ).run(user.id, body.hospital_id, admin?.full_name ?? null, admin?.phone ?? null);
+  ).run(user.id, body.hospital_id ?? null, admin?.full_name ?? null, admin?.phone ?? null);
 
   return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
 }
@@ -44,8 +46,8 @@ export async function PATCH(req: NextRequest) {
   const user = token ? await verifyToken(token) : null;
   if (!user || user.role !== 'super_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json() as { hospital_id?: number };
-  if (!body.hospital_id) return NextResponse.json({ error: 'hospital_id is required' }, { status: 400 });
+  const body = await req.json() as { hospital_id?: number | null };
+  if (body.hospital_id === undefined) return NextResponse.json({ error: 'hospital_id is required' }, { status: 400 });
 
   const db = getDb();
   const existing = db.prepare('SELECT id FROM doctors WHERE user_id = ?').get(user.id);

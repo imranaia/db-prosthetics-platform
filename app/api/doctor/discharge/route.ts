@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
 
-  const doctor = db.prepare('SELECT id, hospital_id FROM doctors WHERE user_id = ?').get(user.id) as any;
+  const doctor = db.prepare('SELECT id FROM doctors WHERE user_id = ?').get(user.id) as any;
   if (!doctor) return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
 
   const body = await req.json() as {
@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'patient_id is required' }, { status: 400 });
   }
 
+  // Hospital attribution follows the linked consultation (chosen there as a
+  // hospital or Personal) rather than a fixed hospital on the doctor record.
+  const hospitalId = body.consultation_id
+    ? ((db.prepare('SELECT hospital_id FROM consultations WHERE id = ?').get(body.consultation_id) as { hospital_id: number | null } | undefined)?.hospital_id ?? null)
+    : null;
+
   const result = db.prepare(`
     INSERT INTO discharge_forms (
       patient_id, consultation_id, hospital_id,
@@ -85,7 +91,7 @@ export async function POST(req: NextRequest) {
   `).run(
     body.patient_id,
     body.consultation_id ?? null,
-    doctor.hospital_id,
+    hospitalId,
     body.device_fit ?? null,
     body.alignment_function ?? null,
     body.skin_condition ?? null,
