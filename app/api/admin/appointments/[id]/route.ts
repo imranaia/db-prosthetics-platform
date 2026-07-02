@@ -16,6 +16,7 @@ export async function PATCH(
   const body = await req.json() as {
     quoted_price?: number;
     assigned_hospital_id?: number;
+    assigned_doctor_id?: number;
     status?: string;
   };
 
@@ -23,9 +24,10 @@ export async function PATCH(
   const setClauses: string[] = [];
   const values: (string | number)[] = [];
 
-  if (body.quoted_price !== undefined)       { setClauses.push('quoted_price = ?');       values.push(Math.round(body.quoted_price * 100)); }
+  if (body.quoted_price !== undefined)         { setClauses.push('quoted_price = ?');         values.push(Math.round(body.quoted_price * 100)); }
   if (body.assigned_hospital_id !== undefined) { setClauses.push('assigned_hospital_id = ?'); values.push(body.assigned_hospital_id); }
-  if (body.status !== undefined)             { setClauses.push('status = ?');             values.push(body.status); }
+  if (body.assigned_doctor_id !== undefined)   { setClauses.push('assigned_doctor_id = ?');   values.push(body.assigned_doctor_id); }
+  if (body.status !== undefined)               { setClauses.push('status = ?');               values.push(body.status); }
 
   if (setClauses.length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

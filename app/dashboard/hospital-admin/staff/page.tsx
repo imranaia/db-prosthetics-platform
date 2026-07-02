@@ -9,9 +9,31 @@ interface StaffMember {
   user_id: number;
   email: string;
   staff_id: number;
+  full_name?: string;
+  phone?: string;
+  specialization?: string;
+  state?: string;
+  lga?: string;
+  address?: string;
+  years_experience?: number;
+  qualifications?: string;
 }
 
-const INITIAL_FORM = { role: 'doctor' as 'doctor' | 'po_specialist', email: '', password: '' };
+const NIGERIAN_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+
+const INITIAL_FORM = {
+  role: 'doctor' as 'doctor' | 'po_specialist',
+  email: '',
+  password: '',
+  full_name: '',
+  phone: '',
+  specialization: '',
+  state: '',
+  lga: '',
+  address: '',
+  years_experience: '' as string | number,
+  qualifications: '',
+};
 
 export default function HospitalAdminStaffPage() {
   const { user, loading } = useAuth();
@@ -55,7 +77,19 @@ export default function HospitalAdminStaffPage() {
       const res = await fetch('/api/hospital-admin/staff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: form.role, email: form.email, password: form.password }),
+        body: JSON.stringify({
+          role: form.role,
+          email: form.email,
+          password: form.password,
+          full_name: form.full_name || undefined,
+          phone: form.phone || undefined,
+          specialization: form.specialization || undefined,
+          state: form.state || undefined,
+          lga: form.lga || undefined,
+          address: form.address || undefined,
+          years_experience: form.years_experience !== '' ? Number(form.years_experience) : undefined,
+          qualifications: form.qualifications || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setFormError(data.error || 'Failed to add staff member.'); }
@@ -90,17 +124,30 @@ export default function HospitalAdminStaffPage() {
   }
 
   function StaffCard({ s }: { s: StaffMember }) {
+    const displayName = (s.role === 'doctor' && s.full_name) ? s.full_name : s.email;
+    const initial = displayName.charAt(0).toUpperCase();
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)', fontSize: '0.85rem', flexShrink: 0 }}>
-            {s.email.charAt(0).toUpperCase()}
+            {initial}
           </div>
           <div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-head)' }}>{s.email}</div>
-            <span style={{ padding: '1px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: s.role === 'doctor' ? '#dbeafe' : '#f3e8ff', color: s.role === 'doctor' ? '#1d4ed8' : '#6d28d9' }}>
-              {s.role === 'doctor' ? 'Doctor' : 'P&O Specialist'}
-            </span>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-head)' }}>{displayName}</div>
+            {s.role === 'doctor' && s.full_name && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{s.email}</div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
+              <span style={{ padding: '1px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: s.role === 'doctor' ? '#dbeafe' : '#f3e8ff', color: s.role === 'doctor' ? '#1d4ed8' : '#6d28d9' }}>
+                {s.role === 'doctor' ? 'Doctor' : 'P&O Specialist'}
+              </span>
+              {s.role === 'doctor' && s.specialization && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.specialization}</span>
+              )}
+              {s.role === 'doctor' && s.state && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.state}</span>
+              )}
+            </div>
           </div>
         </div>
         <button
@@ -174,7 +221,7 @@ export default function HospitalAdminStaffPage() {
               />
             </div>
 
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ marginBottom: 18 }}>
               <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Temporary Password</label>
               <input
                 type="password"
@@ -189,6 +236,106 @@ export default function HospitalAdminStaffPage() {
                 They will be asked to change this on first login.
               </div>
             </div>
+
+            {form.role === 'doctor' && (
+              <>
+                <div style={{ marginBottom: 10, paddingTop: 4, borderTop: '1px solid var(--border-card)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14, marginTop: 14 }}>Doctor Profile</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Full Name <span style={{ color: '#dc2626' }}>*</span></label>
+                      <input
+                        type="text"
+                        className="skeu-input"
+                        style={{ width: '100%' }}
+                        value={form.full_name}
+                        onChange={e => setForm({ ...form, full_name: e.target.value })}
+                        required
+                        placeholder="Dr. Amina Bello"
+                      />
+                    </div>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Phone</label>
+                      <input
+                        type="text"
+                        className="skeu-input"
+                        style={{ width: '100%' }}
+                        value={form.phone}
+                        onChange={e => setForm({ ...form, phone: e.target.value })}
+                        placeholder="+234 801 234 5678"
+                      />
+                    </div>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Specialization</label>
+                      <input
+                        type="text"
+                        className="skeu-input"
+                        style={{ width: '100%' }}
+                        value={form.specialization}
+                        onChange={e => setForm({ ...form, specialization: e.target.value })}
+                        placeholder="Upper Limb Prosthetist"
+                      />
+                    </div>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Years of Experience</label>
+                      <input
+                        type="number"
+                        className="skeu-input"
+                        style={{ width: '100%' }}
+                        value={form.years_experience}
+                        onChange={e => setForm({ ...form, years_experience: e.target.value })}
+                        min={0}
+                        placeholder="5"
+                      />
+                    </div>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>State</label>
+                      <select
+                        className="skeu-select"
+                        style={{ width: '100%' }}
+                        value={form.state}
+                        onChange={e => setForm({ ...form, state: e.target.value })}
+                      >
+                        <option value="">Select state…</option>
+                        {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>LGA</label>
+                      <input
+                        type="text"
+                        className="skeu-input"
+                        style={{ width: '100%' }}
+                        value={form.lga}
+                        onChange={e => setForm({ ...form, lga: e.target.value })}
+                        placeholder="Local Government Area"
+                      />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Address</label>
+                      <input
+                        type="text"
+                        className="skeu-input"
+                        style={{ width: '100%' }}
+                        value={form.address}
+                        onChange={e => setForm({ ...form, address: e.target.value })}
+                        placeholder="Clinic or home address"
+                      />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Qualifications</label>
+                      <textarea
+                        className="skeu-input"
+                        style={{ width: '100%', minHeight: 80, resize: 'vertical' }}
+                        value={form.qualifications}
+                        onChange={e => setForm({ ...form, qualifications: e.target.value })}
+                        placeholder="Certifications, degrees, professional memberships…"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             {formError && (
               <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', margin: '14px 0' }}>

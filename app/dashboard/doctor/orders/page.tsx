@@ -74,10 +74,11 @@ function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function POOrdersPage() {
+export default function DoctorOrdersPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'standard' | 'custom'>('standard');
 
+  // Data
   const [products, setProducts] = useState<Product[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
@@ -105,26 +106,20 @@ export default function POOrdersPage() {
 
   async function load() {
     try {
-      const [prodRes, apptRes, custRes, stdRes] = await Promise.all([
+      const [prodRes, consRes, custRes, stdRes] = await Promise.all([
         fetch('/api/admin/products'),
-        fetch('/api/po-specialist/appointments'),
+        fetch('/api/doctor/consultations'),
         fetch('/api/orders/custom'),
         fetch('/api/orders'),
       ]);
-      const [prodData, apptData, custData, stdData] = await Promise.all([
+      const [prodData, consData, custData, stdData] = await Promise.all([
         prodRes.json(),
-        apptRes.json(),
+        consRes.json(),
         custRes.json(),
         stdRes.json(),
       ]);
       setProducts(Array.isArray(prodData) ? prodData : []);
-      // Extract unique patients from appointments
-      const appts = Array.isArray(apptData.appointments) ? apptData.appointments : [];
-      const patientMap = new Map<number, Patient>();
-      for (const a of appts) {
-        if (a.patient_id && a.patient_name) patientMap.set(a.patient_id, { id: a.patient_id, full_name: a.patient_name });
-      }
-      setPatients(Array.from(patientMap.values()));
+      setPatients(Array.isArray(consData.patients) ? consData.patients : []);
       setCustomOrders(Array.isArray(custData) ? custData : []);
       setStdOrders(Array.isArray(stdData) ? stdData : []);
     } finally {
@@ -139,7 +134,7 @@ export default function POOrdersPage() {
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'po_specialist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   function addToCart(product: Product) {
     setCart(prev => {
@@ -159,13 +154,14 @@ export default function POOrdersPage() {
   async function handleStdOrder() {
     setStdErr(''); setStdMsg('');
     if (cart.length === 0) { setStdErr('Cart is empty.'); return; }
+    if (!stdPatientId) { setStdErr('Please select a patient.'); return; }
     setStdSubmitting(true);
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patient_id: stdPatientId ? Number(stdPatientId) : undefined,
+          patient_id: Number(stdPatientId),
           items: cart.map(c => ({ product_id: c.product.id, quantity: c.quantity })),
           payment_target: stdPayTarget,
         }),
@@ -173,6 +169,7 @@ export default function POOrdersPage() {
       const data = await res.json();
       if (!res.ok) { setStdErr(data.error || 'Failed to place order.'); setStdSubmitting(false); return; }
       if (stdPayTarget === 'creator') {
+        // Initialize Paystack payment
         const payRes = await fetch('/api/payment/initialize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -222,6 +219,7 @@ export default function POOrdersPage() {
 
   return (
     <div className="dash-content">
+      {/* Header */}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <ShoppingCart size={22} color="var(--primary)" />
@@ -252,6 +250,7 @@ export default function POOrdersPage() {
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading...</div>
       ) : activeTab === 'standard' ? (
         <div>
+          {/* Products grid */}
           <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 16 }}>Product Catalog</h2>
           {products.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No products available.</div>
@@ -266,7 +265,12 @@ export default function POOrdersPage() {
                   <span style={{ alignSelf: 'flex-start', padding: '1px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: p.in_stock ? '#d1fae5' : '#fee2e2', color: p.in_stock ? '#065f46' : '#b91c1c' }}>
                     {p.in_stock ? 'In Stock' : 'Out of Stock'}
                   </span>
-                  <button onClick={() => addToCart(p)} disabled={!p.in_stock} className="skeu-btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 }}>
+                  <button
+                    onClick={() => addToCart(p)}
+                    disabled={!p.in_stock}
+                    className="skeu-btn-primary"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 }}
+                  >
                     <Plus size={14} /> Add to Cart
                   </button>
                 </div>
@@ -274,6 +278,7 @@ export default function POOrdersPage() {
             </div>
           )}
 
+          {/* Cart + Order */}
           {cart.length > 0 && (
             <div className="skeu-card" style={{ padding: 20, marginBottom: 24 }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Cart</h3>
@@ -282,19 +287,27 @@ export default function POOrdersPage() {
                   <div key={c.product.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'rgba(27,61,94,0.02)' }}>
                     <Package size={14} color="var(--primary)" style={{ flexShrink: 0 }} />
                     <span style={{ flex: 1, fontSize: '0.88rem', fontWeight: 500, color: 'var(--text-head)' }}>{c.product.name}</span>
-                    <input type="number" min={1} value={c.quantity} onChange={e => updateQty(c.product.id, parseInt(e.target.value) || 0)} style={{ width: 54, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-card)', fontSize: '0.85rem', textAlign: 'center' }} />
+                    <input
+                      type="number" min={1} value={c.quantity}
+                      onChange={e => updateQty(c.product.id, parseInt(e.target.value) || 0)}
+                      style={{ width: 54, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-card)', fontSize: '0.85rem', textAlign: 'center' }}
+                    />
                     <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--primary)', minWidth: 80, textAlign: 'right' }}>{fmt(c.product.price * c.quantity)}</span>
-                    <button onClick={() => updateQty(c.product.id, 0)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}><X size={14} /></button>
+                    <button onClick={() => updateQty(c.product.id, 0)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}>
+                      <X size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
-              <div style={{ textAlign: 'right', fontWeight: 700, fontSize: '1rem', color: 'var(--primary)', marginBottom: 16 }}>Total: {fmt(cartTotal)}</div>
+              <div style={{ textAlign: 'right', fontWeight: 700, fontSize: '1rem', color: 'var(--primary)', marginBottom: 16 }}>
+                Total: {fmt(cartTotal)}
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div>
-                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient (optional)</label>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient <span style={{ color: '#dc2626' }}>*</span></label>
                   <select className="skeu-select" style={{ width: '100%' }} value={stdPatientId} onChange={e => setStdPatientId(e.target.value)}>
-                    <option value="">No patient assigned</option>
+                    <option value="">Select patient…</option>
                     {patients.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                   </select>
                 </div>
@@ -302,7 +315,11 @@ export default function POOrdersPage() {
                   <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Payment</label>
                   <div style={{ display: 'flex', gap: 10 }}>
                     {(['creator', 'patient'] as const).map(opt => (
-                      <button key={opt} type="button" onClick={() => setStdPayTarget(opt)} style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: `2px solid ${stdPayTarget === opt ? 'var(--primary)' : 'var(--border-card)'}`, background: stdPayTarget === opt ? 'rgba(27,61,94,0.07)' : 'transparent', color: stdPayTarget === opt ? 'var(--primary)' : 'var(--text-body)' }}>
+                      <button
+                        key={opt} type="button"
+                        onClick={() => setStdPayTarget(opt)}
+                        style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: `2px solid ${stdPayTarget === opt ? 'var(--primary)' : 'var(--border-card)'}`, background: stdPayTarget === opt ? 'rgba(27,61,94,0.07)' : 'transparent', color: stdPayTarget === opt ? 'var(--primary)' : 'var(--text-body)' }}
+                      >
                         {opt === 'creator' ? 'Pay Now' : 'Send to Patient'}
                       </button>
                     ))}
@@ -319,6 +336,7 @@ export default function POOrdersPage() {
             </div>
           )}
 
+          {/* Past standard orders */}
           {stdOrders.length > 0 && (
             <div>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>Past Orders</h3>
@@ -336,7 +354,7 @@ export default function POOrdersPage() {
                       <>
                         <tr key={o.id} style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer' }} onClick={() => setExpandedStd(expandedStd === o.id ? null : o.id)}>
                           <td style={{ padding: '10px 12px', fontSize: '0.82rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>#{o.id}</td>
-                          <td style={{ padding: '10px 12px', fontSize: '0.88rem', fontWeight: 500, color: 'var(--text-head)' }}>{o.patient_name || '—'}</td>
+                          <td style={{ padding: '10px 12px', fontSize: '0.88rem', fontWeight: 500, color: 'var(--text-head)' }}>{o.patient_name}</td>
                           <td style={{ padding: '10px 12px', fontSize: '0.88rem', fontWeight: 600, color: 'var(--primary)' }}>{fmt(o.total_amount)}</td>
                           <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#b45309' }}>{o.status}</span></td>
                           <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: o.payment_status === 'paid' ? '#d1fae5' : '#fef3c7', color: o.payment_status === 'paid' ? '#065f46' : '#b45309' }}>{o.payment_status}</span></td>
@@ -367,6 +385,7 @@ export default function POOrdersPage() {
         </div>
       ) : (
         <div>
+          {/* Custom order form */}
           <div className="skeu-card" style={{ padding: 22, marginBottom: 24 }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 18 }}>Submit Custom / Bespoke Order</h2>
             <form onSubmit={handleCustOrder}>
@@ -388,13 +407,24 @@ export default function POOrdersPage() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Description <span style={{ color: '#dc2626' }}>*</span></label>
-                <textarea className="skeu-input" style={{ width: '100%', minHeight: 100, resize: 'vertical' }} value={custDesc} onChange={e => setCustDesc(e.target.value)} placeholder="Describe the custom prosthetic requirements…" required />
+                <textarea
+                  className="skeu-input"
+                  style={{ width: '100%', minHeight: 100, resize: 'vertical' }}
+                  value={custDesc}
+                  onChange={e => setCustDesc(e.target.value)}
+                  placeholder="Describe the custom prosthetic requirements, measurements, and any special needs…"
+                  required
+                />
               </div>
               <div style={{ marginBottom: 18 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Who Pays?</label>
                 <div style={{ display: 'flex', gap: 10 }}>
                   {(['creator', 'patient'] as const).map(opt => (
-                    <button key={opt} type="button" onClick={() => setCustPayTarget(opt)} style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: `2px solid ${custPayTarget === opt ? 'var(--primary)' : 'var(--border-card)'}`, background: custPayTarget === opt ? 'rgba(27,61,94,0.07)' : 'transparent', color: custPayTarget === opt ? 'var(--primary)' : 'var(--text-body)' }}>
+                    <button
+                      key={opt} type="button"
+                      onClick={() => setCustPayTarget(opt)}
+                      style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: `2px solid ${custPayTarget === opt ? 'var(--primary)' : 'var(--border-card)'}`, background: custPayTarget === opt ? 'rgba(27,61,94,0.07)' : 'transparent', color: custPayTarget === opt ? 'var(--primary)' : 'var(--text-body)' }}
+                    >
                       {opt === 'creator' ? 'I Pay' : 'Patient Pays'}
                     </button>
                   ))}
@@ -408,6 +438,7 @@ export default function POOrdersPage() {
             </form>
           </div>
 
+          {/* Custom orders list */}
           {customOrders.length > 0 && (
             <div>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>My Custom Orders</h3>
@@ -417,7 +448,10 @@ export default function POOrdersPage() {
                   const isExpanded = expandedCust === o.id;
                   return (
                     <div key={o.id} className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => setExpandedCust(isExpanded ? null : o.id)}>
+                      <div
+                        style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                        onClick={() => setExpandedCust(isExpanded ? null : o.id)}
+                      >
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)' }}>

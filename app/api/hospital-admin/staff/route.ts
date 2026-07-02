@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
 
   const doctors = db
     .prepare(
-      `SELECT 'doctor' as role, u.id as user_id, u.email, d.id as staff_id
+      `SELECT 'doctor' as role, u.id as user_id, u.email, d.id as staff_id,
+              d.full_name, d.phone, d.specialization, d.state, d.lga, d.address,
+              d.years_experience, d.qualifications
        FROM doctors d JOIN users u ON d.user_id = u.id
        WHERE d.hospital_id = ?`
     )
@@ -55,7 +57,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Hospital not found' }, { status: 404 });
   }
 
-  const { role, email, password, full_name } = await req.json();
+  const {
+    role, email, password,
+    full_name, phone, specialization, state, lga, address, years_experience, qualifications,
+  } = await req.json();
 
   if (!role || !email || !password) {
     return NextResponse.json({ error: 'role, email, and password are required.' }, { status: 400 });
@@ -84,7 +89,20 @@ export async function POST(req: NextRequest) {
     const newUserId = userResult.lastInsertRowid;
 
     if (role === 'doctor') {
-      db.prepare('INSERT INTO doctors (user_id, hospital_id) VALUES (?, ?)').run(newUserId, hospital.id);
+      const doctorResult = db.prepare('INSERT INTO doctors (user_id, hospital_id) VALUES (?, ?)').run(newUserId, hospital.id);
+      db.prepare(
+        'UPDATE doctors SET full_name=?, phone=?, specialization=?, state=?, lga=?, address=?, years_experience=?, qualifications=? WHERE id=?'
+      ).run(
+        full_name || null,
+        phone || null,
+        specialization || null,
+        state || null,
+        lga || null,
+        address || null,
+        years_experience ? Number(years_experience) : null,
+        qualifications || null,
+        doctorResult.lastInsertRowid,
+      );
     } else {
       db.prepare('INSERT INTO po_specialists (user_id, hospital_id) VALUES (?, ?)').run(newUserId, hospital.id);
     }

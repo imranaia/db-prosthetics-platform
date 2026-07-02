@@ -7,9 +7,11 @@ import { CalendarDays, Home, Building2 } from 'lucide-react';
 interface Appointment {
   id: number; patient_name: string; type: string; status: string;
   scheduled_date: string | null; notes: string | null;
-  quoted_price: number | null; assigned_hospital_id: number | null; created_at: string;
+  quoted_price: number | null; assigned_hospital_id: number | null;
+  assigned_doctor_id: number | null; created_at: string;
 }
 interface Hospital { id: number; name: string; }
+interface Doctor { id: number; full_name: string | null; email: string; specialization: string | null; state: string | null; }
 
 const FILTERS = ['all', 'requested', 'quoted', 'confirmed', 'completed', 'cancelled'];
 
@@ -27,18 +29,22 @@ export default function AppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [filter, setFilter] = useState('all');
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [quoteAmount, setQuoteAmount] = useState('');
   const [assignId, setAssignId] = useState<number | null>(null);
   const [assignHospital, setAssignHospital] = useState('');
+  const [assignDoctorApptId, setAssignDoctorApptId] = useState<number | null>(null);
+  const [assignDoctor, setAssignDoctor] = useState('');
 
   async function load() {
-    const [a, h] = await Promise.all([
+    const [a, h, d] = await Promise.all([
       fetch('/api/admin/appointments').then(r => r.json()),
       fetch('/api/admin/hospitals').then(r => r.json()),
+      fetch('/api/admin/doctors').then(r => r.json()),
     ]);
-    setAppointments(a); setHospitals(h);
+    setAppointments(Array.isArray(a) ? a : []); setHospitals(Array.isArray(h) ? h : []); setDoctors(Array.isArray(d) ? d : []);
   }
 
   useEffect(() => { if (user) load(); }, [user]);
@@ -61,6 +67,15 @@ export default function AppointmentsPage() {
       body: JSON.stringify({ assigned_hospital_id: parseInt(assignHospital), status: 'confirmed' }),
     });
     setAssignId(null); setAssignHospital(''); load();
+  }
+
+  async function submitAssignDoctor(id: number) {
+    if (!assignDoctor) return;
+    await fetch(`/api/admin/appointments/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned_doctor_id: parseInt(assignDoctor) }),
+    });
+    setAssignDoctorApptId(null); setAssignDoctor(''); load();
   }
 
   async function updateStatus(id: number, status: string) {
@@ -119,42 +134,61 @@ export default function AppointmentsPage() {
                       <span title={a.notes || ''} style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{a.notes || '—'}</span>
                     </td>
                     <td>
-                      {a.status === 'requested' && a.type === 'home' && (
-                        quoteId === a.id ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>₦</span>
-                            <input type="number" min="0" value={quoteAmount} onChange={e => setQuoteAmount(e.target.value)} placeholder="Amount" style={{ width: 100, padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }} />
-                            <button onClick={() => submitQuote(a.id)} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Set</button>
-                            <button onClick={() => setQuoteId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setQuoteId(a.id)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(124,58,237,0.3)', background: 'rgba(124,58,237,0.08)', color: '#7c3aed', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                            Set Quote
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {a.status === 'requested' && a.type === 'home' && (
+                          quoteId === a.id ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>₦</span>
+                              <input type="number" min="0" value={quoteAmount} onChange={e => setQuoteAmount(e.target.value)} placeholder="Amount" style={{ width: 100, padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }} />
+                              <button onClick={() => submitQuote(a.id)} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Set</button>
+                              <button onClick={() => setQuoteId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setQuoteId(a.id)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(124,58,237,0.3)', background: 'rgba(124,58,237,0.08)', color: '#7c3aed', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                              Set Quote
+                            </button>
+                          )
+                        )}
+                        {a.type === 'home' && (a.status === 'requested' || a.status === 'quoted') && (
+                          assignDoctorApptId === a.id ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <select value={assignDoctor} onChange={e => setAssignDoctor(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }}>
+                                <option value="">Select doctor</option>
+                                {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name || d.email}{d.specialization ? ` — ${d.specialization}` : ''}</option>)}
+                              </select>
+                              <button onClick={() => submitAssignDoctor(a.id)} disabled={!assignDoctor} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Assign</button>
+                              <button onClick={() => setAssignDoctorApptId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setAssignDoctorApptId(a.id)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.3)', background: 'rgba(27,61,94,0.08)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                              {a.assigned_doctor_id ? 'Reassign Doctor' : 'Assign Doctor'}
+                            </button>
+                          )
+                        )}
+                        {a.status === 'requested' && a.type === 'hospital' && (
+                          assignId === a.id ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <select value={assignHospital} onChange={e => setAssignHospital(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }}>
+                                <option value="">Select hospital</option>
+                                {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                              </select>
+                              <button onClick={() => submitAssign(a.id)} disabled={!assignHospital} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Assign</button>
+                              <button onClick={() => setAssignId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setAssignId(a.id)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.3)', background: 'rgba(27,61,94,0.08)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                              Assign Hospital
+                            </button>
+                          )
+                        )}
+                        {(a.status === 'quoted' || a.status === 'confirmed') && (
+                          <button onClick={() => updateStatus(a.id, 'completed')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                            Mark Complete
                           </button>
-                        )
-                      )}
-                      {a.status === 'requested' && a.type === 'hospital' && (
-                        assignId === a.id ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <select value={assignHospital} onChange={e => setAssignHospital(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }}>
-                              <option value="">Select hospital</option>
-                              {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                            </select>
-                            <button onClick={() => submitAssign(a.id)} disabled={!assignHospital} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Assign</button>
-                            <button onClick={() => setAssignId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setAssignId(a.id)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.3)', background: 'rgba(27,61,94,0.08)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                            Assign Hospital
-                          </button>
-                        )
-                      )}
-                      {(a.status === 'quoted' || a.status === 'confirmed') && (
-                        <button onClick={() => updateStatus(a.id, 'completed')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                          Mark Complete
-                        </button>
-                      )}
-                      {a.quoted_price && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Quote: {fmt(a.quoted_price)}</div>}
+                        )}
+                        {a.quoted_price && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Quote: {fmt(a.quoted_price)}</div>}
+                        {a.assigned_doctor_id && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Doctor assigned</div>}
+                      </div>
                     </td>
                   </tr>
                 );

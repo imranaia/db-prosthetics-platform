@@ -171,10 +171,6 @@ export default function DischargePage() {
   const [formError, setFormError] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
 
-  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
-  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'super_admin') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-
   const load = () => {
     Promise.all([
       fetch('/api/admin/patients').then(r => r.json()),
@@ -189,9 +185,13 @@ export default function DischargePage() {
   };
 
   useEffect(() => {
+    if (!user || loading) return;
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user, loading]);
+
+  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'super_admin') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
