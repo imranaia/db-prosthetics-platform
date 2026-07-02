@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
     category?: string;
     description: string;
     photos?: string[];
+    body_parts?: string;   // JSON string from BodySelector
+    material_id?: number;
     patient_id?: number;
     payment_target?: string;
   };
@@ -91,23 +93,23 @@ export async function POST(req: NextRequest) {
     const doctor = db.prepare('SELECT id FROM doctors WHERE user_id = ?').get(user.id) as { id: number } | undefined;
     if (!doctor) return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
     db.prepare(`
-      INSERT INTO custom_orders (doctor_id, patient_id, created_by_role, category, description, photos, payment_target)
-      VALUES (?, ?, 'doctor', ?, ?, ?, ?)
-    `).run(doctor.id, body.patient_id || null, body.category || null, body.description.trim(), photosStr, paymentTarget);
+      INSERT INTO custom_orders (doctor_id, patient_id, created_by_role, category, description, photos, body_parts, material_id, payment_target)
+      VALUES (?, ?, 'doctor', ?, ?, ?, ?, ?, ?)
+    `).run(doctor.id, body.patient_id || null, body.category || null, body.description.trim(), photosStr, body.body_parts || null, body.material_id || null, paymentTarget);
   } else if (user.role === 'po_specialist') {
     const specialist = db.prepare('SELECT id FROM po_specialists WHERE user_id = ?').get(user.id) as { id: number } | undefined;
     if (!specialist) return NextResponse.json({ error: 'Specialist not found' }, { status: 404 });
     db.prepare(`
-      INSERT INTO custom_orders (po_specialist_id, patient_id, created_by_role, category, description, photos, payment_target)
-      VALUES (?, ?, 'po_specialist', ?, ?, ?, ?)
-    `).run(specialist.id, body.patient_id || null, body.category || null, body.description.trim(), photosStr, paymentTarget);
+      INSERT INTO custom_orders (po_specialist_id, patient_id, created_by_role, category, description, photos, body_parts, material_id, payment_target)
+      VALUES (?, ?, 'po_specialist', ?, ?, ?, ?, ?, ?)
+    `).run(specialist.id, body.patient_id || null, body.category || null, body.description.trim(), photosStr, body.body_parts || null, body.material_id || null, paymentTarget);
   } else if (user.role === 'patient') {
     const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as { id: number } | undefined;
     if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
     db.prepare(`
-      INSERT INTO custom_orders (patient_id, created_by_role, category, description, photos, payment_target)
-      VALUES (?, 'patient', ?, ?, ?, 'creator')
-    `).run(patient.id, body.category || null, body.description.trim(), photosStr);
+      INSERT INTO custom_orders (patient_id, created_by_role, category, description, photos, body_parts, material_id, payment_target)
+      VALUES (?, 'patient', ?, ?, ?, ?, ?, 'creator')
+    `).run(patient.id, body.category || null, body.description.trim(), photosStr, body.body_parts || null, body.material_id || null);
   }
 
   return NextResponse.json({ success: true }, { status: 201 });

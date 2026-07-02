@@ -28,9 +28,12 @@ export async function POST(req: NextRequest) {
     price: number;
     description: string;
     in_stock: number;
+    image_url?: string;
+    dimensions?: string;
+    material?: string;
   };
 
-  const { name, category, type, price, description, in_stock } = body;
+  const { name, category, type, price, description, in_stock, image_url, dimensions, material } = body;
 
   if (!name || !category || !type || price == null) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -38,8 +41,8 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
   const result = db.prepare(
-    `INSERT INTO products (name, category, type, price, description, in_stock) VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(name, category, type, Math.round(price * 100), description || '', in_stock ?? 1);
+    `INSERT INTO products (name, category, type, price, description, in_stock, image_url, dimensions, material) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(name, category, type, Math.round(price * 100), description || '', in_stock ?? 1, image_url || null, dimensions || null, material || null);
 
   return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
 }

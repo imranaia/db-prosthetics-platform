@@ -20,11 +20,14 @@ export async function PATCH(
     price?: number;
     description?: string;
     in_stock?: number;
+    image_url?: string | null;
+    dimensions?: string;
+    material?: string;
   };
 
   const db = getDb();
   const setClauses: string[] = [];
-  const values: (string | number)[] = [];
+  const values: (string | number | null)[] = [];
 
   if (body.name !== undefined)        { setClauses.push('name = ?');        values.push(body.name); }
   if (body.category !== undefined)    { setClauses.push('category = ?');    values.push(body.category); }
@@ -32,6 +35,9 @@ export async function PATCH(
   if (body.price !== undefined)       { setClauses.push('price = ?');       values.push(Math.round(body.price * 100)); }
   if (body.description !== undefined) { setClauses.push('description = ?'); values.push(body.description); }
   if (body.in_stock !== undefined)    { setClauses.push('in_stock = ?');    values.push(body.in_stock); }
+  if (body.image_url !== undefined)   { setClauses.push('image_url = ?');   values.push(body.image_url); }
+  if (body.dimensions !== undefined)  { setClauses.push('dimensions = ?');  values.push(body.dimensions); }
+  if (body.material !== undefined)    { setClauses.push('material = ?');    values.push(body.material); }
 
   if (setClauses.length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
