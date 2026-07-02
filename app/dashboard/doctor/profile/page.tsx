@@ -15,6 +15,14 @@ interface DoctorProfile {
   address: string | null;
   years_experience: number | null;
   qualifications: string | null;
+  dob: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  occupation: string | null;
+  religion: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_relationship: string | null;
+  next_of_kin_phone: string | null;
 }
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
@@ -27,7 +35,7 @@ function SectionHeader({ number, title }: { number: string; title: string }) {
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
@@ -84,6 +92,14 @@ export default function DoctorProfilePage() {
       address: doctor.address || '',
       years_experience: doctor.years_experience ?? undefined,
       qualifications: doctor.qualifications || '',
+      dob: doctor.dob || '',
+      gender: doctor.gender || '',
+      marital_status: doctor.marital_status || '',
+      occupation: doctor.occupation || '',
+      religion: doctor.religion || '',
+      next_of_kin_name: doctor.next_of_kin_name || '',
+      next_of_kin_relationship: doctor.next_of_kin_relationship || '',
+      next_of_kin_phone: doctor.next_of_kin_phone || '',
     });
     setEditing(true);
     setEditError('');
@@ -172,23 +188,62 @@ export default function DoctorProfilePage() {
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
               <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Qualifications</label><textarea className="skeu-input" rows={3} value={editForm.qualifications ?? ''} onChange={e => setEditForm({ ...editForm, qualifications: e.target.value })} style={{ resize: 'vertical' }} /></div>
             </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Personal Information</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input className="skeu-input" value={editForm.dob ?? ''} onChange={e => setEditForm({ ...editForm, dob: e.target.value })} placeholder="YYYY-MM-DD" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input className="skeu-input" value={editForm.gender ?? ''} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} placeholder="e.g. Male, Female" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input className="skeu-input" value={editForm.marital_status ?? ''} onChange={e => setEditForm({ ...editForm, marital_status: e.target.value })} placeholder="e.g. Single, Married" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Religion</label><input className="skeu-input" value={editForm.religion ?? ''} onChange={e => setEditForm({ ...editForm, religion: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input className="skeu-input" value={editForm.occupation ?? ''} onChange={e => setEditForm({ ...editForm, occupation: e.target.value })} /></div>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Next of Kin</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.next_of_kin_name ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_name: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Relationship</label><input className="skeu-input" value={editForm.next_of_kin_relationship ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_relationship: e.target.value })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.next_of_kin_phone ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_phone: e.target.value })} /></div>
+            </div>
+
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="submit" className="skeu-btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save Changes'}</button>
               <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}><X size={14} />Cancel</button>
             </div>
           </form>
         ) : doctor ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
-            <Field label="Full Name" value={doctor.full_name || ''} />
-            <Field label="Email" value={doctor.email} />
-            <Field label="Phone" value={doctor.phone || ''} />
-            <Field label="Specialization" value={doctor.specialization || ''} />
-            <Field label="Years Experience" value={doctor.years_experience != null ? String(doctor.years_experience) : ''} />
-            <Field label="State" value={doctor.state || ''} />
-            <Field label="LGA" value={doctor.lga || ''} />
-            <Field label="Address" value={doctor.address || ''} />
-            <div style={{ gridColumn: '1 / -1' }}><Field label="Qualifications" value={doctor.qualifications || ''} /></div>
-          </div>
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Full Name" value={doctor.full_name || ''} />
+              <Field label="Email" value={doctor.email} />
+              <Field label="Phone" value={doctor.phone || ''} />
+              <Field label="Specialization" value={doctor.specialization || ''} />
+              <Field label="Years Experience" value={doctor.years_experience != null ? String(doctor.years_experience) : ''} />
+              <Field label="State" value={doctor.state || ''} />
+              <Field label="LGA" value={doctor.lga || ''} />
+              <Field label="Address" value={doctor.address || ''} />
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Qualifications" value={doctor.qualifications || ''} /></div>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
+            <SectionHeader number="2" title="Personal Information" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Date of Birth" value={doctor.dob} />
+              <Field label="Gender" value={doctor.gender} />
+              <Field label="Marital Status" value={doctor.marital_status} />
+              <Field label="Religion" value={doctor.religion} />
+              <Field label="Occupation" value={doctor.occupation} />
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
+            <SectionHeader number="3" title="Next of Kin" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Full Name" value={doctor.next_of_kin_name} />
+              <Field label="Relationship" value={doctor.next_of_kin_relationship} />
+              <Field label="Phone" value={doctor.next_of_kin_phone} />
+            </div>
+          </>
         ) : (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No profile data found.</div>
         )}
@@ -196,7 +251,7 @@ export default function DoctorProfilePage() {
 
       {/* Change Password */}
       <div className="skeu-card" style={{ padding: 24 }}>
-        <SectionHeader number="2" title="Change Password" />
+        <SectionHeader number="4" title="Change Password" />
         <form onSubmit={handlePasswordSubmit} style={{ maxWidth: 480 }}>
           <div style={{ marginBottom: 14 }}>
             <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Current Password</label>

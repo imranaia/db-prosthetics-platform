@@ -22,20 +22,23 @@ function getDb(): Database.Database {
   }
 
   console.log(`[db] Opening database at: ${DB_PATH}`);
-  db = new Database(DB_PATH);
+  const conn = new Database(DB_PATH);
 
   // Enable WAL mode for better concurrent read performance.
-  db.pragma('journal_mode = WAL');
+  conn.pragma('journal_mode = WAL');
 
   // Enforce foreign key constraints (SQLite turns these off by default).
-  db.pragma('foreign_keys = ON');
+  conn.pragma('foreign_keys = ON');
 
-  // Run migrations on first connect.
-  migrate(db);
+  // Run migrations on first connect. Only cache the connection once this
+  // succeeds, so a failed migration doesn't get silently reused (skipping
+  // migrate() entirely) on every subsequent getDb() call.
+  migrate(conn);
 
   // Seed Super Admin if no users exist yet.
-  seedAdmin(db);
+  seedAdmin(conn);
 
+  db = conn;
   return db;
 }
 

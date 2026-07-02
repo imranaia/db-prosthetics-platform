@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
-import bcrypt from 'bcryptjs';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || user.role !== 'super_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user || user.role !== 'hospital_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getDb();
   const row = db.prepare('SELECT id, email, full_name, phone, dob, gender, address, state, lga, marital_status, occupation, religion, next_of_kin_name, next_of_kin_relationship, next_of_kin_phone FROM users WHERE id = ?').get(user.id);
@@ -16,11 +15,9 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || user.role !== 'super_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user || user.role !== 'hospital_admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json() as {
-    current_password?: string;
-    new_password?: string;
     full_name?: string;
     phone?: string;
     dob?: string;
@@ -37,20 +34,6 @@ export async function PATCH(req: NextRequest) {
   };
 
   const db = getDb();
-
-  // Password change
-  if (body.current_password && body.new_password) {
-    if (body.new_password.length < 8) return NextResponse.json({ error: 'New password must be at least 8 characters.' }, { status: 400 });
-    const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id) as { password_hash: string } | undefined;
-    if (!row) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
-    const valid = await bcrypt.compare(body.current_password, row.password_hash);
-    if (!valid) return NextResponse.json({ error: 'Current password is incorrect.' }, { status: 400 });
-    const hash = await bcrypt.hash(body.new_password, 12);
-    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, user.id);
-    return NextResponse.json({ success: true });
-  }
-
-  // Profile update
   const setClauses: string[] = [];
   const values: (string | null)[] = [];
   const fields = ['full_name','phone','dob','gender','address','state','lga','marital_status','occupation','religion','next_of_kin_name','next_of_kin_relationship','next_of_kin_phone'] as const;

@@ -1,8 +1,9 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect, useState } from 'react';
-import { ShoppingCart, Package, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ShoppingCart, Package, ChevronDown, ChevronUp, Plus, X, Upload } from 'lucide-react';
+import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
 
 interface Product {
   id: number;
@@ -12,6 +13,13 @@ interface Product {
   price: number;
   description: string;
   image_url?: string;
+  in_stock: number;
+}
+
+interface Material {
+  id: number;
+  name: string;
+  description: string | null;
   in_stock: number;
 }
 
@@ -29,6 +37,8 @@ interface CustomOrder {
   id: number;
   category: string | null;
   description: string;
+  body_parts: string | null;
+  material_id: number | null;
   status: string;
   quoted_price: number | null;
   payment_target: string;
@@ -81,6 +91,7 @@ export default function DoctorOrdersPage() {
 
   // Data
   const [products, setProducts] = useState<Product[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
   const [stdOrders, setStdOrders] = useState<StdOrder[]>([]);
@@ -101,29 +112,41 @@ export default function DoctorOrdersPage() {
   const [custDesc, setCustDesc] = useState('');
   const [custPatientId, setCustPatientId] = useState('');
   const [custPayTarget, setCustPayTarget] = useState<'creator' | 'patient'>('creator');
+  const [custBodyParts, setCustBodyParts] = useState<BodyPart[]>([]);
+  const [custMaterialId, setCustMaterialId] = useState('');
+  const [custPhotosAffected, setCustPhotosAffected] = useState<string[]>([]);
+  const [custPhotosUnaffected, setCustPhotosUnaffected] = useState<string[]>([]);
+  const [uploadingAffected, setUploadingAffected] = useState(false);
+  const [uploadingUnaffected, setUploadingUnaffected] = useState(false);
   const [custSubmitting, setCustSubmitting] = useState(false);
   const [custMsg, setCustMsg] = useState('');
   const [custErr, setCustErr] = useState('');
   const [expandedCust, setExpandedCust] = useState<number | null>(null);
 
+  const photoAffectedRef = useRef<HTMLInputElement>(null);
+  const photoUnaffectedRef = useRef<HTMLInputElement>(null);
+
   async function load() {
     try {
-      const [prodRes, consRes, custRes, stdRes] = await Promise.all([
-        fetch('/api/admin/products'),
+      const [prodRes, consRes, custRes, stdRes, matRes] = await Promise.all([
+        fetch('/api/products'),
         fetch('/api/doctor/consultations'),
         fetch('/api/orders/custom'),
         fetch('/api/orders'),
+        fetch('/api/materials'),
       ]);
-      const [prodData, consData, custData, stdData] = await Promise.all([
+      const [prodData, consData, custData, stdData, matData] = await Promise.all([
         prodRes.json(),
         consRes.json(),
         custRes.json(),
         stdRes.json(),
+        matRes.json(),
       ]);
       setProducts(Array.isArray(prodData) ? prodData : []);
       setPatients(Array.isArray(consData.patients) ? consData.patients : []);
       setCustomOrders(Array.isArray(custData) ? custData : []);
       setStdOrders(Array.isArray(stdData) ? stdData : []);
+      setMaterials(Array.isArray(matData) ? matData : []);
     } finally {
       setDataLoading(false);
     }
@@ -152,6 +175,27 @@ export default function DoctorOrdersPage() {
   }
 
   const cartTotal = cart.reduce((sum, c) => sum + c.product.price * c.quantity, 0);
+  const selectedMaterial = materials.find(m => m.id === Number(custMaterialId));
+
+  async function handlePhotoUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'affected' | 'unaffected'
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (type === 'affected') setUploadingAffected(true);
+    else setUploadingUnaffected(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.url) {
+      if (type === 'affected') setCustPhotosAffected(prev => [...prev, data.url]);
+      else setCustPhotosUnaffected(prev => [...prev, data.url]);
+    }
+    if (type === 'affected') { setUploadingAffected(false); if (photoAffectedRef.current) photoAffectedRef.current.value = ''; }
+    else { setUploadingUnaffected(false); if (photoUnaffectedRef.current) photoUnaffectedRef.current.value = ''; }
+  }
 
   async function handleStdOrder() {
     setStdErr(''); setStdMsg('');
@@ -171,7 +215,6 @@ export default function DoctorOrdersPage() {
       const data = await res.json();
       if (!res.ok) { setStdErr(data.error || 'Failed to place order.'); setStdSubmitting(false); return; }
       if (stdPayTarget === 'creator') {
-        // Initialize Paystack payment
         const payRes = await fetch('/api/payment/initialize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -220,12 +263,18 @@ export default function DoctorOrdersPage() {
           description: custDesc,
           patient_id: custPatientId ? Number(custPatientId) : undefined,
           payment_target: custPayTarget,
+          body_parts: custBodyParts.length > 0 ? JSON.stringify(custBodyParts) : undefined,
+          material_id: custMaterialId ? Number(custMaterialId) : undefined,
+          photos_affected: custPhotosAffected.length > 0 ? custPhotosAffected : undefined,
+          photos_unaffected: custPhotosUnaffected.length > 0 ? custPhotosUnaffected : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setCustErr(data.error || 'Failed to submit.'); setCustSubmitting(false); return; }
       setCustMsg('Custom order submitted. Admin will review and quote a price.');
       setCustCategory(''); setCustDesc(''); setCustPatientId(''); setCustPayTarget('creator');
+      setCustBodyParts([]); setCustMaterialId('');
+      setCustPhotosAffected([]); setCustPhotosUnaffected([]);
       load();
     } catch {
       setCustErr('Network error. Please try again.');
@@ -413,10 +462,12 @@ export default function DoctorOrdersPage() {
       ) : (
         <div>
           {/* Custom order form */}
-          <div className="skeu-card" style={{ padding: 22, marginBottom: 24 }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 18 }}>Submit Custom / Bespoke Order</h2>
+          <div className="skeu-card" style={{ padding: 24, marginBottom: 24 }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 20 }}>Submit Custom / Bespoke Order</h2>
             <form onSubmit={handleCustOrder}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+
+              {/* Category + Patient */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
                 <div>
                   <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Category</label>
                   <select className="skeu-select" style={{ width: '100%' }} value={custCategory} onChange={e => setCustCategory(e.target.value)}>
@@ -432,7 +483,15 @@ export default function DoctorOrdersPage() {
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: 14 }}>
+
+              {/* Body Part Selector */}
+              <div style={{ marginBottom: 20 }}>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Affected Body Part(s)</label>
+                <BodySelector value={custBodyParts} onChange={setCustBodyParts} />
+              </div>
+
+              {/* Description */}
+              <div style={{ marginBottom: 18 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Description <span style={{ color: '#dc2626' }}>*</span></label>
                 <textarea
                   className="skeu-input"
@@ -443,7 +502,92 @@ export default function DoctorOrdersPage() {
                   required
                 />
               </div>
+
+              {/* Material selection */}
               <div style={{ marginBottom: 18 }}>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Preferred Material</label>
+                {materials.length === 0 ? (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '10px 0' }}>No materials in catalogue yet. Admin will advise.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+                    <button type="button" onClick={() => setCustMaterialId('')}
+                      style={{ padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: `2px solid ${!custMaterialId ? 'var(--primary)' : 'var(--border-card)'}`, background: !custMaterialId ? 'rgba(27,61,94,0.07)' : 'transparent' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: !custMaterialId ? 'var(--primary)' : 'var(--text-body)' }}>No preference</div>
+                    </button>
+                    {materials.map(m => (
+                      <button key={m.id} type="button" onClick={() => setCustMaterialId(String(m.id))}
+                        style={{ padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: `2px solid ${custMaterialId === String(m.id) ? (m.in_stock ? 'var(--primary)' : '#f87171') : 'var(--border-card)'}`, background: custMaterialId === String(m.id) ? (m.in_stock ? 'rgba(27,61,94,0.07)' : 'rgba(239,68,68,0.05)') : 'transparent' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: custMaterialId === String(m.id) ? (m.in_stock ? 'var(--primary)' : '#b91c1c') : 'var(--text-head)' }}>{m.name}</div>
+                        {m.description && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{m.description}</div>}
+                        <div style={{ marginTop: 4 }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: m.in_stock ? '#d1fae5' : '#fee2e2', color: m.in_stock ? '#065f46' : '#b91c1c' }}>
+                            {m.in_stock ? 'In Stock' : 'Out of Stock'}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedMaterial && !selectedMaterial.in_stock && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef3c7', borderRadius: 8, fontSize: '0.82rem', color: '#b45309' }}>
+                    This material is currently out of stock. Your order will be placed but fulfillment may be delayed.
+                  </div>
+                )}
+              </div>
+
+              {/* Photo upload - two sections */}
+              <div style={{ marginBottom: 18 }}>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Reference Photos</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {/* Affected limb photos */}
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 8 }}>Affected Limb/Part <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      {custPhotosAffected.map((url, i) => (
+                        <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button type="button" onClick={() => setCustPhotosAffected(prev => prev.filter((_, j) => j !== i))}
+                            style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => photoAffectedRef.current?.click()} disabled={uploadingAffected}
+                        style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                        <Upload size={16} />
+                        <span style={{ fontSize: '0.65rem' }}>{uploadingAffected ? 'Uploading…' : 'Add Photo'}</span>
+                      </button>
+                      <input ref={photoAffectedRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'affected')} />
+                    </div>
+                  </div>
+
+                  {/* Unaffected/healthy reference */}
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 4 }}>Unaffected Reference Limb <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>Leave empty if not applicable (e.g., bilateral amputation)</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      {custPhotosUnaffected.map((url, i) => (
+                        <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button type="button" onClick={() => setCustPhotosUnaffected(prev => prev.filter((_, j) => j !== i))}
+                            style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => photoUnaffectedRef.current?.click()} disabled={uploadingUnaffected}
+                        style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                        <Upload size={16} />
+                        <span style={{ fontSize: '0.65rem' }}>{uploadingUnaffected ? 'Uploading…' : 'Add Photo'}</span>
+                      </button>
+                      <input ref={photoUnaffectedRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'unaffected')} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Who pays */}
+              <div style={{ marginBottom: 20 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Who Pays?</label>
                 <div style={{ display: 'flex', gap: 10 }}>
                   {(['creator', 'patient'] as const).map(opt => (
@@ -457,6 +601,7 @@ export default function DoctorOrdersPage() {
                   ))}
                 </div>
               </div>
+
               {custErr && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custErr}</div>}
               {custMsg && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custMsg}</div>}
               <button type="submit" className="skeu-btn-accent" disabled={custSubmitting} style={{ width: '100%' }}>
@@ -473,6 +618,9 @@ export default function DoctorOrdersPage() {
                 {customOrders.map(o => {
                   const ss = CUSTOM_STATUS_STYLE[o.status] || { bg: '#f3f4f6', color: '#374151' };
                   const isExpanded = expandedCust === o.id;
+                  const matName = o.material_id ? materials.find(m => m.id === o.material_id)?.name : null;
+                  let bodyPartsArr: BodyPart[] = [];
+                  try { if (o.body_parts) bodyPartsArr = JSON.parse(o.body_parts); } catch {}
                   return (
                     <div key={o.id} className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
                       <div
@@ -480,19 +628,35 @@ export default function DoctorOrdersPage() {
                         onClick={() => setExpandedCust(isExpanded ? null : o.id)}
                       >
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)' }}>
                               {o.category ? CATEGORIES.find(c => c.value === o.category)?.label || o.category : 'Custom Order'}
                               {o.patient_name && <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> — {o.patient_name}</span>}
                             </span>
                             <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600, background: ss.bg, color: ss.color }}>{o.status}</span>
                           </div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}{o.quoted_price ? ` · Quoted: ${fmt(o.quoted_price)}` : ''}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            {formatDate(o.created_at)}
+                            {o.quoted_price ? ` · Quoted: ${fmt(o.quoted_price)}` : ''}
+                            {matName ? ` · Material: ${matName}` : ''}
+                          </div>
                         </div>
                         {isExpanded ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
                       </div>
                       {isExpanded && (
                         <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--border-card)', paddingTop: 14 }}>
+                          {bodyPartsArr.length > 0 && (
+                            <div style={{ marginBottom: 10 }}>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 6 }}>Affected Parts</div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {bodyPartsArr.map((bp, i) => (
+                                  <span key={i} style={{ padding: '2px 10px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8', fontSize: '0.78rem', fontWeight: 600 }}>
+                                    {bp.label}{bp.subParts?.length > 0 ? ` (${bp.subParts.join(', ')})` : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{o.description}</div>
                           {o.quoted_price && (
                             <div style={{ marginTop: 10, fontSize: '0.88rem', fontWeight: 600, color: 'var(--primary)' }}>Quoted Price: {fmt(o.quoted_price)}</div>

@@ -40,20 +40,36 @@ export async function PATCH(req: NextRequest) {
     address?: string;
     years_experience?: number;
     qualifications?: string;
+    dob?: string;
+    gender?: string;
+    marital_status?: string;
+    occupation?: string;
+    religion?: string;
+    next_of_kin_name?: string;
+    next_of_kin_relationship?: string;
+    next_of_kin_phone?: string;
   };
 
   const db = getDb();
   const setClauses: string[] = [];
   const values: (string | number | null)[] = [];
 
-  if (body.full_name !== undefined)       { setClauses.push('full_name = ?');       values.push(body.full_name); }
-  if (body.phone !== undefined)           { setClauses.push('phone = ?');           values.push(body.phone); }
-  if (body.specialization !== undefined)  { setClauses.push('specialization = ?');  values.push(body.specialization); }
-  if (body.state !== undefined)           { setClauses.push('state = ?');           values.push(body.state); }
-  if (body.lga !== undefined)             { setClauses.push('lga = ?');             values.push(body.lga); }
-  if (body.address !== undefined)         { setClauses.push('address = ?');         values.push(body.address); }
-  if (body.years_experience !== undefined){ setClauses.push('years_experience = ?'); values.push(body.years_experience); }
-  if (body.qualifications !== undefined)  { setClauses.push('qualifications = ?');  values.push(body.qualifications); }
+  if (body.full_name !== undefined)             { setClauses.push('full_name = ?');             values.push(body.full_name); }
+  if (body.phone !== undefined)                 { setClauses.push('phone = ?');                 values.push(body.phone); }
+  if (body.specialization !== undefined)        { setClauses.push('specialization = ?');        values.push(body.specialization); }
+  if (body.state !== undefined)                 { setClauses.push('state = ?');                 values.push(body.state); }
+  if (body.lga !== undefined)                   { setClauses.push('lga = ?');                   values.push(body.lga); }
+  if (body.address !== undefined)               { setClauses.push('address = ?');               values.push(body.address); }
+  if (body.years_experience !== undefined)      { setClauses.push('years_experience = ?');      values.push(body.years_experience); }
+  if (body.qualifications !== undefined)        { setClauses.push('qualifications = ?');        values.push(body.qualifications); }
+  if (body.dob !== undefined)                   { setClauses.push('dob = ?');                   values.push(body.dob); }
+  if (body.gender !== undefined)                { setClauses.push('gender = ?');                values.push(body.gender); }
+  if (body.marital_status !== undefined)        { setClauses.push('marital_status = ?');        values.push(body.marital_status); }
+  if (body.occupation !== undefined)            { setClauses.push('occupation = ?');            values.push(body.occupation); }
+  if (body.religion !== undefined)              { setClauses.push('religion = ?');              values.push(body.religion); }
+  if (body.next_of_kin_name !== undefined)      { setClauses.push('next_of_kin_name = ?');      values.push(body.next_of_kin_name); }
+  if (body.next_of_kin_relationship !== undefined) { setClauses.push('next_of_kin_relationship = ?'); values.push(body.next_of_kin_relationship); }
+  if (body.next_of_kin_phone !== undefined)     { setClauses.push('next_of_kin_phone = ?');     values.push(body.next_of_kin_phone); }
 
   if (setClauses.length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

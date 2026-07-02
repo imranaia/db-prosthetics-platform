@@ -103,18 +103,21 @@ export default function POOrdersPage() {
   const [custBodyParts, setCustBodyParts] = useState<BodyPart[]>([]);
   const [custMaterialId, setCustMaterialId] = useState('');
   const [custPayTarget, setCustPayTarget] = useState<'creator' | 'patient'>('creator');
-  const [custPhotos, setCustPhotos] = useState<string[]>([]);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [custPhotosAffected, setCustPhotosAffected] = useState<string[]>([]);
+  const [custPhotosUnaffected, setCustPhotosUnaffected] = useState<string[]>([]);
+  const [uploadingAffected, setUploadingAffected] = useState(false);
+  const [uploadingUnaffected, setUploadingUnaffected] = useState(false);
   const [custSubmitting, setCustSubmitting] = useState(false);
   const [custMsg, setCustMsg] = useState('');
   const [custErr, setCustErr] = useState('');
   const [expandedCust, setExpandedCust] = useState<number | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoAffectedRef = useRef<HTMLInputElement>(null);
+  const photoUnaffectedRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     try {
       const [prodRes, custRes, stdRes, matRes] = await Promise.all([
-        fetch('/api/admin/products'),
+        fetch('/api/products'),
         fetch('/api/orders/custom'),
         fetch('/api/orders'),
         fetch('/api/materials'),
@@ -153,17 +156,21 @@ export default function POOrdersPage() {
   }
   const cartTotal = cart.reduce((sum, c) => sum + c.product.price * c.quantity, 0);
 
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>, type: 'affected' | 'unaffected') {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingPhoto(true);
+    if (type === 'affected') setUploadingAffected(true);
+    else setUploadingUnaffected(true);
     const fd = new FormData();
     fd.append('file', file);
     const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
     const data = await res.json();
-    if (data.url) setCustPhotos(prev => [...prev, data.url]);
-    setUploadingPhoto(false);
-    if (photoInputRef.current) photoInputRef.current.value = '';
+    if (data.url) {
+      if (type === 'affected') setCustPhotosAffected(prev => [...prev, data.url]);
+      else setCustPhotosUnaffected(prev => [...prev, data.url]);
+    }
+    if (type === 'affected') { setUploadingAffected(false); if (photoAffectedRef.current) photoAffectedRef.current.value = ''; }
+    else { setUploadingUnaffected(false); if (photoUnaffectedRef.current) photoUnaffectedRef.current.value = ''; }
   }
 
   async function handleStdOrder() {
@@ -210,7 +217,8 @@ export default function POOrdersPage() {
           description: custDesc,
           body_parts: custBodyParts.length > 0 ? JSON.stringify(custBodyParts) : undefined,
           material_id: custMaterialId ? Number(custMaterialId) : undefined,
-          photos: custPhotos.length > 0 ? custPhotos : undefined,
+          photos_affected: custPhotosAffected.length > 0 ? custPhotosAffected : undefined,
+          photos_unaffected: custPhotosUnaffected.length > 0 ? custPhotosUnaffected : undefined,
           payment_target: custPayTarget,
         }),
       });
@@ -218,7 +226,7 @@ export default function POOrdersPage() {
       if (!res.ok) { setCustErr(data.error || 'Failed.'); setCustSubmitting(false); return; }
       setCustMsg('Custom order submitted. Admin will review and quote a price.');
       setCustCategory(''); setCustDesc(''); setCustBodyParts([]); setCustMaterialId('');
-      setCustPhotos([]); setCustPayTarget('creator');
+      setCustPhotosAffected([]); setCustPhotosUnaffected([]); setCustPayTarget('creator');
       load();
     } catch { setCustErr('Network error.'); }
     setCustSubmitting(false);
@@ -431,25 +439,54 @@ export default function POOrdersPage() {
                 )}
               </div>
 
-              {/* Photo upload */}
+              {/* Photo upload - two sections */}
               <div style={{ marginBottom: 18 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Reference Photos (optional)</label>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                  {custPhotos.map((url, i) => (
-                    <div key={i} style={{ position: 'relative', width: 90, height: 90, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-                      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <button type="button" onClick={() => setCustPhotos(prev => prev.filter((_, j) => j !== i))}
-                        style={{ position: 'absolute', top: 3, right: 3, width: 20, height: 20, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                        <X size={10} />
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Reference Photos</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {/* Affected limb photos */}
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 8 }}>Affected Limb/Part Photos <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      {custPhotosAffected.map((url, i) => (
+                        <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button type="button" onClick={() => setCustPhotosAffected(prev => prev.filter((_, j) => j !== i))}
+                            style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => photoAffectedRef.current?.click()} disabled={uploadingAffected}
+                        style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                        <Upload size={16} />
+                        <span style={{ fontSize: '0.65rem' }}>{uploadingAffected ? 'Uploading…' : 'Add Photo'}</span>
                       </button>
+                      <input ref={photoAffectedRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'affected')} />
                     </div>
-                  ))}
-                  <button type="button" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}
-                    style={{ width: 90, height: 90, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
-                    <Upload size={18} />
-                    <span style={{ fontSize: '0.68rem' }}>{uploadingPhoto ? 'Uploading…' : 'Add Photo'}</span>
-                  </button>
-                  <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+                  </div>
+
+                  {/* Unaffected/healthy reference */}
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 4 }}>Unaffected/Healthy Reference Part Photos <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>(Leave empty if not applicable)</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      {custPhotosUnaffected.map((url, i) => (
+                        <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button type="button" onClick={() => setCustPhotosUnaffected(prev => prev.filter((_, j) => j !== i))}
+                            style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => photoUnaffectedRef.current?.click()} disabled={uploadingUnaffected}
+                        style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                        <Upload size={16} />
+                        <span style={{ fontSize: '0.65rem' }}>{uploadingUnaffected ? 'Uploading…' : 'Add Photo'}</span>
+                      </button>
+                      <input ref={photoUnaffectedRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'unaffected')} />
+                    </div>
+                  </div>
                 </div>
               </div>
 

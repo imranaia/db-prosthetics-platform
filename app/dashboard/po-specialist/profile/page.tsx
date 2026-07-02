@@ -2,7 +2,28 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { UserCircle, Pencil } from 'lucide-react';
+import { UserCircle, Pencil, X } from 'lucide-react';
+
+interface POSpecialistProfile {
+  id: number;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  specialization: string | null;
+  years_experience: number | null;
+  qualifications: string | null;
+  state: string | null;
+  lga: string | null;
+  address: string | null;
+  dob: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  occupation: string | null;
+  religion: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_relationship: string | null;
+  next_of_kin_phone: string | null;
+}
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
@@ -14,50 +35,101 @@ function SectionHeader({ number, title }: { number: string; title: string }) {
   );
 }
 
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{value || '—'}</div>
+    </div>
+  );
+}
+
 export default function POSpecialistProfilePage() {
   const { user, loading } = useAuth();
-  const [profileData, setProfileData] = useState<{ email: string; role: string } | null>(null);
+  const [profile, setProfile] = useState<POSpecialistProfile | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Edit form
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ full_name: '', phone: '' });
+  const [editForm, setEditForm] = useState<Partial<POSpecialistProfile>>({});
   const [editSubmitting, setEditSubmitting] = useState(false);
-  const [editMsg, setEditMsg] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+
+  // Password form
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
   const [pwSubmitting, setPwSubmitting] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
 
+  async function loadProfile() {
+    try {
+      const r = await fetch('/api/po-specialist/profile');
+      const data = await r.json();
+      if (data.profile) setProfile(data.profile);
+    } finally {
+      setDataLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!user || loading) return;
-    fetch('/api/profile')
-      .then(r => r.json())
-      .then(data => setProfileData(data))
-      .catch(() => {});
+    loadProfile();
   }, [user, loading]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'po_specialist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
+  function startEdit() {
+    if (!profile) return;
+    setEditForm({
+      full_name: profile.full_name || '',
+      phone: profile.phone || '',
+      specialization: profile.specialization || '',
+      years_experience: profile.years_experience ?? undefined,
+      qualifications: profile.qualifications || '',
+      state: profile.state || '',
+      lga: profile.lga || '',
+      address: profile.address || '',
+      dob: profile.dob || '',
+      gender: profile.gender || '',
+      marital_status: profile.marital_status || '',
+      occupation: profile.occupation || '',
+      religion: profile.religion || '',
+      next_of_kin_name: profile.next_of_kin_name || '',
+      next_of_kin_relationship: profile.next_of_kin_relationship || '',
+      next_of_kin_phone: profile.next_of_kin_phone || '',
+    });
+    setEditing(true);
+    setEditError('');
+    setEditSuccess('');
+  }
+
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEditSubmitting(true);
-    setEditMsg('');
+    setEditError('');
     try {
       const res = await fetch('/api/po-specialist/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
       });
-      if (res.ok) { setEditMsg('Profile updated.'); setEditing(false); }
-      else { const d = await res.json(); setEditMsg(d.error || 'Failed.'); }
-    } catch { setEditMsg('Network error.'); }
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'Failed to update profile.'); }
+      else {
+        setEditSuccess('Profile updated successfully.');
+        setEditing(false);
+        loadProfile();
+      }
+    } catch { setEditError('Network error. Please try again.'); }
     setEditSubmitting(false);
   }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setPwError('');
-    setPwSuccess('');
+    setPwError(''); setPwSuccess('');
     if (pwForm.new_password !== pwForm.confirm_password) { setPwError('New passwords do not match.'); return; }
     if (pwForm.new_password.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
     setPwSubmitting(true);
@@ -74,6 +146,13 @@ export default function POSpecialistProfilePage() {
     setPwSubmitting(false);
   }
 
+  const ef = editForm;
+  const inp = (field: keyof typeof ef) => ({
+    className: 'skeu-input' as const,
+    value: (ef[field] as string) ?? '',
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditForm({ ...ef, [field]: e.target.value }),
+  });
+
   return (
     <div className="dash-content">
       <div className="dash-page-header" style={{ marginBottom: 24 }}>
@@ -81,51 +160,111 @@ export default function POSpecialistProfilePage() {
           <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <UserCircle size={22} color="var(--primary)" />
           </div>
-          <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Profile</h1>
+          <div>
+            <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Profile</h1>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '2px 12px', borderRadius: 20, background: '#f3e8ff', color: '#6d28d9', fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>
+              P&amp;O Specialist
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Account Info */}
+      {/* Profile card */}
       <div className="skeu-card" style={{ padding: 24, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <SectionHeader number="1" title="Account Information" />
-          {!editing && (
-            <button onClick={() => { setEditing(true); setEditMsg(''); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, marginTop: -8 }}>
-              <Pencil size={13} /> Edit
+          <SectionHeader number="1" title="Professional Information" />
+          {profile && !editing && (
+            <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, marginTop: -8 }}>
+              <Pencil size={13} /> Edit Profile
             </button>
           )}
         </div>
-        {editMsg && <div style={{ background: editMsg.includes('updated') ? '#d1fae5' : '#fee2e2', color: editMsg.includes('updated') ? '#065f46' : '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 14 }}>{editMsg}</div>}
-        {editing ? (
+
+        {editSuccess && !editing && (
+          <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editSuccess}</div>
+        )}
+
+        {dataLoading ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem', padding: '20px 0' }}>Loading profile...</div>
+        ) : editing ? (
           <form onSubmit={handleEditSubmit}>
+            {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Display Name</label><input className="skeu-input" value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} placeholder="Your name" /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} placeholder="Phone number" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input {...inp('full_name')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Email</label><input className="skeu-input" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('phone')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Specialization</label><input {...inp('specialization')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Years Experience</label><input type="number" min="0" className="skeu-input" value={ef.years_experience ?? ''} onChange={e => setEditForm({ ...ef, years_experience: parseInt(e.target.value) || 0 })} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input {...inp('state')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input {...inp('lga')} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input {...inp('address')} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Qualifications</label><textarea className="skeu-input" rows={3} value={ef.qualifications ?? ''} onChange={e => setEditForm({ ...ef, qualifications: e.target.value })} style={{ resize: 'vertical' }} /></div>
             </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Personal Information</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input {...inp('dob')} placeholder="YYYY-MM-DD" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input {...inp('gender')} placeholder="e.g. Male, Female" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input {...inp('marital_status')} placeholder="e.g. Single, Married" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Religion</label><input {...inp('religion')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input {...inp('occupation')} /></div>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Next of Kin</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input {...inp('next_of_kin_name')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Relationship</label><input {...inp('next_of_kin_relationship')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('next_of_kin_phone')} /></div>
+            </div>
+
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="submit" className="skeu-btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save Changes'}</button>
-              <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}>Cancel</button>
+              <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}><X size={14} />Cancel</button>
             </div>
           </form>
+        ) : profile ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Full Name" value={profile.full_name} />
+              <Field label="Email" value={profile.email} />
+              <Field label="Phone" value={profile.phone} />
+              <Field label="Specialization" value={profile.specialization} />
+              <Field label="Years Experience" value={profile.years_experience != null ? String(profile.years_experience) : null} />
+              <Field label="State" value={profile.state} />
+              <Field label="LGA" value={profile.lga} />
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Address" value={profile.address} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Qualifications" value={profile.qualifications} /></div>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
+            <SectionHeader number="2" title="Personal Information" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Date of Birth" value={profile.dob} />
+              <Field label="Gender" value={profile.gender} />
+              <Field label="Marital Status" value={profile.marital_status} />
+              <Field label="Religion" value={profile.religion} />
+              <Field label="Occupation" value={profile.occupation} />
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
+            <SectionHeader number="3" title="Next of Kin" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Full Name" value={profile.next_of_kin_name} />
+              <Field label="Relationship" value={profile.next_of_kin_relationship} />
+              <Field label="Phone" value={profile.next_of_kin_phone} />
+            </div>
+          </>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>Email Address</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{profileData?.email || user.email || '—'}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>Role</div>
-              <span style={{ background: '#f3e8ff', color: '#6d28d9', padding: '3px 12px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600 }}>
-                P&O Specialist
-              </span>
-            </div>
-          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No profile data found.</div>
         )}
       </div>
 
       {/* Change Password */}
       <div className="skeu-card" style={{ padding: 24 }}>
-        <SectionHeader number="2" title="Change Password" />
+        <SectionHeader number="4" title="Change Password" />
         <form onSubmit={handlePasswordSubmit} style={{ maxWidth: 480 }}>
           <div style={{ marginBottom: 14 }}>
             <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Current Password</label>

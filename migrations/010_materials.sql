@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS materials (
   created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Extend products with image, dimensions, material
-ALTER TABLE products ADD COLUMN image_url  TEXT;
+-- Extend products with dimensions, material (image_url already exists from 001_initial_schema.sql)
 ALTER TABLE products ADD COLUMN dimensions TEXT;
 ALTER TABLE products ADD COLUMN material   TEXT;
 

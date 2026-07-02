@@ -1,155 +1,266 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useState } from 'react';
-import { UserCircle, Lock, CheckCircle, AlertCircle, Pencil, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { UserCircle, Pencil, X } from 'lucide-react';
 
-export default function ProfilePage() {
+interface AdminProfile {
+  id: number;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  dob: string | null;
+  gender: string | null;
+  address: string | null;
+  state: string | null;
+  lga: string | null;
+  marital_status: string | null;
+  occupation: string | null;
+  religion: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_relationship: string | null;
+  next_of_kin_phone: string | null;
+}
+
+function SectionHeader({ number, title }: { number: string; title: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 8 }}>
+      <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>{number}</div>
+      <h3 className="font-display" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>{title}</h3>
+      <div style={{ flex: 1, height: 1, background: 'var(--border-card)' }} />
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{value || '—'}</div>
+    </div>
+  );
+}
+
+export default function SuperAdminProfilePage() {
   const { user, loading } = useAuth();
-  const [form, setForm] = useState({ current_password: '', new_password: '', confirm: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profile, setProfile] = useState<AdminProfile | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
 
   // Edit form
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ full_name: '', phone: '' });
+  const [editForm, setEditForm] = useState<Partial<AdminProfile>>({});
   const [editSubmitting, setEditSubmitting] = useState(false);
-  const [editMsg, setEditMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+
+  // Password form
+  const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+
+  async function loadProfile() {
+    try {
+      const r = await fetch('/api/admin/profile');
+      const data = await r.json();
+      if (data.profile) setProfile(data.profile);
+    } finally {
+      setDataLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!user || loading) return;
+    loadProfile();
+  }, [user, loading]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'super_admin') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  function startEdit() {
+    if (!profile) return;
+    setEditForm({
+      full_name: profile.full_name || '',
+      phone: profile.phone || '',
+      dob: profile.dob || '',
+      gender: profile.gender || '',
+      address: profile.address || '',
+      state: profile.state || '',
+      lga: profile.lga || '',
+      marital_status: profile.marital_status || '',
+      occupation: profile.occupation || '',
+      religion: profile.religion || '',
+      next_of_kin_name: profile.next_of_kin_name || '',
+      next_of_kin_relationship: profile.next_of_kin_relationship || '',
+      next_of_kin_phone: profile.next_of_kin_phone || '',
+    });
+    setEditing(true);
+    setEditError('');
+    setEditSuccess('');
+  }
 
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEditSubmitting(true);
-    setEditMsg(null);
+    setEditError('');
     try {
-      // Super admin profile fields are stored in users table;
-      // update email if it changed (future-proof — currently users only has email as mutable)
       const res = await fetch('/api/admin/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        // Only password fields are handled by this endpoint currently
-        // For non-password fields we optimistically succeed
-        body: JSON.stringify({ display_name: editForm.full_name, phone: editForm.phone }),
+        body: JSON.stringify(editForm),
       });
-      // Admin profile API only handles passwords — for display fields, store locally
-      if (res.ok || res.status === 400) {
-        // 400 means "both fields required" (not a real error for display fields)
-        setEditMsg({ type: 'success', text: 'Display name saved.' });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'Failed to update profile.'); }
+      else {
+        setEditSuccess('Profile updated successfully.');
         setEditing(false);
-      } else {
-        const d = await res.json();
-        setEditMsg({ type: 'error', text: d.error || 'Failed to update.' });
+        loadProfile();
       }
-    } catch { setEditMsg({ type: 'error', text: 'Network error.' }); }
+    } catch { setEditError('Network error. Please try again.'); }
     setEditSubmitting(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMessage(null);
-    if (form.new_password !== form.confirm) { setMessage({ type: 'error', text: 'New passwords do not match.' }); return; }
-    setSubmitting(true);
-    const r = await fetch('/api/admin/profile', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ current_password: form.current_password, new_password: form.new_password }),
-    });
-    const d = await r.json();
-    setSubmitting(false);
-    if (r.ok) { setMessage({ type: 'success', text: 'Password updated successfully.' }); setForm({ current_password: '', new_password: '', confirm: '' }); }
-    else setMessage({ type: 'error', text: d.error || 'Failed to update password.' });
+    setPwError(''); setPwSuccess('');
+    if (pwForm.new_password !== pwForm.confirm_password) { setPwError('New passwords do not match.'); return; }
+    if (pwForm.new_password.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    setPwSubmitting(true);
+    try {
+      const res = await fetch('/api/admin/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_password: pwForm.current_password, new_password: pwForm.new_password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPwError(data.error || 'Failed to update password.'); }
+      else { setPwSuccess('Password updated successfully.'); setPwForm({ current_password: '', new_password: '', confirm_password: '' }); }
+    } catch { setPwError('Network error. Please try again.'); }
+    setPwSubmitting(false);
   }
 
+  const ef = editForm;
+  const inp = (field: keyof typeof ef) => ({
+    className: 'skeu-input' as const,
+    value: (ef[field] as string) ?? '',
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditForm({ ...ef, [field]: e.target.value }),
+  });
+
   return (
-    <div className="dash-content" style={{ maxWidth: 640 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <UserCircle size={22} color="var(--primary)" />
-        </div>
-        <div>
-          <h1 className="font-display" style={{ fontSize: '1.75rem', color: 'var(--text-head)', fontWeight: 600 }}>My Profile</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Manage your account settings</p>
+    <div className="dash-content">
+      <div className="dash-page-header" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <UserCircle size={22} color="var(--primary)" />
+          </div>
+          <div>
+            <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Profile</h1>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '2px 12px', borderRadius: 20, background: '#1b3d5e18', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>
+              Super Admin
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Account info card */}
-      <div className="skeu-card" style={{ padding: '24px', marginBottom: '24px', cursor: 'default' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)' }}>Account Information</div>
-          {!editing && (
-            <button onClick={() => { setEditing(true); setEditMsg(null); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
-              <Pencil size={13} /> Edit
+      {/* Profile card */}
+      <div className="skeu-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader number="1" title="Personal Information" />
+          {profile && !editing && (
+            <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, marginTop: -8 }}>
+              <Pencil size={13} /> Edit Profile
             </button>
           )}
         </div>
-        {editMsg && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, marginBottom: 16, background: editMsg.type === 'success' ? 'rgba(22,163,74,0.1)' : '#fef2f2', border: `1px solid ${editMsg.type === 'success' ? 'rgba(22,163,74,0.3)' : '#fca5a5'}`, color: editMsg.type === 'success' ? '#16a34a' : '#b91c1c', fontSize: '0.875rem' }}>
-            {editMsg.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
-            {editMsg.text}
-          </div>
+
+        {editSuccess && !editing && (
+          <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editSuccess}</div>
         )}
-        {editing ? (
+
+        {dataLoading ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem', padding: '20px 0' }}>Loading profile...</div>
+        ) : editing ? (
           <form onSubmit={handleEditSubmit}>
+            {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-              <div><label className="skeu-label">Full Name</label><input className="skeu-input" value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} placeholder="Your name" /></div>
-              <div><label className="skeu-label">Phone</label><input className="skeu-input" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} placeholder="Phone number" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input {...inp('full_name')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Email</label><input className="skeu-input" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('phone')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input {...inp('dob')} placeholder="YYYY-MM-DD" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input {...inp('gender')} placeholder="e.g. Male, Female" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input {...inp('marital_status')} placeholder="e.g. Single, Married" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Religion</label><input {...inp('religion')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input {...inp('occupation')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label><input {...inp('state')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label><input {...inp('lga')} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input {...inp('address')} /></div>
             </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Next of Kin</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input {...inp('next_of_kin_name')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Relationship</label><input {...inp('next_of_kin_relationship')} /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('next_of_kin_phone')} /></div>
+            </div>
+
             <div style={{ display: 'flex', gap: 10 }}>
-              <button type="submit" className="skeu-btn-primary" disabled={editSubmitting} style={{ padding: '9px 20px' }}>{editSubmitting ? 'Saving...' : 'Save Changes'}</button>
-              <button type="button" onClick={() => setEditing(false)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}><X size={14} />Cancel</button>
+              <button type="submit" className="skeu-btn-primary" disabled={editSubmitting}>{editSubmitting ? 'Saving...' : 'Save Changes'}</button>
+              <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}><X size={14} />Cancel</button>
             </div>
           </form>
+        ) : profile ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Full Name" value={profile.full_name} />
+              <Field label="Email" value={profile.email} />
+              <Field label="Phone" value={profile.phone} />
+              <Field label="Date of Birth" value={profile.dob} />
+              <Field label="Gender" value={profile.gender} />
+              <Field label="Marital Status" value={profile.marital_status} />
+              <Field label="Religion" value={profile.religion} />
+              <Field label="Occupation" value={profile.occupation} />
+              <Field label="State" value={profile.state} />
+              <Field label="LGA" value={profile.lga} />
+              <div style={{ gridColumn: '1 / -1' }}><Field label="Address" value={profile.address} /></div>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
+            <SectionHeader number="2" title="Next of Kin" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+              <Field label="Full Name" value={profile.next_of_kin_name} />
+              <Field label="Relationship" value={profile.next_of_kin_relationship} />
+              <Field label="Phone" value={profile.next_of_kin_phone} />
+            </div>
+          </>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Email</div>
-              <div style={{ fontWeight: 500, color: 'var(--text-head)' }}>{user.email}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Role</div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 12px', borderRadius: '50px', background: 'rgba(27,61,94,0.1)', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600 }}>
-                Super Admin
-              </div>
-            </div>
-          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No profile data found.</div>
         )}
       </div>
 
-      {/* Change password */}
-      <div className="skeu-card" style={{ padding: '24px', cursor: 'default' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <Lock size={16} color="var(--primary)" />
-          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)' }}>Change Password</div>
-        </div>
-
-        {message && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', borderRadius: '8px', marginBottom: '20px', background: message.type === 'success' ? 'rgba(22,163,74,0.1)' : '#fef2f2', border: `1px solid ${message.type === 'success' ? 'rgba(22,163,74,0.3)' : '#fca5a5'}`, color: message.type === 'success' ? '#16a34a' : '#b91c1c', fontSize: '0.875rem' }}>
-            {message.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
-            {message.text}
+      {/* Change Password */}
+      <div className="skeu-card" style={{ padding: 24 }}>
+        <SectionHeader number="3" title="Change Password" />
+        <form onSubmit={handlePasswordSubmit} style={{ maxWidth: 480 }}>
+          <div style={{ marginBottom: 14 }}>
+            <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Current Password</label>
+            <input type="password" className="skeu-input" style={{ width: '100%' }} value={pwForm.current_password} onChange={e => setPwForm({ ...pwForm, current_password: e.target.value })} required />
           </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label className="skeu-label">Current Password</label>
-            <input className="skeu-input" type="password" value={form.current_password} onChange={e => setForm({ ...form, current_password: e.target.value })} required placeholder="Your current password" />
+          <div style={{ marginBottom: 14 }}>
+            <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>New Password</label>
+            <input type="password" className="skeu-input" style={{ width: '100%' }} value={pwForm.new_password} onChange={e => setPwForm({ ...pwForm, new_password: e.target.value })} required minLength={8} />
           </div>
-          <div className="form-grid-2">
-            <div>
-              <label className="skeu-label">New Password</label>
-              <input className="skeu-input" type="password" value={form.new_password} onChange={e => setForm({ ...form, new_password: e.target.value })} required placeholder="Min. 8 characters" />
-            </div>
-            <div>
-              <label className="skeu-label">Confirm New Password</label>
-              <input className="skeu-input" type="password" value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} required placeholder="Repeat new password" />
-            </div>
+          <div style={{ marginBottom: 20 }}>
+            <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Confirm New Password</label>
+            <input type="password" className="skeu-input" style={{ width: '100%' }} value={pwForm.confirm_password} onChange={e => setPwForm({ ...pwForm, confirm_password: e.target.value })} required />
           </div>
-          <div style={{ marginTop: '20px' }}>
-            <button className="skeu-btn-primary" type="submit" disabled={submitting} style={{ padding: '10px 24px' }}>
-              {submitting ? 'Updating…' : 'Update Password'}
-            </button>
-          </div>
+          {pwError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{pwError}</div>}
+          {pwSuccess && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{pwSuccess}</div>}
+          <button type="submit" className="skeu-btn-primary" disabled={pwSubmitting}>
+            {pwSubmitting ? 'Updating...' : 'Update Password'}
+          </button>
         </form>
       </div>
     </div>
