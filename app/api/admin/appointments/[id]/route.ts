@@ -23,7 +23,7 @@ export async function PATCH(
 
   const db = getDb();
   const setClauses: string[] = [];
-  const values: (string | number)[] = [];
+  const values: (string | number | null)[] = [];
 
   if (body.quoted_price !== undefined)         { setClauses.push('quoted_price = ?');         values.push(Math.round(body.quoted_price * 100)); }
   if (body.assigned_hospital_id !== undefined) { setClauses.push('assigned_hospital_id = ?'); values.push(body.assigned_hospital_id); }
