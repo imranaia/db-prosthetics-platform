@@ -178,7 +178,7 @@ export default function PatientOrdersPage() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Total: {fmt(o.total_amount)}</div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {(o.fulfillment_status === 'dispatched' || o.fulfillment_status === 'received_by_doctor') && o.fulfillment_status !== 'received_by_patient' && (
+                        {(o.fulfillment_status === 'dispatched' || o.fulfillment_status === 'received_by_doctor') && (
                           <button
                             onClick={() => confirmReceipt(o.id)}
                             disabled={confirmingReceipt === o.id}
