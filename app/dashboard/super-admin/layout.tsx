@@ -8,11 +8,18 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   async function switchToDoctor() {
     if (!user?.hasDoctorProfile) {
-      await fetch('/api/admin/doctor-profile', {
+      const res = await fetch('/api/admin/doctor-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
+      // 409 means a doctor profile already exists (e.g. hasDoctorProfile was
+      // stale) — that's fine, proceed to the doctor dashboard either way.
+      if (!res.ok && res.status !== 409) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Could not switch to Doctor Dashboard. Please try again.');
+        return;
+      }
     }
     window.location.href = '/dashboard/doctor';
   }

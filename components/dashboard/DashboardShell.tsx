@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Building2, Package, Users, ShoppingCart,
-  CalendarDays, Boxes, Menu, X, LogOut, Stethoscope,
-  Layout, UserCircle, ClipboardCheck, Repeat,
+  Boxes, Menu, X, LogOut, Layout, UserCircle, Repeat,
 } from 'lucide-react';
 
 interface NavItem {
@@ -34,11 +33,8 @@ const DEFAULT_NAV: NavItem[] = [
   { label: 'Hospitals',       href: '/dashboard/super-admin/hospitals',       icon: Building2 },
   { label: 'Products',        href: '/dashboard/super-admin/products',        icon: Package },
   { label: 'Patients',        href: '/dashboard/super-admin/patients',        icon: Users },
-  { label: 'Consultations',   href: '/dashboard/super-admin/consultations',   icon: Stethoscope },
   { label: 'Orders',          href: '/dashboard/super-admin/orders',          icon: ShoppingCart },
-  { label: 'Appointments',    href: '/dashboard/super-admin/appointments',    icon: CalendarDays },
   { label: 'Inventory',       href: '/dashboard/super-admin/inventory',       icon: Boxes },
-  { label: 'Discharge Forms', href: '/dashboard/super-admin/discharge',       icon: ClipboardCheck },
   { label: 'Edit Landing Page', href: '/dashboard/super-admin/landing-editor', icon: Layout },
   { label: 'My Profile',      href: '/dashboard/super-admin/profile',         icon: UserCircle },
 ];
@@ -125,40 +121,6 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
           </button>
         </div>
 
-        {/* Switch (top, high-visibility) */}
-        {switchLink && (
-          <div style={{ padding: '12px 16px 4px' }}>
-            {switchLink.href ? (
-              <Link
-                href={switchLink.href}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '10px 14px', borderRadius: '8px',
-                  background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
-                  color: '#f0d9b5', fontSize: '0.875rem', fontWeight: 600,
-                  textDecoration: 'none', boxSizing: 'border-box',
-                }}
-              >
-                <Repeat size={15} />
-                {switchLink.label}
-              </Link>
-            ) : (
-              <button
-                onClick={switchLink.onClick}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
-                  background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
-                  color: '#f0d9b5', fontSize: '0.875rem', fontWeight: 600,
-                }}
-              >
-                <Repeat size={15} />
-                {switchLink.label}
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Nav */}
         <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto' }}>
           {NAV.map(({ label, href, icon: Icon }) => (
@@ -173,23 +135,54 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
           ))}
         </nav>
 
-        {/* Logout */}
-        <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Logout + Switch, side by side */}
+        <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 8 }}>
           <button
             onClick={logout}
             style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
               background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', fontWeight: 500,
+              color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 500,
               transition: 'all 0.15s',
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.13)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.7)'; }}
           >
-            <LogOut size={15} />
+            <LogOut size={14} />
             Sign Out
           </button>
+
+          {switchLink && (switchLink.href ? (
+            <Link
+              href={switchLink.href}
+              title={switchLink.label}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                padding: '8px 10px', borderRadius: '8px', minWidth: 0,
+                background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
+                color: '#f0d9b5', fontSize: '0.8rem', fontWeight: 600,
+                textDecoration: 'none', boxSizing: 'border-box',
+              }}
+            >
+              Switch
+              <Repeat size={14} />
+            </Link>
+          ) : (
+            <button
+              onClick={switchLink.onClick}
+              title={switchLink.label}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', minWidth: 0,
+                background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
+                color: '#f0d9b5', fontSize: '0.8rem', fontWeight: 600,
+              }}
+            >
+              Switch
+              <Repeat size={14} />
+            </button>
+          ))}
         </div>
       </aside>
 

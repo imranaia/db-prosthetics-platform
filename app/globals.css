@@ -41,12 +41,19 @@
 
 html { scroll-behavior: smooth; }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--bg-base);
   color: var(--text-body);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+img { max-width: 100%; }
 
 /* ─────────────────────────────────────────────
    TYPOGRAPHY
