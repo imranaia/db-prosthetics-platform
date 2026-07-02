@@ -1,10 +1,26 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
 import { Users, ShoppingCart, CalendarDays } from 'lucide-react';
+
+interface Stats {
+  patients: number;
+  orders: number;
+  pending_orders: number;
+}
 
 export default function POSpecialistPage() {
   const { user, loading } = useAuth();
+  const [stats, setStats] = useState<Stats>({ patients: 0, orders: 0, pending_orders: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/po-specialist/stats')
+      .then(r => r.json())
+      .then(data => { if (data.stats) setStats(data.stats); })
+      .catch(() => {});
+  }, [user]);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -15,9 +31,9 @@ export default function POSpecialistPage() {
   if (user.role !== 'po_specialist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   const STAT_CARDS = [
-    { label: 'My Patients', value: 0, icon: Users,        color: '#2563eb' },
-    { label: 'Orders',      value: 0, icon: ShoppingCart, color: '#d08c2a' },
-    { label: 'Appointments', value: 0, icon: CalendarDays, color: '#059669' },
+    { label: 'My Patients',    value: stats.patients,      icon: Users,        color: '#2563eb' },
+    { label: 'Orders',         value: stats.orders,        icon: ShoppingCart, color: '#d08c2a' },
+    { label: 'Pending Orders', value: stats.pending_orders, icon: CalendarDays, color: '#059669' },
   ];
 
   return (
@@ -27,7 +43,7 @@ export default function POSpecialistPage() {
           P&amp;O Specialist Overview
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '6px' }}>
-          Your dashboard is ready
+          Your dashboard summary
         </p>
       </div>
 
@@ -47,7 +63,7 @@ export default function POSpecialistPage() {
 
       <div className="skeu-card" style={{ padding: '28px', textAlign: 'center' }}>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Welcome, P&amp;O Specialist \u2014 Your dashboard is ready. Use the navigation to access your patients and orders.
+          Welcome, P&amp;O Specialist &mdash; Use the navigation to access your patients and orders.
         </p>
       </div>
     </div>

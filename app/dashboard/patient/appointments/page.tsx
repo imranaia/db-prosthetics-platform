@@ -12,6 +12,8 @@ interface Appointment {
   preferred_date: string;
   scheduled_date: string;
   quoted_price: number | null;
+  service_fee: number;
+  payment_status: string;
   created_at: string;
   hospital_name: string | null;
 }
@@ -46,6 +48,15 @@ export default function PatientAppointmentsPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [paying, setPaying] = useState<number | null>(null);
+  const [paymentResult, setPaymentResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('payment');
+      setPaymentResult(p);
+    }
+  }, []);
 
   const load = () => {
     fetch('/api/patient/appointments')
@@ -88,8 +99,36 @@ export default function PatientAppointmentsPage() {
     setSubmitting(false);
   }
 
+  async function handlePayNow(id: number) {
+    setPaying(id);
+    const res = await fetch('/api/payment/initialize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id }),
+    });
+    const data = await res.json();
+    setPaying(null);
+    if (data.authorization_url) {
+      window.location.href = data.authorization_url;
+    } else {
+      alert(data.error || 'Failed to initialize payment');
+    }
+  }
+
   return (
     <div className="dash-content">
+      {/* Payment result banners */}
+      {paymentResult === 'success' && (
+        <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', color: '#065f46', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: '0.9rem', fontWeight: 500 }}>
+          ✓ Payment successful! Your appointment has been confirmed.
+        </div>
+      )}
+      {paymentResult === 'failed' && (
+        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: '0.9rem', fontWeight: 500 }}>
+          Payment was not completed. Please try again or contact us.
+        </div>
+      )}
+
       {/* Header */}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -190,37 +229,47 @@ export default function PatientAppointmentsPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {appointments.map(a => (
-            <div key={a.id} className="skeu-card" style={{ padding: '18px 20px' }}>
+          {appointments.map(appt => (
+            <div key={appt.id} className="skeu-card" style={{ padding: '18px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{
                     padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600,
-                    background: a.type === 'home' ? '#05966918' : '#1b3d5e18',
-                    color: a.type === 'home' ? '#059669' : 'var(--primary)',
+                    background: appt.type === 'home' ? '#05966918' : '#1b3d5e18',
+                    color: appt.type === 'home' ? '#059669' : 'var(--primary)',
                   }}>
-                    {a.type === 'home' ? 'Home Visit' : 'Hospital Visit'}
+                    {appt.type === 'home' ? 'Home Visit' : 'Hospital Visit'}
                   </span>
-                  <StatusBadge status={a.status} />
+                  <StatusBadge status={appt.status} />
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(a.created_at)}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(appt.created_at)}</div>
               </div>
 
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ fontSize: '0.88rem', color: 'var(--text-head)', fontWeight: 500 }}>
-                  {a.hospital_name || 'Pending assignment'}
+                  {appt.hospital_name || 'Pending assignment'}
                 </div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Preferred: {a.scheduled_date ? formatDate(a.scheduled_date) : (a.preferred_date ? formatDate(a.preferred_date) : 'No date set')}
+                  Preferred: {appt.scheduled_date ? formatDate(appt.scheduled_date) : (appt.preferred_date ? formatDate(appt.preferred_date) : 'No date set')}
                 </div>
-                {a.notes && (
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-body)', marginTop: 4 }}>{a.notes}</div>
+                {appt.notes && (
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-body)', marginTop: 4 }}>{appt.notes}</div>
                 )}
-                {a.status === 'quoted' && a.quoted_price != null && (
-                  <div style={{ marginTop: 8 }}>
-                    <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '4px 12px', borderRadius: 20, fontSize: '0.82rem', fontWeight: 600 }}>
-                      Quoted: ₦{(a.quoted_price / 100).toLocaleString('en-NG')}
-                    </span>
+                {appt.status === 'quoted' && appt.quoted_price != null && (
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+                      Quoted: ₦{(appt.quoted_price / 100).toLocaleString('en-NG')} + ₦{((appt.service_fee || 100000) / 100).toLocaleString('en-NG')} service fee
+                      {' = '}
+                      <strong style={{ color: 'var(--text-head)' }}>₦{((appt.quoted_price + (appt.service_fee || 100000)) / 100).toLocaleString('en-NG')} total</strong>
+                    </div>
+                    <button
+                      className="skeu-btn-accent"
+                      style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+                      onClick={() => handlePayNow(appt.id)}
+                      disabled={paying === appt.id}
+                    >
+                      {paying === appt.id ? 'Redirecting\u2026' : `Pay \u20a6${((appt.quoted_price + (appt.service_fee || 100000)) / 100).toLocaleString('en-NG')}`}
+                    </button>
                   </div>
                 )}
               </div>
