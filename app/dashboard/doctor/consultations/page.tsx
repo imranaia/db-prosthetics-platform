@@ -1,21 +1,63 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect, useState } from 'react';
-import { Stethoscope, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Upload, Trash2 } from 'lucide-react';
+import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+
+/* ─── Types ─── */
+interface PhysicalRow { findings: string; notes: string; }
+interface PhysicalAssessment {
+  residual_limb: PhysicalRow;
+  rom: PhysicalRow;
+  muscle_strength: PhysicalRow;
+  sensation_pain: PhysicalRow;
+  gait: PhysicalRow;
+  functional_mobility: PhysicalRow;
+}
+
+const EMPTY_PA: PhysicalAssessment = {
+  residual_limb:       { findings: '', notes: '' },
+  rom:                 { findings: '', notes: '' },
+  muscle_strength:     { findings: '', notes: '' },
+  sensation_pain:      { findings: '', notes: '' },
+  gait:                { findings: '', notes: '' },
+  functional_mobility: { findings: '', notes: '' },
+};
+
+const PA_ROWS: { key: keyof PhysicalAssessment; label: string }[] = [
+  { key: 'residual_limb',       label: 'Residual Limb: Condition, Length, Shape, Skin' },
+  { key: 'rom',                 label: 'Range of Motion (ROM)' },
+  { key: 'muscle_strength',     label: 'Muscle Strength' },
+  { key: 'sensation_pain',      label: 'Sensation / Pain' },
+  { key: 'gait',                label: 'Gait Analysis (if applicable)' },
+  { key: 'functional_mobility', label: 'Functional Mobility (e.g., Transfers, Balance)' },
+];
+
+interface Patient { id: number; full_name: string; }
 
 interface Consultation {
   id: number;
   patient_name: string;
-  assessor_name: string;
-  chief_complaint: string;
-  medical_history: string;
+  assessor_name: string | null;
+  chief_complaint: string | null;
+  medical_history: string | null;
   physical_assessment: string | null;
-  patient_goals: string;
-  recommended_device: string;
-  notes: string;
+  patient_goals: string | null;
+  recommended_device: string | null;
+  followup_date: string | null;
+  notes: string | null;
+  body_parts: string | null;
+  photos: string | null;
   consent_given: number;
   created_at: string;
+}
+
+interface PhotoEntry { type: 'injury' | 'existing'; url: string; }
+
+function tryParse<T>(str: string | null, fallback: T): T {
+  if (!str) return fallback;
+  try { return JSON.parse(str) as T; } catch { return fallback; }
 }
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
@@ -37,71 +79,99 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function tryParse<T>(str: string | null, fallback: T): T {
-  if (!str) return fallback;
-  try { return JSON.parse(str) as T; } catch { return fallback; }
-}
-
-interface PARow { label: string; findings: string; notes: string; }
-const PA_LABELS = ['Residual Limb', 'ROM', 'Muscle Strength', 'Sensation/Pain', 'Gait', 'Functional Mobility'];
-
-function formatDate(dt: string) {
+function formatDate(dt: string | null) {
   if (!dt) return '—';
   return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function ConsultationDetail({ c }: { c: Consultation }) {
-  const pa = tryParse<PARow[]>(c.physical_assessment, []);
+  const bodyParts: BodyPart[] = tryParse(c.body_parts, []);
+  const photos: { type: string; url: string }[] = tryParse(c.photos, []);
+  const pa: PhysicalAssessment = tryParse(c.physical_assessment, EMPTY_PA);
+
   return (
-    <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: 18 }}>
-      <SectionHeader number="1" title="Chief Complaint & History" />
-      <Field label="Chief Complaint" value={c.chief_complaint} />
-      <Field label="Medical History" value={c.medical_history} />
-
-      <SectionHeader number="2" title="Physical Assessment" />
-      {pa.length === 0 ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: 14 }}>No data recorded.</div>
-      ) : (
-        <div style={{ overflowX: 'auto', marginBottom: 16 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-base)' }}>
-                {['Category', 'Findings', 'Notes'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-card)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {PA_LABELS.map((label, i) => {
-                const row = pa[i] || { label, findings: '', notes: '' };
-                return (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-head)', whiteSpace: 'nowrap' }}>{label}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-body)' }}>{row.findings || '—'}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-body)' }}>{row.notes || '—'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <SectionHeader number="3" title="Patient Goals & Device" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
-        <Field label="Patient Goals" value={c.patient_goals} />
-        <Field label="Recommended Device" value={c.recommended_device} />
+    <div style={{ padding: '20px 24px', background: 'rgba(37,79,122,0.02)', borderTop: '1px solid var(--border-card)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        <Field label="Patient" value={c.patient_name} />
+        <Field label="Date" value={formatDate(c.created_at)} />
+        <Field label="Assessor" value={c.assessor_name || '—'} />
+        <Field label="Follow-up Date" value={formatDate(c.followup_date)} />
       </div>
 
-      <SectionHeader number="4" title="Notes & Consent" />
-      <Field label="General Notes" value={c.notes} />
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>Consent</div>
-        {c.consent_given ? (
-          <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.9rem' }}>Given</span>
-        ) : (
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Not recorded</span>
-        )}
+      <SectionHeader number="1" title="Medical & Social History" />
+      <Field label="Chief Complaint" value={c.chief_complaint || '—'} />
+      <Field label="Medical History" value={c.medical_history || '—'} />
+
+      {bodyParts.length > 0 && (
+        <>
+          <SectionHeader number="2" title="Affected Body Area" />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+            {bodyParts.map((bp, i) => (
+              <span key={i} style={{ display: 'inline-flex', padding: '4px 12px', borderRadius: 20, background: 'rgba(208,140,42,0.12)', border: '1px solid rgba(208,140,42,0.35)', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 500 }}>
+                {bp.label}{bp.subParts?.length ? ` (${bp.subParts.join(', ')})` : ''}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+
+      <SectionHeader number="3" title="Physical Assessment" />
+      <div style={{ overflowX: 'auto', marginBottom: 20 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+          <thead>
+            <tr style={{ background: 'rgba(37,79,122,0.06)' }}>
+              <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid var(--border-card)', width: '35%', color: 'var(--text-head)', fontWeight: 600 }}>Parameter</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid var(--border-card)', color: 'var(--text-head)', fontWeight: 600 }}>Findings</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid var(--border-card)', color: 'var(--text-head)', fontWeight: 600 }}>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PA_ROWS.map(row => (
+              <tr key={row.key}>
+                <td style={{ padding: '8px 12px', border: '1px solid var(--border-card)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>{row.label}</td>
+                <td style={{ padding: '8px 12px', border: '1px solid var(--border-card)', color: 'var(--text-body)' }}>{pa[row.key]?.findings || '—'}</td>
+                <td style={{ padding: '8px 12px', border: '1px solid var(--border-card)', color: 'var(--text-body)' }}>{pa[row.key]?.notes || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <SectionHeader number="4" title="Patient Goals & Treatment Plan" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        <Field label="Patient Goals" value={c.patient_goals || '—'} />
+        <Field label="Recommended Device" value={c.recommended_device || '—'} />
+      </div>
+
+      {c.notes && (
+        <>
+          <SectionHeader number="5" title="Additional Notes" />
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.7, marginBottom: 20 }}>{c.notes}</div>
+        </>
+      )}
+
+      {photos.length > 0 && (
+        <>
+          <SectionHeader number="6" title="Clinical Photographs" />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+            {photos.map((ph, i) => (
+              <div key={i}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', fontWeight: 600 }}>
+                  {ph.type === 'injury' ? 'Injury / Amputation Site' : 'Existing Limb Reference'}
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ph.url} alt={ph.type} style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border-card)' }} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, background: c.consent_given ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.05)', border: `1px solid ${c.consent_given ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.15)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: '1rem' }}>{c.consent_given ? '✓' : '✗'}</span>
+        <span style={{ fontSize: '0.82rem', color: c.consent_given ? '#065f46' : '#991b1b' }}>
+          {c.consent_given ? 'Consent obtained and recorded' : 'Consent not yet recorded'}
+        </span>
       </div>
     </div>
   );
@@ -110,71 +180,337 @@ function ConsultationDetail({ c }: { c: Consultation }) {
 export default function DoctorConsultationsPage() {
   const { user, loading } = useAuth();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState<'injury' | 'existing' | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
+  const today = new Date().toISOString().split('T')[0];
+
+  const [form, setForm] = useState({
+    patient_id: '',
+    assessor_name: '',
+    chief_complaint: '',
+    medical_history: '',
+    patient_goals: '',
+    recommended_device: '',
+    followup_date: '',
+    notes: '',
+    consent_given: false,
+    assessment_date: today,
+  });
+
+  const [physicalAssessment, setPhysicalAssessment] = useState<PhysicalAssessment>(EMPTY_PA);
+  const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
+  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
+
+  const injuryInputRef   = useRef<HTMLInputElement>(null);
+  const existingInputRef = useRef<HTMLInputElement>(null);
+
+  const load = () => {
     fetch('/api/doctor/consultations')
       .then(r => r.json())
       .then(data => {
         if (data.consultations) setConsultations(data.consultations);
+        if (data.patients) setPatients(data.patients);
         setDataLoading(false);
       })
       .catch(() => setDataLoading(false));
-  }, [user]);
+  };
+
+  useEffect(() => { if (user) load(); }, [user]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'doctor') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
+  function updatePA(key: keyof PhysicalAssessment, field: 'findings' | 'notes', value: string) {
+    setPhysicalAssessment(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  }
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>, type: 'injury' | 'existing') {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(type);
+    setUploadError('');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', 'db-prosthetics/consultations');
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok || data.error) { setUploadError(data.error || 'Upload failed'); }
+      else { setPhotos(prev => [...prev, { type, url: data.url! }]); }
+    } catch { setUploadError('Upload failed — network error'); }
+    finally { setUploadingPhoto(null); e.target.value = ''; }
+  }
+
+  function removePhoto(url: string) { setPhotos(prev => prev.filter(p => p.url !== url)); }
+
+  function resetForm() {
+    setForm({ patient_id: '', assessor_name: '', chief_complaint: '', medical_history: '', patient_goals: '', recommended_device: '', followup_date: '', notes: '', consent_given: false, assessment_date: today });
+    setPhysicalAssessment(EMPTY_PA);
+    setBodyParts([]);
+    setPhotos([]);
+    setError('');
+    setUploadError('');
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    const res = await fetch('/api/doctor/consultations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patient_id:          parseInt(form.patient_id),
+        assessor_name:       form.assessor_name,
+        chief_complaint:     form.chief_complaint,
+        medical_history:     form.medical_history,
+        physical_assessment: physicalAssessment,
+        patient_goals:       form.patient_goals,
+        recommended_device:  form.recommended_device,
+        followup_date:       form.followup_date || null,
+        notes:               form.notes,
+        consent_given:       form.consent_given ? 1 : 0,
+        body_parts:          bodyParts,
+        photos,
+      }),
+    });
+    setSubmitting(false);
+    if (res.ok) { resetForm(); setShowForm(false); setDataLoading(true); load(); }
+    else { const d = await res.json() as { error?: string }; setError(d.error || 'Failed to save consultation'); }
+  }
+
   const q = search.toLowerCase();
   const filtered = consultations.filter(c =>
     c.patient_name?.toLowerCase().includes(q) ||
-    c.chief_complaint?.toLowerCase().includes(q)
+    (c.chief_complaint || '').toLowerCase().includes(q)
   );
 
   return (
     <div className="dash-content">
+      {/* Header */}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Stethoscope size={22} color="var(--primary)" />
           </div>
-          <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Consultations</h1>
+          <div>
+            <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>Consultations</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 2 }}>Standard P&O Assessment Forms</p>
+          </div>
         </div>
-        <input
-          type="search"
-          className="skeu-input"
-          placeholder="Search patient or complaint..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ width: 280 }}
-        />
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="search"
+            className="skeu-input"
+            placeholder="Search patient or complaint..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: 240 }}
+          />
+          <button
+            className="skeu-btn-primary"
+            onClick={() => { if (showForm) { resetForm(); setShowForm(false); } else setShowForm(true); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7 }}
+          >
+            {showForm ? <><X size={15} />Cancel</> : <><Plus size={15} />New Consultation</>}
+          </button>
+        </div>
       </div>
 
+      {/* Form */}
+      {showForm && (
+        <div className="skeu-card" style={{ padding: 28, marginBottom: 24 }}>
+          <div style={{ borderBottom: '2px solid var(--primary)', paddingBottom: 16, marginBottom: 24 }}>
+            <h2 className="font-display" style={{ fontSize: '1.15rem', color: 'var(--text-head)', fontWeight: 600, margin: 0 }}>
+              Standard Prosthetics &amp; Orthotics Assessment Form
+            </h2>
+          </div>
+
+          {error && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: '0.85rem' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {/* Patient + Assessor + Date */}
+            <div className="form-grid-2" style={{ marginBottom: 20 }}>
+              <div>
+                <label className="skeu-label">Patient <span style={{ color: '#dc2626' }}>*</span></label>
+                <select className="skeu-select" value={form.patient_id} onChange={e => setForm({ ...form, patient_id: e.target.value })} required>
+                  <option value="">Select a patient…</option>
+                  {patients.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="skeu-label">Assessor Name</label>
+                <input className="skeu-input" value={form.assessor_name} onChange={e => setForm({ ...form, assessor_name: e.target.value })} placeholder="Full name of assessor…" />
+              </div>
+            </div>
+
+            {/* Section 1 */}
+            <SectionHeader number="1" title="Medical & Social History" />
+            <div style={{ marginBottom: 16 }}>
+              <label className="skeu-label">Chief Complaint / Reason for Referral <span style={{ color: '#dc2626' }}>*</span></label>
+              <textarea className="skeu-input" rows={2} value={form.chief_complaint} onChange={e => setForm({ ...form, chief_complaint: e.target.value })} placeholder="Primary reason for referral…" style={{ resize: 'vertical' }} required />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label className="skeu-label">Relevant Medical History</label>
+              <textarea className="skeu-input" rows={3} value={form.medical_history} onChange={e => setForm({ ...form, medical_history: e.target.value })} placeholder="Diagnosis, amputation details, comorbidities…" style={{ resize: 'vertical' }} />
+            </div>
+
+            {/* Section 2 — Body diagram */}
+            <SectionHeader number="2" title="Affected Body Area" />
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10, marginTop: 0 }}>
+              Click on the body diagram to mark the affected region(s). For hands/feet, select specific fingers or toes.
+            </p>
+            <BodySelector value={bodyParts} onChange={setBodyParts} />
+
+            {/* Section 3 — Physical Assessment */}
+            <div style={{ marginTop: 24 }}>
+              <SectionHeader number="3" title="Physical Assessment" />
+            </div>
+            <div style={{ overflowX: 'auto', marginBottom: 24 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(37,79,122,0.06)' }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid var(--border-card)', width: '35%', color: 'var(--text-head)', fontWeight: 600 }}>Parameter</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid var(--border-card)', color: 'var(--text-head)', fontWeight: 600 }}>Findings</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid var(--border-card)', color: 'var(--text-head)', fontWeight: 600 }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {PA_ROWS.map(row => (
+                    <tr key={row.key} style={{ borderBottom: '1px solid var(--border-card)' }}>
+                      <td style={{ padding: '10px 12px', fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>{row.label}</td>
+                      <td style={{ padding: '6px 8px' }}>
+                        <input className="skeu-input" style={{ margin: 0, fontSize: '0.82rem' }} value={physicalAssessment[row.key].findings} onChange={e => updatePA(row.key, 'findings', e.target.value)} placeholder="Findings…" />
+                      </td>
+                      <td style={{ padding: '6px 8px' }}>
+                        <input className="skeu-input" style={{ margin: 0, fontSize: '0.82rem' }} value={physicalAssessment[row.key].notes} onChange={e => updatePA(row.key, 'notes', e.target.value)} placeholder="Notes…" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 4 — Goals & Plan */}
+            <SectionHeader number="4" title="Patient Goals & Treatment Plan" />
+            <div style={{ marginBottom: 16 }}>
+              <label className="skeu-label">Patient Goals</label>
+              <textarea className="skeu-input" rows={2} value={form.patient_goals} onChange={e => setForm({ ...form, patient_goals: e.target.value })} placeholder="What does the patient hope to achieve…" style={{ resize: 'vertical' }} />
+            </div>
+            <div className="form-grid-2" style={{ marginBottom: 24 }}>
+              <div>
+                <label className="skeu-label">Recommended Device / Intervention</label>
+                <input className="skeu-input" value={form.recommended_device} onChange={e => setForm({ ...form, recommended_device: e.target.value })} placeholder="e.g. Below-knee prosthesis…" />
+              </div>
+              <div>
+                <label className="skeu-label">Follow-up / Review Date</label>
+                <input type="date" className="skeu-input" value={form.followup_date} onChange={e => setForm({ ...form, followup_date: e.target.value })} />
+              </div>
+            </div>
+
+            {/* Section 5 — Photos */}
+            <SectionHeader number="5" title="Clinical Photographs" />
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10, marginTop: 0 }}>
+              Attach photos of the injury/amputation site or an existing limb for reference.
+            </p>
+
+            {uploadError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '8px 12px', borderRadius: 7, marginBottom: 10, fontSize: '0.82rem' }}>{uploadError}</div>
+            )}
+
+            <input ref={injuryInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'injury')} />
+            <input ref={existingInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'existing')} />
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+              <button type="button" onClick={() => injuryInputRef.current?.click()} disabled={uploadingPhoto === 'injury'}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1.5px dashed rgba(208,140,42,0.4)', background: 'rgba(208,140,42,0.05)', color: 'var(--accent, #d08c2a)', fontSize: '0.82rem', fontWeight: 500, cursor: uploadingPhoto === 'injury' ? 'wait' : 'pointer', opacity: uploadingPhoto === 'injury' ? 0.6 : 1 }}>
+                <Upload size={13} />
+                {uploadingPhoto === 'injury' ? 'Uploading…' : 'Injury / Amputation Site Photo'}
+              </button>
+              <button type="button" onClick={() => existingInputRef.current?.click()} disabled={uploadingPhoto === 'existing'}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1.5px dashed rgba(37,79,122,0.3)', background: 'rgba(37,79,122,0.04)', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 500, cursor: uploadingPhoto === 'existing' ? 'wait' : 'pointer', opacity: uploadingPhoto === 'existing' ? 0.6 : 1 }}>
+                <Upload size={13} />
+                {uploadingPhoto === 'existing' ? 'Uploading…' : 'Existing Limb / Reference Photo (optional)'}
+              </button>
+            </div>
+
+            {photos.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                {photos.map((ph, i) => (
+                  <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ph.url} alt={ph.type} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.6rem', textAlign: 'center', padding: '2px 0', textTransform: 'uppercase' }}>{ph.type}</div>
+                    <button type="button" onClick={() => removePhoto(ph.url)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.55)', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }} aria-label="Remove photo">
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Notes */}
+            <div style={{ marginBottom: 20 }}>
+              <label className="skeu-label">Additional Notes</label>
+              <textarea className="skeu-input" rows={3} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Any additional observations…" style={{ resize: 'vertical' }} />
+            </div>
+
+            {/* Consent */}
+            <div style={{ marginBottom: 24, padding: '14px 16px', background: 'rgba(37,79,122,0.05)', borderRadius: 8, border: '1px solid rgba(37,79,122,0.12)' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input type="checkbox" checked={form.consent_given} onChange={e => setForm({ ...form, consent_given: e.target.checked })} style={{ marginTop: 2, flexShrink: 0 }} />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
+                  Patient / Guardian consents to the fabrication and fitting of artificial limb(s) by DB Prosthetics and Orthotics Ltd, as per the Consent Form for Fabrication and Fitting of Artificial Limbs. Patient has been informed of the process, risks, and benefits.
+                </span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="skeu-btn-primary" type="submit" disabled={submitting} style={{ padding: '10px 24px' }}>
+                {submitting ? 'Saving…' : 'Save Assessment'}
+              </button>
+              <button type="button" onClick={() => { resetForm(); setShowForm(false); }}
+                style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* List */}
       <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
         {dataLoading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading consultations...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            {consultations.length === 0 ? 'No consultations recorded yet.' : 'No consultations match your search.'}
-          </div>
         ) : (
           <div className="table-scroll">
             <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
                   {['Patient', 'Chief Complaint', 'Recommended Device', 'Date', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {h}
-                    </th>
+                    <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => {
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    {consultations.length === 0 ? 'No consultations recorded yet. Use the button above to create the first one.' : 'No consultations match your search.'}
+                  </td></tr>
+                ) : filtered.map(c => {
                   const isExp = expanded === c.id;
                   return (
                     <>
@@ -184,12 +520,10 @@ export default function DoctorConsultationsPage() {
                         onClick={() => setExpanded(isExp ? null : c.id)}
                       >
                         <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-head)' }}>{c.patient_name || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)', maxWidth: 220 }}>{c.chief_complaint || '—'}</td>
+                        <td style={{ padding: '14px 16px', color: 'var(--text-body)', maxWidth: 220 }}>{c.chief_complaint ? c.chief_complaint.slice(0, 60) + (c.chief_complaint.length > 60 ? '…' : '') : '—'}</td>
                         <td style={{ padding: '14px 16px' }}>
                           {c.recommended_device ? (
-                            <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500 }}>
-                              {c.recommended_device}
-                            </span>
+                            <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500 }}>{c.recommended_device}</span>
                           ) : '—'}
                         </td>
                         <td style={{ padding: '14px 16px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</td>
@@ -199,7 +533,7 @@ export default function DoctorConsultationsPage() {
                       </tr>
                       {isExp && (
                         <tr key={`${c.id}-exp`} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                          <td colSpan={5} style={{ padding: '20px 24px', background: 'rgba(27,61,94,0.02)' }}>
+                          <td colSpan={5} style={{ padding: 0 }}>
                             <ConsultationDetail c={c} />
                           </td>
                         </tr>
