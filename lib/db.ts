@@ -69,10 +69,22 @@ function migrate(database: Database.Database): void {
 
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
 
-    database.transaction(() => {
-      database.exec(sql);
-      database.prepare('INSERT INTO _migrations (filename) VALUES (?)').run(file);
-    })();
+    // Some migrations rebuild a table (SQLite has no ALTER COLUMN) via
+    // CREATE new + copy + DROP old + RENAME. If other tables hold live
+    // foreign keys into the table being dropped, that DROP is rejected
+    // with FK enforcement on — even though the data itself never becomes
+    // inconsistent, since we copy rows (including ids) verbatim first.
+    // Foreign keys can't be toggled inside a transaction, so this has to
+    // wrap the transaction, not sit inside it.
+    database.pragma('foreign_keys = OFF');
+    try {
+      database.transaction(() => {
+        database.exec(sql);
+        database.prepare('INSERT INTO _migrations (filename) VALUES (?)').run(file);
+      })();
+    } finally {
+      database.pragma('foreign_keys = ON');
+    }
 
     console.log(`[db] Applied migration: ${file}`);
   }
