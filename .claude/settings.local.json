@@ -79,7 +79,23 @@
       "Bash(rm -f app/api/doctor/consent/route.ts)",
       "Bash(rm -f /tmp/pov.txt)",
       "Bash(rm -f /tmp/ob.txt)",
-      "Bash(rm -f /tmp/fha.txt /tmp/fpo.txt /tmp/fp.txt)"
+      "Bash(rm -f /tmp/fha.txt /tmp/fpo.txt /tmp/fp.txt)",
+      "Skill(run)",
+      "Bash(command -v chromium-cli)",
+      "Bash(node \"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-LENOVO-OneDrive-Desktop-db-prosthetics-platform\\\\f11fd512-fd48-4d50-a123-ae58e3c3dcf4\\\\scratchpad\\\\mobile_check.js\")",
+      "Bash(node _mobile_check.js)",
+      "Bash(node _mobile_check2.js)",
+      "Bash(rm -f _mobile_check.js _mobile_check2.js)",
+      "Bash(rm -rf _mobile_shots)",
+      "Bash(xxd)",
+      "Bash(node _fix_escape.js)",
+      "Bash(node _fix2.js)",
+      "Bash(node _fix3.js)",
+      "Bash(rm _fix3.js)",
+      "Bash(rm -f /tmp/vf.txt)",
+      "Bash(railway deployment *)",
+      "Bash(railway domain *)",
+      "Bash(node _verify_viewport.js)"
     ]
   }
 }

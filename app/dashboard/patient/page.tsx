@@ -93,7 +93,7 @@ export default function PatientPage() {
             Welcome back, {dataLoading ? '...' : (patient?.full_name ?? 'Patient')}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '6px' }}>
-            Patient Portal \u2014 DB Prosthetics &amp; Orthotics Ltd
+            Patient Portal — DB Prosthetics &amp; Orthotics Ltd
           </p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export default function PatientPage() {
           </div>
           <div>
             <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-head)', lineHeight: 1 }}>
-              {dataLoading ? '\u2014' : consultations.length}
+              {dataLoading ? '—' : consultations.length}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Total Consultations</div>
           </div>
@@ -118,7 +118,7 @@ export default function PatientPage() {
           </div>
           <div>
             <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-head)', lineHeight: 1 }}>
-              {dataLoading ? '\u2014' : upcomingAppointments.length}
+              {dataLoading ? '—' : upcomingAppointments.length}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Upcoming Appointments</div>
           </div>
@@ -130,7 +130,7 @@ export default function PatientPage() {
           </div>
           <div>
             <div style={{ fontSize: dataLoading ? '1.75rem' : lastVisit ? '1rem' : '1.75rem', fontWeight: 700, color: 'var(--text-head)', lineHeight: 1 }}>
-              {dataLoading ? '\u2014' : lastVisit ? formatDate(lastVisit) : 'No visits yet'}
+              {dataLoading ? '—' : lastVisit ? formatDate(lastVisit) : 'No visits yet'}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Last Visit</div>
           </div>
