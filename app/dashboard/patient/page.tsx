@@ -137,8 +137,8 @@ export default function PatientPage() {
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', alignItems: 'start' }}>
+      {/* Two-column layout — stacks to 1 column under 768px via .chart-grid */}
+      <div className="chart-grid" style={{ alignItems: 'start' }}>
         {/* Left: Recent Consultations */}
         <div className="skeu-card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>

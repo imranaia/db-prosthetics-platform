@@ -65,7 +65,16 @@
       "Bash(cd C:\\\\Users\\\\LENOVO\\\\OneDrive\\\\Desktop\\\\db-prosthetics-platform *)",
       "Bash(taskkill //F //PID 1980)",
       "Bash(curl -s http://localhost:3000/api/auth/me)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_OperatingSystem | Select-Object TotalVisibleMemorySize,FreePhysicalMemory\")",
+      "Bash(wmic OS get FreePhysicalMemory,TotalVisibleMemorySize)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(rm -f /tmp/ha2.txt /tmp/po2.txt)",
+      "Bash(rm -f /tmp/vha.txt /tmp/vp.txt)",
+      "Bash(rm -f /tmp/cvha.txt /tmp/cvp.txt)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);const f=j.forms[0];console.log\\('patient:',f.patient_name,'hospital:',f.hospital_name,'sigs:',!!f.patient_guardian_signature,!!f.witness_signature,!!f.clinician_signature\\);}\\);\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\('count:',j.forms.length, j.forms[0]?.patient_name\\);}\\);\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\('count:',j.forms.length, j.forms[0]?.hospital_name\\);}\\);\")"
     ]
   }
 }

@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { ClipboardCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import SignaturePad from '@/components/forms/SignaturePad';
 
 interface DischargeForm {
   id: number;
@@ -24,6 +25,8 @@ interface DischargeForm {
   next_appointment: string | null;
   prosthetist_name: string | null;
   patient_signature_name: string | null;
+  prosthetist_signature: string | null;
+  patient_signature: string | null;
   created_at: string;
 }
 
@@ -75,7 +78,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="2" title="Training & Education Provided" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { key: 'training_donning' as const, label: 'Donning / Doffing' },
           { key: 'training_care' as const, label: 'Care & Maintenance' },
@@ -90,7 +93,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="3" title="Discharge Summary" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Discharge Date</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{formatDate(form.discharge_date)}</div>
@@ -112,14 +115,14 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="4" title="Signatures" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Prosthetist / Orthotist</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{form.prosthetist_name || '—'}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Prosthetist / Orthotist — {form.prosthetist_name || '—'}</div>
+          <SignaturePad value={form.prosthetist_signature} disabled height={90} />
         </div>
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Patient / Caregiver</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{form.patient_signature_name || '—'}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Patient / Caregiver — {form.patient_signature_name || '—'}</div>
+          <SignaturePad value={form.patient_signature} disabled height={90} />
         </div>
       </div>
     </div>

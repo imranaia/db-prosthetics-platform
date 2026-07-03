@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
       c.recommended_device,
       c.followup_date,
       c.consent_given,
+      c.assessor_signature,
+      c.patient_signature,
       p.full_name AS patient_name,
       u.email     AS doctor_email,
       h.name      AS hospital_name,
@@ -87,6 +89,8 @@ export async function POST(req: NextRequest) {
     followup_date?: string | null;
     notes?: string;
     consent_given?: number;
+    assessor_signature?: string | null;
+    patient_signature?: string | null;
     body_parts?: unknown;
     photos?: unknown;
   };
@@ -103,6 +107,8 @@ export async function POST(req: NextRequest) {
     followup_date,
     notes,
     consent_given,
+    assessor_signature,
+    patient_signature,
     body_parts,
     photos,
   } = body;
@@ -142,9 +148,11 @@ export async function POST(req: NextRequest) {
       followup_date,
       notes,
       consent_given,
+      assessor_signature,
+      patient_signature,
       body_parts,
       photos
-    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     patient_id,
     hospital_id ?? null,
@@ -157,6 +165,8 @@ export async function POST(req: NextRequest) {
     followup_date || null,
     notes?.trim() || null,
     consent_given ?? 0,
+    assessor_signature ?? null,
+    patient_signature ?? null,
     bodyPartsStr,
     photosStr,
   );

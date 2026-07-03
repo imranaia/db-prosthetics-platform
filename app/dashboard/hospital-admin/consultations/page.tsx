@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { Stethoscope, ChevronDown, ChevronUp } from 'lucide-react';
+import SignaturePad from '@/components/forms/SignaturePad';
 
 interface Consultation {
   id: number;
@@ -16,6 +17,8 @@ interface Consultation {
   recommended_device: string;
   notes: string;
   consent_given: number;
+  assessor_signature: string | null;
+  patient_signature: string | null;
   created_at: string;
 }
 
@@ -89,7 +92,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
       )}
 
       <SectionHeader number="3" title="Patient Goals & Device" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 24px' }}>
         <Field label="Patient Goals" value={c.patient_goals} />
         <Field label="Recommended Device" value={c.recommended_device} />
       </div>
@@ -104,6 +107,18 @@ function ConsultationDetail({ c }: { c: Consultation }) {
           <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Not recorded</span>
         )}
       </div>
+      {(c.assessor_signature || c.patient_signature) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginTop: 12 }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Prosthetist / Orthotist Signature</div>
+            <SignaturePad value={c.assessor_signature} disabled height={80} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Patient / Guardian Signature</div>
+            <SignaturePad value={c.patient_signature} disabled height={80} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Building2, Package, Users, ShoppingCart,
-  Boxes, Menu, X, LogOut, Layout, UserCircle, Repeat, CalendarDays,
+  Boxes, Menu, X, LogOut, Layout, UserCircle, Repeat, CalendarDays, FileSignature,
 } from 'lucide-react';
 
 interface NavItem {
@@ -34,6 +34,7 @@ const DEFAULT_NAV: NavItem[] = [
   { label: 'Products',        href: '/dashboard/super-admin/products',        icon: Package },
   { label: 'Patients',        href: '/dashboard/super-admin/patients',        icon: Users },
   { label: 'Appointments',    href: '/dashboard/super-admin/appointments',    icon: CalendarDays },
+  { label: 'Consent Forms',   href: '/dashboard/super-admin/consent',         icon: FileSignature },
   { label: 'Orders',          href: '/dashboard/super-admin/orders',          icon: ShoppingCart },
   { label: 'Inventory',       href: '/dashboard/super-admin/inventory',       icon: Boxes },
   { label: 'Edit Landing Page', href: '/dashboard/super-admin/landing-editor', icon: Layout },

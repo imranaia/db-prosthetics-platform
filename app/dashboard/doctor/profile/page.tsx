@@ -181,7 +181,7 @@ export default function DoctorProfilePage() {
         ) : editing ? (
           <form onSubmit={handleEditSubmit}>
             {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Specialization</label><input className="skeu-input" value={editForm.specialization ?? ''} onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} /></div>
@@ -211,7 +211,7 @@ export default function DoctorProfilePage() {
 
             <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Personal Information</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 18 }}>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input className="skeu-input" value={editForm.dob ?? ''} onChange={e => setEditForm({ ...editForm, dob: e.target.value })} placeholder="YYYY-MM-DD" /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input className="skeu-input" value={editForm.gender ?? ''} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} placeholder="e.g. Male, Female" /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input className="skeu-input" value={editForm.marital_status ?? ''} onChange={e => setEditForm({ ...editForm, marital_status: e.target.value })} placeholder="e.g. Single, Married" /></div>
@@ -221,7 +221,7 @@ export default function DoctorProfilePage() {
 
             <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Next of Kin</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 18 }}>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.next_of_kin_name ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_name: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Relationship</label><input className="skeu-input" value={editForm.next_of_kin_relationship ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_relationship: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.next_of_kin_phone ?? ''} onChange={e => setEditForm({ ...editForm, next_of_kin_phone: e.target.value })} /></div>
@@ -234,7 +234,7 @@ export default function DoctorProfilePage() {
           </form>
         ) : doctor ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
               <Field label="Full Name" value={doctor.full_name || ''} />
               <Field label="Email" value={doctor.email} />
               <Field label="Phone" value={doctor.phone || ''} />
@@ -248,7 +248,7 @@ export default function DoctorProfilePage() {
 
             <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
             <SectionHeader number="2" title="Personal Information" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
               <Field label="Date of Birth" value={doctor.dob} />
               <Field label="Gender" value={doctor.gender} />
               <Field label="Marital Status" value={doctor.marital_status} />
@@ -258,7 +258,7 @@ export default function DoctorProfilePage() {
 
             <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
             <SectionHeader number="3" title="Next of Kin" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
               <Field label="Full Name" value={doctor.next_of_kin_name} />
               <Field label="Relationship" value={doctor.next_of_kin_relationship} />
               <Field label="Phone" value={doctor.next_of_kin_phone} />

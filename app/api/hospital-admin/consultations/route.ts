@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   const consultations = db
     .prepare(
       `SELECT c.id, c.assessor_name, c.chief_complaint, c.recommended_device, c.created_at, c.consent_given,
+              c.assessor_signature, c.patient_signature,
               p.full_name AS patient_name, p.phone AS patient_phone
        FROM consultations c
        LEFT JOIN patients p ON c.patient_id = p.id

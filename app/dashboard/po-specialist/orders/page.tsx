@@ -444,7 +444,7 @@ export default function POOrdersPage() {
               {/* Photo upload - two sections */}
               <div style={{ marginBottom: 18 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Reference Photos</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
                   {/* Affected limb photos */}
                   <div>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 8 }}>Affected Limb/Part Photos <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>

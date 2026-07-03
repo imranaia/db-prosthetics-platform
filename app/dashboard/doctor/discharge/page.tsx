@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { ClipboardCheck, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import SignaturePad from '@/components/forms/SignaturePad';
 
 interface Patient { id: number; full_name: string; }
 interface Consultation { id: number; patient_name: string; chief_complaint: string | null; created_at: string; }
@@ -27,6 +28,8 @@ interface DischargeForm {
   next_appointment: string | null;
   prosthetist_name: string | null;
   patient_signature_name: string | null;
+  prosthetist_signature: string | null;
+  patient_signature: string | null;
   created_at: string;
 }
 
@@ -58,6 +61,8 @@ const INITIAL_FORM = {
   next_appointment: '',
   prosthetist_name: '',
   patient_signature_name: '',
+  prosthetist_signature: null as string | null,
+  patient_signature: null as string | null,
 };
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
@@ -99,7 +104,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="2" title="Training & Education Provided" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { key: 'training_donning' as const, label: 'Donning / Doffing' },
           { key: 'training_care' as const, label: 'Care & Maintenance' },
@@ -114,7 +119,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="3" title="Discharge Summary" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Discharge Date</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{formatDate(form.discharge_date)}</div>
@@ -136,14 +141,14 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="4" title="Signatures" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Prosthetist / Orthotist</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{form.prosthetist_name || '—'}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Prosthetist / Orthotist — {form.prosthetist_name || '—'}</div>
+          <SignaturePad value={form.prosthetist_signature} disabled height={90} />
         </div>
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Patient / Caregiver</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{form.patient_signature_name || '—'}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Patient / Caregiver — {form.patient_signature_name || '—'}</div>
+          <SignaturePad value={form.patient_signature} disabled height={90} />
         </div>
       </div>
     </div>
@@ -248,7 +253,7 @@ export default function DoctorDischargePage() {
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 20 }}>New Discharge Form</h2>
           <form onSubmit={handleSubmit}>
             {/* Patient + Consultation */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient <span style={{ color: '#dc2626' }}>*</span></label>
                 <select className="skeu-select" style={{ width: '100%' }} value={form.patient_id as unknown as string}
@@ -296,7 +301,7 @@ export default function DoctorDischargePage() {
             </div>
 
             <SectionHeader number="2" title="Training & Education Provided" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
               {[
                 { key: 'training_donning' as const, label: 'Donning / Doffing' },
                 { key: 'training_care' as const, label: 'Care & Maintenance' },
@@ -311,7 +316,7 @@ export default function DoctorDischargePage() {
             </div>
 
             <SectionHeader number="3" title="Discharge Summary" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Discharge Date</label>
                 <input type="date" className="skeu-input" style={{ width: '100%' }} value={form.discharge_date} onChange={e => setForm({ ...form, discharge_date: e.target.value })} />
@@ -341,15 +346,16 @@ export default function DoctorDischargePage() {
             </div>
 
             <SectionHeader number="4" title="Signatures" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 24 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Prosthetist / Orthotist Name</label>
-                <input type="text" className="skeu-input" style={{ width: '100%' }} placeholder="Full name" value={form.prosthetist_name} onChange={e => setForm({ ...form, prosthetist_name: e.target.value })} />
+                <input type="text" className="skeu-input" style={{ width: '100%', marginBottom: 8 }} placeholder="Full name" value={form.prosthetist_name} onChange={e => setForm({ ...form, prosthetist_name: e.target.value })} />
+                <SignaturePad value={form.prosthetist_signature} onChange={sig => setForm({ ...form, prosthetist_signature: sig })} height={110} />
               </div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient / Caregiver Name</label>
-                <input type="text" className="skeu-input" style={{ width: '100%' }} placeholder="Full name" value={form.patient_signature_name} onChange={e => setForm({ ...form, patient_signature_name: e.target.value })} />
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>Digital record of name serves as acknowledgement</div>
+                <input type="text" className="skeu-input" style={{ width: '100%', marginBottom: 8 }} placeholder="Full name" value={form.patient_signature_name} onChange={e => setForm({ ...form, patient_signature_name: e.target.value })} />
+                <SignaturePad value={form.patient_signature} onChange={sig => setForm({ ...form, patient_signature: sig })} height={110} />
               </div>
             </div>
 

@@ -121,6 +121,8 @@ export async function POST(req: NextRequest) {
     followup_date?: string | null;
     notes?: string;
     consent_given?: number;
+    assessor_signature?: string | null;
+    patient_signature?: string | null;
     body_parts?: unknown;
     photos?: unknown;
   };
@@ -147,8 +149,9 @@ export async function POST(req: NextRequest) {
       patient_id, doctor_id, conducted_by_role, hospital_id,
       assessor_name, chief_complaint, medical_history, physical_assessment,
       patient_goals, recommended_device, followup_date, notes, consent_given,
+      assessor_signature, patient_signature,
       body_parts, photos
-    ) VALUES (?, ?, 'doctor', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, 'doctor', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     body.patient_id,
     doctor.id,
@@ -162,6 +165,8 @@ export async function POST(req: NextRequest) {
     body.followup_date || null,
     body.notes?.trim() || null,
     body.consent_given ?? 0,
+    body.assessor_signature ?? null,
+    body.patient_signature ?? null,
     bodyPartsStr,
     photosStr,
   );

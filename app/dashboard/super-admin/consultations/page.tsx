@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Search, Upload, Trash2 } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import SignaturePad from '@/components/forms/SignaturePad';
 
 /* ─── Types ─── */
 interface PhysicalRow { findings: string; notes: string; }
@@ -55,6 +56,8 @@ interface Consultation {
   body_parts: string | null;  // JSON
   photos: string | null;      // JSON
   consent_given: number;
+  assessor_signature: string | null;
+  patient_signature: string | null;
   created_at: string;
 }
 
@@ -122,7 +125,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
       </div>
 
       {/* Patient info */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
         <Field label="Patient" value={c.patient_name} />
         <Field label="Assessment Date" value={new Date(c.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })} />
         <Field label="Assessor" value={c.assessor_name || '—'} />
@@ -177,7 +180,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
 
       {/* Section 4 */}
       <SectionHeader number="4" title="Patient Goals & Treatment Plan" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
         <Field label="Patient Goals" value={c.patient_goals || '—'} block />
         <div>
           <Field label="Recommended Device / Intervention" value={c.recommended_device || '—'} />
@@ -215,7 +218,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
 
       {/* Consent */}
       <div style={{
-        marginTop: 16, padding: '10px 14px', borderRadius: 8,
+        marginTop: 16, marginBottom: (c.assessor_signature || c.patient_signature) ? 14 : 0, padding: '10px 14px', borderRadius: 8,
         background: c.consent_given ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.05)',
         border: `1px solid ${c.consent_given ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.15)'}`,
         display: 'flex', alignItems: 'center', gap: 8,
@@ -225,6 +228,18 @@ function ConsultationDetail({ c }: { c: Consultation }) {
           {c.consent_given ? 'Consent obtained and recorded' : 'Consent not yet recorded'}
         </span>
       </div>
+      {(c.assessor_signature || c.patient_signature) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Prosthetist / Orthotist Signature</div>
+            <SignaturePad value={c.assessor_signature} disabled height={80} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Patient / Guardian Signature</div>
+            <SignaturePad value={c.patient_signature} disabled height={80} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -261,6 +276,8 @@ export default function ConsultationsPage() {
     consent_given:     false,
     assessment_date:   today,
   });
+  const [assessorSignature, setAssessorSignature] = useState<string | null>(null);
+  const [patientSignature, setPatientSignature] = useState<string | null>(null);
 
   const [physicalAssessment, setPhysicalAssessment] = useState<PhysicalAssessment>(EMPTY_PA);
   const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
@@ -338,6 +355,8 @@ export default function ConsultationsPage() {
     setPhysicalAssessment(EMPTY_PA);
     setBodyParts([]);
     setPhotos([]);
+    setAssessorSignature(null);
+    setPatientSignature(null);
     setError('');
     setUploadError('');
   }
@@ -361,7 +380,9 @@ export default function ConsultationsPage() {
         recommended_device:  form.recommended_device,
         followup_date:       form.followup_date || null,
         notes:               form.notes,
-        consent_given:       form.consent_given ? 1 : 0,
+        consent_given:       patientSignature ? 1 : 0,
+        assessor_signature:  assessorSignature,
+        patient_signature:   patientSignature,
         body_parts:          bodyParts,
         photos,
       }),
@@ -712,19 +733,20 @@ export default function ConsultationsPage() {
               />
             </div>
 
-            {/* Consent */}
-            <div style={{ marginBottom: 24, padding: '14px 16px', background: 'rgba(37,79,122,0.05)', borderRadius: 8, border: '1px solid rgba(37,79,122,0.12)' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={form.consent_given}
-                  onChange={e => setForm({ ...form, consent_given: e.target.checked })}
-                  style={{ marginTop: 2, flexShrink: 0 }}
-                />
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
-                  Patient / Guardian consents to the fabrication and fitting of artificial limb(s) by DB Prosthetics and Orthotics Ltd, as per the Consent Form for Fabrication and Fitting of Artificial Limbs. Patient has been informed of the process, risks, and benefits.
-                </span>
-              </label>
+            {/* Signatures & Consent */}
+            <SectionHeader number="6" title="Signatures & Consent" />
+            <div style={{ marginBottom: 14, padding: '14px 16px', background: 'rgba(37,79,122,0.05)', borderRadius: 8, border: '1px solid rgba(37,79,122,0.12)', fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
+              By signing below, the Patient / Guardian consents to the fabrication and fitting of artificial limb(s) by DB Prosthetics and Orthotics Ltd, as per the Consent Form for Fabrication and Fitting of Artificial Limbs. Patient has been informed of the process, risks, and benefits.
+            </div>
+            <div className="form-grid-2" style={{ marginBottom: 24 }}>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Prosthetist / Orthotist Signature</label>
+                <SignaturePad value={assessorSignature} onChange={setAssessorSignature} height={110} />
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient / Guardian Signature</label>
+                <SignaturePad value={patientSignature} onChange={setPatientSignature} height={110} />
+              </div>
             </div>
 
             {/* Submit */}

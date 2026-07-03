@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
     next_appointment?: string;
     prosthetist_name?: string;
     patient_signature_name?: string;
+    prosthetist_signature?: string | null;
+    patient_signature?: string | null;
   };
 
   if (!body.patient_id) {
@@ -62,13 +64,15 @@ export async function POST(req: NextRequest) {
       pain_discomfort, gait_mobility, patient_satisfaction,
       training_donning, training_care, training_skin, training_troubleshooting,
       discharge_date, discharge_reason, followup_recommended, next_appointment,
-      prosthetist_name, patient_signature_name, conducted_by_role
+      prosthetist_name, patient_signature_name,
+      prosthetist_signature, patient_signature, conducted_by_role
     ) VALUES (
       ?, ?, ?,
       ?, ?, ?,
       ?, ?, ?,
       ?, ?, ?, ?,
       ?, ?, ?, ?,
+      ?, ?,
       ?, ?, 'super_admin'
     )
   `).run(
@@ -91,6 +95,8 @@ export async function POST(req: NextRequest) {
     body.next_appointment ?? null,
     body.prosthetist_name ?? null,
     body.patient_signature_name ?? null,
+    body.prosthetist_signature ?? null,
+    body.patient_signature ?? null,
   );
 
   return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
