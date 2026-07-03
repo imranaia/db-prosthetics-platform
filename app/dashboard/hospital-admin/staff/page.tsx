@@ -241,7 +241,7 @@ export default function HospitalAdminStaffPage() {
               <>
                 <div style={{ marginBottom: 10, paddingTop: 4, borderTop: '1px solid var(--border-card)' }}>
                   <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14, marginTop: 14 }}>Doctor Profile</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+                  <div className="form-grid-2" style={{ gap: 14 }}>
                     <div>
                       <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Full Name <span style={{ color: '#dc2626' }}>*</span></label>
                       <input

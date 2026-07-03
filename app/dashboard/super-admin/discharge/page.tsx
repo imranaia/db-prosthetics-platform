@@ -115,7 +115,7 @@ function ReadOnlyDischargeView({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="2" title="Training & Education Provided" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ gap: 10, marginBottom: 20 }}>
         {[
           { key: 'training_donning', label: 'Donning / Doffing' },
           { key: 'training_care', label: 'Care & Maintenance' },
@@ -130,7 +130,7 @@ function ReadOnlyDischargeView({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="3" title="Discharge Summary" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ gap: 14, marginBottom: 20 }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Discharge Date</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{formatDate(form.discharge_date)}</div>
@@ -152,7 +152,7 @@ function ReadOnlyDischargeView({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="4" title="Signatures" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+      <div className="form-grid-2" style={{ gap: 14 }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Prosthetist / Orthotist — {form.prosthetist_name || '—'}</div>
           <SignaturePad value={form.prosthetist_signature} disabled height={90} />
@@ -254,7 +254,7 @@ export default function DischargePage() {
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 20 }}>New Discharge Form</h2>
           <form onSubmit={handleSubmit}>
             {/* Row 1: Patient, Hospital, Consultation */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+            <div className="form-grid-3" style={{ gap: 16, marginBottom: 20 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient <span style={{ color: '#dc2626' }}>*</span></label>
                 <select
@@ -321,7 +321,7 @@ export default function DischargePage() {
             </div>
 
             <SectionHeader number="2" title="Training & Education Provided" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
+            <div className="form-grid-2" style={{ gap: 10, marginBottom: 20 }}>
               {[
                 { key: 'training_donning' as const, label: 'Donning / Doffing' },
                 { key: 'training_care' as const, label: 'Care & Maintenance' },
@@ -341,7 +341,7 @@ export default function DischargePage() {
             </div>
 
             <SectionHeader number="3" title="Discharge Summary" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
+            <div className="form-grid-2" style={{ gap: 14, marginBottom: 20 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Discharge Date</label>
                 <input type="date" className="skeu-input" style={{ width: '100%' }} value={form.discharge_date} onChange={e => setForm({ ...form, discharge_date: e.target.value })} />
@@ -371,7 +371,7 @@ export default function DischargePage() {
             </div>
 
             <SectionHeader number="4" title="Signatures" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 24 }}>
+            <div className="form-grid-2" style={{ gap: 14, marginBottom: 24 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Prosthetist / Orthotist Name</label>
                 <input type="text" className="skeu-input" style={{ width: '100%', marginBottom: 8 }} placeholder="Full name" value={form.prosthetist_name} onChange={e => setForm({ ...form, prosthetist_name: e.target.value })} />

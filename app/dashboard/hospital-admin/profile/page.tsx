@@ -187,7 +187,7 @@ export default function HospitalAdminProfilePage() {
           <form onSubmit={handleEditSubmit}>
             {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+            <div className="form-grid-2" style={{ gap: 14, marginBottom: 14 }}>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input {...inp('full_name')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Email</label><input className="skeu-input" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('phone')} /></div>
@@ -220,7 +220,7 @@ export default function HospitalAdminProfilePage() {
 
             <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Next of Kin</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 18 }}>
+            <div className="form-grid-2" style={{ gap: 14, marginBottom: 18 }}>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input {...inp('next_of_kin_name')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Relationship</label><input {...inp('next_of_kin_relationship')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input {...inp('next_of_kin_phone')} /></div>
@@ -233,7 +233,7 @@ export default function HospitalAdminProfilePage() {
           </form>
         ) : profile ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
+            <div className="form-grid-2" style={{ gap: '0 32px' }}>
               <Field label="Full Name" value={profile.full_name} />
               <Field label="Email" value={profile.email} />
               <Field label="Phone" value={profile.phone} />
@@ -249,7 +249,7 @@ export default function HospitalAdminProfilePage() {
 
             <div style={{ height: 1, background: 'var(--border-card)', margin: '16px 0' }} />
             <SectionHeader number="2" title="Next of Kin" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
+            <div className="form-grid-2" style={{ gap: '0 32px' }}>
               <Field label="Full Name" value={profile.next_of_kin_name} />
               <Field label="Relationship" value={profile.next_of_kin_relationship} />
               <Field label="Phone" value={profile.next_of_kin_phone} />

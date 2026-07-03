@@ -293,7 +293,7 @@ export default function OrdersPage() {
                             quoteId === o.id ? (
                               <div style={{ marginTop: 14, padding: 16, borderRadius: 10, border: '1px solid var(--border-card)', background: 'rgba(27,61,94,0.03)' }}>
                                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>Set Quote</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
+                                <div className="form-grid-2" style={{ gap: 12, marginBottom: 12 }}>
                                   <div>
                                     <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Quoted Price (₦) <span style={{ color: '#dc2626' }}>*</span></label>
                                     <input

@@ -78,7 +78,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="2" title="Training & Education Provided" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ gap: 10, marginBottom: 20 }}>
         {[
           { key: 'training_donning' as const, label: 'Donning / Doffing' },
           { key: 'training_care' as const, label: 'Care & Maintenance' },
@@ -93,7 +93,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="3" title="Discharge Summary" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ gap: 14, marginBottom: 20 }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Discharge Date</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-body)' }}>{formatDate(form.discharge_date)}</div>
@@ -115,7 +115,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
       </div>
 
       <SectionHeader number="4" title="Signatures" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+      <div className="form-grid-2" style={{ gap: 14 }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Prosthetist / Orthotist — {form.prosthetist_name || '—'}</div>
           <SignaturePad value={form.prosthetist_signature} disabled height={90} />

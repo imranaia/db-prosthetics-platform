@@ -95,7 +95,15 @@
       "Bash(rm -f /tmp/vf.txt)",
       "Bash(railway deployment *)",
       "Bash(railway domain *)",
-      "Bash(node _verify_viewport.js)"
+      "Bash(node _verify_viewport.js)",
+      "Bash(node _check_orders.js)",
+      "Bash(grep -oh \"style={{ display: 'grid', gridTemplateColumns: 'repeat\\(2, minmax\\(0, 1fr\\)\\)'[^}]*}}\" app/dashboard/doctor/consultations/page.tsx app/dashboard/patient/profile/page.tsx)",
+      "Bash(grep -rn \"className=\\\\\"[^\\\\\"]*\\\\\" style={{ display: 'grid', gridTemplateColumns: 'repeat\\(2, minmax\\(0, 1fr\\)\\)'\" app --include=\"*.tsx\")",
+      "Bash(grep -orh \"<[a-zA-Z]* [^>]\\\\{0,30\\\\}style={{ display: 'grid', gridTemplateColumns: 'repeat\\(2, minmax\\(0, 1fr\\)\\)'\" app --include=\"*.tsx\" -r app)",
+      "Bash(rm -f /tmp/gha.txt /tmp/gpo.txt /tmp/gp.txt)",
+      "Bash(node _verify_fix.js)",
+      "Bash(rm -f _verify_fix.js _verify_grid_fix.png _check_orders.js)",
+      "Bash(rm -rf _orders_shots)"
     ]
   }
 }

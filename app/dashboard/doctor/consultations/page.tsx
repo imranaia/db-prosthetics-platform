@@ -95,7 +95,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
 
   return (
     <div style={{ padding: '20px 24px', background: 'rgba(37,79,122,0.02)', borderTop: '1px solid var(--border-card)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ gap: 16, marginBottom: 20 }}>
         <Field label="Patient" value={c.patient_name} />
         <Field label="Date" value={formatDate(c.created_at)} />
         <Field label="Assessor" value={c.assessor_name || '—'} />
@@ -142,7 +142,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
       </div>
 
       <SectionHeader number="4" title="Patient Goals & Treatment Plan" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ gap: 16, marginBottom: 20 }}>
         <Field label="Patient Goals" value={c.patient_goals || '—'} />
         <Field label="Recommended Device" value={c.recommended_device || '—'} />
       </div>
@@ -178,7 +178,7 @@ function ConsultationDetail({ c }: { c: Consultation }) {
         </span>
       </div>
       {(c.assessor_signature || c.patient_signature) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+        <div className="form-grid-2" style={{ gap: 14 }}>
           <div>
             <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Prosthetist / Orthotist Signature</div>
             <SignaturePad value={c.assessor_signature} disabled height={80} />

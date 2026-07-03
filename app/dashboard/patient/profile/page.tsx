@@ -191,7 +191,7 @@ export default function PatientProfilePage() {
         ) : editing ? (
           <form onSubmit={handleEditSubmit}>
             {editError && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{editError}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+            <div className="form-grid-2" style={{ gap: 14, marginBottom: 14 }}>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input type="date" className="skeu-input" value={editForm.dob ?? ''} onChange={e => setEditForm({ ...editForm, dob: e.target.value })} /></div>
@@ -229,7 +229,7 @@ export default function PatientProfilePage() {
           </form>
         ) : patient ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
+            <div className="form-grid-2" style={{ gap: '0 32px' }}>
               <Field label="Full Name" value={patient.full_name} />
               <Field label="Date of Birth" value={patient.dob} />
               <Field label="Phone" value={patient.phone} />
@@ -249,7 +249,7 @@ export default function PatientProfilePage() {
             {patient.amputation_yes === 1 && (
               <>
                 <SectionHeader number="1a" title="Amputation Details" />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
+                <div className="form-grid-2" style={{ gap: '0 32px' }}>
                   <Field label="Level" value={patient.amputation_level} />
                   <Field label="Side" value={patient.amputation_side} />
                   <Field label="Date" value={patient.amputation_date} />
@@ -260,7 +260,7 @@ export default function PatientProfilePage() {
             )}
 
             <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: 16, marginTop: 8 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0 32px' }}>
+              <div className="form-grid-2" style={{ gap: '0 32px' }}>
                 <Field label="Allergies" value={patient.allergies} />
                 <Field label="Functional Mobility" value={patient.functional_mobility_status} />
               </div>

@@ -418,7 +418,7 @@ export default function DoctorOrdersPage() {
                 Total: {fmt(cartTotal)}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+              <div className="form-grid-2" style={{ gap: 14, marginBottom: 14 }}>
                 <div>
                   <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient <span style={{ color: '#dc2626' }}>*</span></label>
                   <select className="skeu-select" style={{ width: '100%' }} value={stdPatientId} onChange={e => setStdPatientId(e.target.value)}>
@@ -523,7 +523,7 @@ export default function DoctorOrdersPage() {
             <form onSubmit={handleCustOrder}>
 
               {/* Category + Patient */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 18 }}>
+              <div className="form-grid-2" style={{ gap: 14, marginBottom: 18 }}>
                 <div>
                   <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Category</label>
                   <select className="skeu-select" style={{ width: '100%' }} value={custCategory} onChange={e => setCustCategory(e.target.value)}>
@@ -594,7 +594,7 @@ export default function DoctorOrdersPage() {
               {/* Photo upload - two sections */}
               <div style={{ marginBottom: 18 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Reference Photos</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+                <div className="form-grid-2" style={{ gap: 16 }}>
                   {/* Affected limb photos */}
                   <div>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 8 }}>Affected Limb/Part <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>

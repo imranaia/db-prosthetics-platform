@@ -233,7 +233,7 @@ export default function ProductsPage() {
                   <label className="skeu-label">Product Name</label>
                   <input className="skeu-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="e.g. Transtibial Prosthesis" />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+                <div className="form-grid-2" style={{ gap: 14, marginBottom: 14 }}>
                   <div>
                     <label className="skeu-label">Category</label>
                     <select className="skeu-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} required>
@@ -312,7 +312,7 @@ export default function ProductsPage() {
                         </div>
                       </div>
                       <input className="skeu-input" value={editRow.name ?? ''} onChange={e => setEditRow({ ...editRow, name: e.target.value })} style={{ marginBottom: 8, fontSize: '0.85rem' }} placeholder="Name" />
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 8 }}>
+                      <div className="form-grid-2" style={{ gap: 8, marginBottom: 8 }}>
                         <select className="skeu-select" value={editRow.category ?? ''} onChange={e => setEditRow({ ...editRow, category: e.target.value })} style={{ fontSize: '0.82rem' }}>
                           {Object.entries(CAT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                         </select>
@@ -387,7 +387,7 @@ export default function ProductsPage() {
               <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 16 }}>New Material</h2>
               {matError && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: '0.85rem' }}>{matError}</div>}
               <form onSubmit={handleMatSubmit}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+                <div className="form-grid-2" style={{ gap: 14, marginBottom: 14 }}>
                   <div>
                     <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Material Name <span style={{ color: '#dc2626' }}>*</span></label>
                     <input className="skeu-input" value={matForm.name} onChange={e => setMatForm({ ...matForm, name: e.target.value })} required placeholder="e.g. Carbon Fibre, Titanium, Silicone" />
@@ -418,7 +418,7 @@ export default function ProductsPage() {
               {materials.map(m => (
                 <div key={m.id} className="skeu-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
                   {matEditId === m.id ? (
-                    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+                    <div className="form-grid-2" style={{ flex: 1, gap: 10 }}>
                       <input className="skeu-input" value={matEditRow.name ?? ''} onChange={e => setMatEditRow({ ...matEditRow, name: e.target.value })} placeholder="Name" style={{ fontSize: '0.88rem' }} />
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-body)', userSelect: 'none' }}>

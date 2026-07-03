@@ -41,9 +41,12 @@
 
 html { scroll-behavior: smooth; }
 
+/* Safety net: if something still doesn't fit a narrow screen despite the
+   responsive rules below, let the user scroll to see it rather than
+   hiding it outright. */
 html, body {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 body {
@@ -726,4 +729,17 @@ img { max-width: 100%; }
 }
 @media (min-width: 560px) {
   .form-grid-2 { grid-template-columns: 1fr 1fr; }
+}
+
+/* 3-col form grid — stacks to 1 column, then 2, then 3 as room allows */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 560px) {
+  .form-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 860px) {
+  .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
 }
