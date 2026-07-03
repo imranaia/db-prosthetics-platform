@@ -220,7 +220,10 @@ export default function DoctorConsultationsPage() {
     notes: '',
     consent_given: false,
     assessment_date: today,
+    consultation_type: 'new' as 'new' | 'follow_up',
+    category: '',
   });
+  const [recommendDevice, setRecommendDevice] = useState(true);
   const [assessorSignature, setAssessorSignature] = useState<string | null>(null);
   const [patientSignature, setPatientSignature] = useState<string | null>(null);
 
@@ -287,7 +290,8 @@ export default function DoctorConsultationsPage() {
   function removePhoto(url: string) { setPhotos(prev => prev.filter(p => p.url !== url)); }
 
   function resetForm() {
-    setForm({ patient_id: '', hospital_id: '', assessor_name: '', chief_complaint: '', medical_history: '', patient_goals: '', recommended_device: '', followup_date: '', notes: '', consent_given: false, assessment_date: today });
+    setForm({ patient_id: '', hospital_id: '', assessor_name: '', chief_complaint: '', medical_history: '', patient_goals: '', recommended_device: '', followup_date: '', notes: '', consent_given: false, assessment_date: today, consultation_type: 'new', category: '' });
+    setRecommendDevice(true);
     setPhysicalAssessment(EMPTY_PA);
     setBodyParts([]);
     setPhotos([]);
@@ -318,13 +322,28 @@ export default function DoctorConsultationsPage() {
         consent_given:       patientSignature ? 1 : 0,
         assessor_signature:  assessorSignature,
         patient_signature:   patientSignature,
+        consultation_type:   form.consultation_type,
+        category:            recommendDevice ? (form.category || null) : null,
         body_parts:          bodyParts,
         photos,
       }),
     });
     setSubmitting(false);
-    if (res.ok) { resetForm(); setShowForm(false); setDataLoading(true); load(); }
-    else { const d = await res.json() as { error?: string }; setError(d.error || 'Failed to save consultation'); }
+    if (res.ok) {
+      const data = await res.json() as { id?: number };
+      const newId = data.id;
+      resetForm();
+      setShowForm(false);
+      if (recommendDevice && newId) {
+        window.location.href = `/dashboard/doctor/orders?from_consultation=${newId}&tab=custom`;
+        return;
+      }
+      setDataLoading(true);
+      load();
+    } else {
+      const d = await res.json() as { error?: string };
+      setError(d.error || 'Failed to save consultation');
+    }
   }
 
   const q = search.toLowerCase();
@@ -414,6 +433,51 @@ export default function DoctorConsultationsPage() {
                   {patients.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                 </select>
               </div>
+            </div>
+
+            {/* Visit type */}
+            <div style={{ marginBottom: 20 }}>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Visit Type</label>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {(['new', 'follow_up'] as const).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setForm({ ...form, consultation_type: t })}
+                    style={{
+                      padding: '9px 18px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                      border: `2px solid ${form.consultation_type === t ? 'var(--primary)' : 'var(--border-card)'}`,
+                      background: form.consultation_type === t ? 'rgba(27,61,94,0.07)' : 'transparent',
+                      color: form.consultation_type === t ? 'var(--primary)' : 'var(--text-body)',
+                    }}
+                  >
+                    {t === 'new' ? 'New Patient Assessment' : 'Follow-up Visit'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommend new device — drives the handoff to Orders */}
+            <div style={{ marginBottom: 20, padding: '14px 16px', background: 'rgba(208,140,42,0.06)', border: '1px solid rgba(208,140,42,0.2)', borderRadius: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: recommendDevice ? 12 : 0 }}>
+                <input type="checkbox" checked={recommendDevice} onChange={e => setRecommendDevice(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-body)', fontWeight: 500 }}>
+                  Recommend a new prosthetic/orthotic device for this patient — saving will take you straight to placing the order with this consultation's details carried over.
+                </span>
+              </label>
+              {recommendDevice && (
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Device Category</label>
+                  <select className="skeu-select" style={{ width: '100%', maxWidth: 320 }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                    <option value="">Select category…</option>
+                    <option value="upper_limb">Upper Limb</option>
+                    <option value="lower_limb">Lower Limb</option>
+                    <option value="facial">Facial</option>
+                    <option value="spinal">Spinal</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Assessor */}

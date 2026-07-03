@@ -74,7 +74,12 @@
       "Bash(rm -f /tmp/cvha.txt /tmp/cvp.txt)",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);const f=j.forms[0];console.log\\('patient:',f.patient_name,'hospital:',f.hospital_name,'sigs:',!!f.patient_guardian_signature,!!f.witness_signature,!!f.clinician_signature\\);}\\);\")",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\('count:',j.forms.length, j.forms[0]?.patient_name\\);}\\);\")",
-      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\('count:',j.forms.length, j.forms[0]?.hospital_name\\);}\\);\")"
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\('count:',j.forms.length, j.forms[0]?.hospital_name\\);}\\);\")",
+      "Bash(rm -rf app/dashboard/doctor/consent app/dashboard/super-admin/consent app/dashboard/hospital-admin/consent app/dashboard/patient/consent)",
+      "Bash(rm -f app/api/doctor/consent/route.ts)",
+      "Bash(rm -f /tmp/pov.txt)",
+      "Bash(rm -f /tmp/ob.txt)",
+      "Bash(rm -f /tmp/fha.txt /tmp/fpo.txt /tmp/fp.txt)"
     ]
   }
 }

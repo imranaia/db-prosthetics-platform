@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
     consent_given?: number;
     assessor_signature?: string | null;
     patient_signature?: string | null;
+    consultation_type?: string;
+    category?: string | null;
     body_parts?: unknown;
     photos?: unknown;
   };
@@ -109,6 +111,8 @@ export async function POST(req: NextRequest) {
     consent_given,
     assessor_signature,
     patient_signature,
+    consultation_type,
+    category,
     body_parts,
     photos,
   } = body;
@@ -133,7 +137,7 @@ export async function POST(req: NextRequest) {
     : null;
 
   const db = getDb();
-  db.prepare(`
+  const result = db.prepare(`
     INSERT INTO consultations (
       patient_id,
       doctor_id,
@@ -150,9 +154,11 @@ export async function POST(req: NextRequest) {
       consent_given,
       assessor_signature,
       patient_signature,
+      consultation_type,
+      category,
       body_parts,
       photos
-    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     patient_id,
     hospital_id ?? null,
@@ -167,9 +173,11 @@ export async function POST(req: NextRequest) {
     consent_given ?? 0,
     assessor_signature ?? null,
     patient_signature ?? null,
+    consultation_type === 'follow_up' ? 'follow_up' : 'new',
+    category ?? null,
     bodyPartsStr,
     photosStr,
   );
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, id: result.lastInsertRowid });
 }

@@ -4,6 +4,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState, useRef } from 'react';
 import { ShoppingCart, Package, ChevronDown, ChevronUp, Plus, X, Upload } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import ConsentCaptureInline, { ConsentValue, EMPTY_CONSENT } from '@/components/forms/ConsentCaptureInline';
+import SignaturePad from '@/components/forms/SignaturePad';
+
+interface ConsultationForPrefill {
+  id: number;
+  patient_name: string;
+  category: string | null;
+  body_parts: string | null;
+  chief_complaint: string | null;
+  recommended_device: string | null;
+  notes: string | null;
+}
 
 interface Product {
   id: number;
@@ -45,6 +57,12 @@ interface CustomOrder {
   payment_status: string;
   patient_name?: string;
   created_at: string;
+  patient_guardian_name: string | null;
+  patient_guardian_signature: string | null;
+  witness_name: string | null;
+  witness_signature: string | null;
+  clinician_name: string | null;
+  clinician_signature: string | null;
 }
 
 interface StdOrder {
@@ -101,6 +119,7 @@ export default function DoctorOrdersPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [stdPatientId, setStdPatientId] = useState('');
   const [stdPayTarget, setStdPayTarget] = useState<'creator' | 'patient'>('creator');
+  const [stdConsent, setStdConsent] = useState<ConsentValue>({ ...EMPTY_CONSENT });
   const [stdSubmitting, setStdSubmitting] = useState(false);
   const [stdMsg, setStdMsg] = useState('');
   const [stdErr, setStdErr] = useState('');
@@ -118,6 +137,8 @@ export default function DoctorOrdersPage() {
   const [custPhotosUnaffected, setCustPhotosUnaffected] = useState<string[]>([]);
   const [uploadingAffected, setUploadingAffected] = useState(false);
   const [uploadingUnaffected, setUploadingUnaffected] = useState(false);
+  const [custConsent, setCustConsent] = useState<ConsentValue>({ ...EMPTY_CONSENT });
+  const [custConsultationId, setCustConsultationId] = useState<number | null>(null);
   const [custSubmitting, setCustSubmitting] = useState(false);
   const [custMsg, setCustMsg] = useState('');
   const [custErr, setCustErr] = useState('');
@@ -147,6 +168,28 @@ export default function DoctorOrdersPage() {
       setCustomOrders(Array.isArray(custData) ? custData : []);
       setStdOrders(Array.isArray(stdData) ? stdData : []);
       setMaterials(Array.isArray(matData) ? matData : []);
+
+      // Consultation → order handoff: prefill the custom-order form from
+      // ?from_consultation=<id> and jump straight to the custom tab.
+      const fromConsultation = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('from_consultation')
+        : null;
+      if (fromConsultation) {
+        const consultations: ConsultationForPrefill[] = Array.isArray(consData.consultations) ? consData.consultations : [];
+        const match = consultations.find(c => c.id === Number(fromConsultation));
+        if (match) {
+          setActiveTab('custom');
+          setCustConsultationId(match.id);
+          const matchedPatient = (Array.isArray(consData.patients) ? consData.patients as Patient[] : []).find(p => p.full_name === match.patient_name);
+          if (matchedPatient) setCustPatientId(String(matchedPatient.id));
+          if (match.category) setCustCategory(match.category);
+          if (match.body_parts) {
+            try { setCustBodyParts(JSON.parse(match.body_parts)); } catch { /* ignore malformed JSON */ }
+          }
+          const descParts = [match.recommended_device, match.chief_complaint, match.notes].filter(Boolean);
+          if (descParts.length > 0) setCustDesc(descParts.join(' — '));
+        }
+      }
     } finally {
       setDataLoading(false);
     }
@@ -175,6 +218,7 @@ export default function DoctorOrdersPage() {
   }
 
   const cartTotal = cart.reduce((sum, c) => sum + c.product.price * c.quantity, 0);
+  const cartRequiresConsent = cart.some(c => c.product.type === 'complete');
   const selectedMaterial = materials.find(m => m.id === Number(custMaterialId));
 
   async function handlePhotoUpload(
@@ -201,6 +245,7 @@ export default function DoctorOrdersPage() {
     setStdErr(''); setStdMsg('');
     if (cart.length === 0) { setStdErr('Cart is empty.'); return; }
     if (!stdPatientId) { setStdErr('Please select a patient.'); return; }
+    if (cartRequiresConsent && !stdConsent.patient_guardian_signature) { setStdErr('Patient / Guardian signature is required to order a complete device.'); return; }
     setStdSubmitting(true);
     try {
       const res = await fetch('/api/orders', {
@@ -210,6 +255,7 @@ export default function DoctorOrdersPage() {
           patient_id: Number(stdPatientId),
           items: cart.map(c => ({ product_id: c.product.id, quantity: c.quantity })),
           payment_target: stdPayTarget,
+          consent: cartRequiresConsent ? stdConsent : undefined,
         }),
       });
       const data = await res.json();
@@ -227,7 +273,7 @@ export default function DoctorOrdersPage() {
         }
       }
       setStdMsg(stdPayTarget === 'patient' ? 'Invoice sent to patient portal.' : 'Order placed successfully.');
-      setCart([]); setStdPatientId(''); setStdPayTarget('creator');
+      setCart([]); setStdPatientId(''); setStdPayTarget('creator'); setStdConsent({ ...EMPTY_CONSENT });
       load();
     } catch {
       setStdErr('Network error. Please try again.');
@@ -253,6 +299,7 @@ export default function DoctorOrdersPage() {
     e.preventDefault();
     setCustErr(''); setCustMsg('');
     if (!custDesc.trim()) { setCustErr('Description is required.'); return; }
+    if (custPatientId && !custConsent.patient_guardian_signature) { setCustErr('Patient / Guardian signature is required to place a fabrication order.'); return; }
     setCustSubmitting(true);
     try {
       const res = await fetch('/api/orders/custom', {
@@ -267,6 +314,8 @@ export default function DoctorOrdersPage() {
           material_id: custMaterialId ? Number(custMaterialId) : undefined,
           photos_affected: custPhotosAffected.length > 0 ? custPhotosAffected : undefined,
           photos_unaffected: custPhotosUnaffected.length > 0 ? custPhotosUnaffected : undefined,
+          consultation_id: custConsultationId ?? undefined,
+          consent: custConsent,
         }),
       });
       const data = await res.json();
@@ -275,6 +324,7 @@ export default function DoctorOrdersPage() {
       setCustCategory(''); setCustDesc(''); setCustPatientId(''); setCustPayTarget('creator');
       setCustBodyParts([]); setCustMaterialId('');
       setCustPhotosAffected([]); setCustPhotosUnaffected([]);
+      setCustConsent({ ...EMPTY_CONSENT }); setCustConsultationId(null);
       load();
     } catch {
       setCustErr('Network error. Please try again.');
@@ -391,6 +441,10 @@ export default function DoctorOrdersPage() {
                   </div>
                 </div>
               </div>
+
+              {cartRequiresConsent && (
+                <ConsentCaptureInline value={stdConsent} onChange={setStdConsent} />
+              )}
 
               {stdErr && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{stdErr}</div>}
               {stdMsg && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{stdMsg}</div>}
@@ -604,6 +658,14 @@ export default function DoctorOrdersPage() {
                 </div>
               </div>
 
+              {custPatientId ? (
+                <ConsentCaptureInline value={custConsent} onChange={setCustConsent} />
+              ) : (
+                <div style={{ marginBottom: 20, padding: '12px 16px', background: 'rgba(0,0,0,0.03)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Select a patient above to capture their fabrication consent now — or leave it and an admin can attach patient + consent when this order is assigned.
+                </div>
+              )}
+
               {custErr && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custErr}</div>}
               {custMsg && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custMsg}</div>}
               <button type="submit" className="skeu-btn-accent" disabled={custSubmitting} style={{ width: '100%' }}>
@@ -662,6 +724,13 @@ export default function DoctorOrdersPage() {
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{o.description}</div>
                           {o.quoted_price && (
                             <div style={{ marginTop: 10, fontSize: '0.88rem', fontWeight: 600, color: 'var(--primary)' }}>Quoted Price: {fmt(o.quoted_price)}</div>
+                          )}
+                          {o.patient_guardian_signature && (
+                            <div style={{ marginTop: 14 }}>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 6 }}>Fabrication Consent</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>Patient / Guardian — {o.patient_guardian_name || '—'}</div>
+                              <SignaturePad value={o.patient_guardian_signature} disabled height={70} />
+                            </div>
                           )}
                         </div>
                       )}

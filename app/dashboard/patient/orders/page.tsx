@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState, useRef } from 'react';
 import { ShoppingCart, Package, Upload, X } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import ConsentCaptureInline, { ConsentValue, EMPTY_CONSENT } from '@/components/forms/ConsentCaptureInline';
 
 interface StdOrder {
   id: number;
@@ -90,6 +91,7 @@ export default function PatientOrdersPage() {
   const [custPhotosUnaffected, setCustPhotosUnaffected] = useState<string[]>([]);
   const [uploadingAffected, setUploadingAffected] = useState(false);
   const [uploadingUnaffected, setUploadingUnaffected] = useState(false);
+  const [custConsent, setCustConsent] = useState<ConsentValue>({ ...EMPTY_CONSENT });
   const [custSubmitting, setCustSubmitting] = useState(false);
   const [custErr, setCustErr] = useState('');
   const [custMsg, setCustMsg] = useState('');
@@ -177,6 +179,7 @@ export default function PatientOrdersPage() {
     e.preventDefault();
     setCustErr(''); setCustMsg('');
     if (!custDesc.trim()) { setCustErr('Description is required.'); return; }
+    if (!custConsent.patient_guardian_signature) { setCustErr('Your signature is required to submit a fabrication request.'); return; }
     setCustSubmitting(true);
     try {
       const res = await fetch('/api/orders/custom', {
@@ -189,6 +192,7 @@ export default function PatientOrdersPage() {
           material_id: custMaterialId ? Number(custMaterialId) : undefined,
           photos_affected: custPhotosAffected.length > 0 ? custPhotosAffected : undefined,
           photos_unaffected: custPhotosUnaffected.length > 0 ? custPhotosUnaffected : undefined,
+          consent: custConsent,
         }),
       });
       const data = await res.json();
@@ -196,6 +200,7 @@ export default function PatientOrdersPage() {
       setCustMsg('Custom order submitted. Our team will review and quote a price.');
       setCustCategory(''); setCustDesc(''); setCustMaterialId('');
       setCustBodyParts([]); setCustPhotosAffected([]); setCustPhotosUnaffected([]);
+      setCustConsent({ ...EMPTY_CONSENT });
       load();
     } catch {
       setCustErr('Network error. Please try again.');
@@ -473,6 +478,8 @@ export default function PatientOrdersPage() {
                   </div>
                 </div>
               </div>
+
+              <ConsentCaptureInline value={custConsent} onChange={setCustConsent} />
 
               {custErr && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custErr}</div>}
               {custMsg && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custMsg}</div>}

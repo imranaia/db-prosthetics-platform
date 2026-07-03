@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardShell from '@/components/dashboard/DashboardShell';
-import { LayoutDashboard, Users, Stethoscope, CalendarDays, UserCircle, UserPlus, ClipboardCheck, FileSignature } from 'lucide-react';
+import { LayoutDashboard, Users, Stethoscope, CalendarDays, UserCircle, UserPlus, ClipboardCheck } from 'lucide-react';
 
 const NAV = [
   { label: 'Overview',       href: '/dashboard/hospital-admin',                 icon: LayoutDashboard },
@@ -9,7 +9,6 @@ const NAV = [
   { label: 'Consultations',  href: '/dashboard/hospital-admin/consultations',    icon: Stethoscope },
   { label: 'Appointments',   href: '/dashboard/hospital-admin/appointments',     icon: CalendarDays },
   { label: 'Discharge Records', href: '/dashboard/hospital-admin/discharge',    icon: ClipboardCheck },
-  { label: 'Consent Forms',  href: '/dashboard/hospital-admin/consent',          icon: FileSignature },
   { label: 'Staff',          href: '/dashboard/hospital-admin/staff',            icon: UserPlus },
   { label: 'My Profile',     href: '/dashboard/hospital-admin/profile',          icon: UserCircle },
 ];
