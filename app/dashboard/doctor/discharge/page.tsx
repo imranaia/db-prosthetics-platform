@@ -79,7 +79,8 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
   return (
     <div style={{ padding: '16px 0' }}>
       <SectionHeader number="1" title="Post-Fitting Assessment" />
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+      <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, minWidth: 420 }}>
         <thead>
           <tr style={{ background: 'rgba(27,61,94,0.06)' }}>
             <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', border: '1px solid var(--border-card)', width: '40%' }}>Aspect</th>
@@ -95,6 +96,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
           ))}
         </tbody>
       </table>
+      </div>
 
       <SectionHeader number="2" title="Training & Education Provided" />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
@@ -270,7 +272,8 @@ export default function DoctorDischargePage() {
             </div>
 
             <SectionHeader number="1" title="Post-Fitting Assessment" />
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, minWidth: 420 }}>
               <thead>
                 <tr style={{ background: 'rgba(27,61,94,0.06)' }}>
                   <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', border: '1px solid var(--border-card)', width: '40%' }}>Aspect</th>
@@ -290,6 +293,7 @@ export default function DoctorDischargePage() {
                 ))}
               </tbody>
             </table>
+            </div>
 
             <SectionHeader number="2" title="Training & Education Provided" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>

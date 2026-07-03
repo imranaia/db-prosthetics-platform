@@ -58,7 +58,14 @@
       "Bash(cp \"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-LENOVO-OneDrive-Desktop-db-prosthetics-platform\\\\7085e659-0ab1-4267-98ab-bf99fe12097b\\\\scratchpad\\\\test-migration.js\" \"C:\\\\Users\\\\LENOVO\\\\OneDrive\\\\Desktop\\\\db-prosthetics-platform\\\\_test-migration.js\")",
       "Bash(node _test-migration.js)",
       "Bash(rm \"C:\\\\Users\\\\LENOVO\\\\OneDrive\\\\Desktop\\\\db-prosthetics-platform\\\\_test-migration.js\")",
-      "Bash(rm \"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-LENOVO-OneDrive-Desktop-db-prosthetics-platform\\\\7085e659-0ab1-4267-98ab-bf99fe12097b\\\\scratchpad\\\\test-migration.js\")"
+      "Bash(rm \"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-LENOVO-OneDrive-Desktop-db-prosthetics-platform\\\\7085e659-0ab1-4267-98ab-bf99fe12097b\\\\scratchpad\\\\test-migration.js\")",
+      "Bash(tasklist)",
+      "Bash(netstat -ano)",
+      "Bash(sqlite3 db.sqlite \"SELECT id, email, role FROM users WHERE role='super_admin';\")",
+      "Bash(cd C:\\\\Users\\\\LENOVO\\\\OneDrive\\\\Desktop\\\\db-prosthetics-platform *)",
+      "Bash(taskkill //F //PID 1980)",
+      "Bash(curl -s http://localhost:3000/api/auth/me)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

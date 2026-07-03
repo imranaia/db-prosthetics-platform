@@ -406,6 +406,7 @@ export default function DoctorOrdersPage() {
             <div>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>Past Orders</h3>
               <div className="skeu-card" style={{ overflow: 'hidden' }}>
+                <div className="table-scroll">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'rgba(27,61,94,0.04)', borderBottom: '1px solid var(--border-card)' }}>
@@ -455,6 +456,7 @@ export default function DoctorOrdersPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}

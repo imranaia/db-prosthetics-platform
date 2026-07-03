@@ -29,9 +29,11 @@ export async function GET(req: NextRequest) {
 
   const upcoming_appointments = (db
     .prepare(
-      "SELECT COUNT(*) as count FROM appointments WHERE assigned_hospital_id = ? AND status NOT IN ('completed','cancelled')"
+      `SELECT COUNT(*) as count FROM appointments
+       WHERE status NOT IN ('completed','cancelled')
+         AND (assigned_doctor_id = ? OR (type = 'hospital' AND assigned_hospital_id = ?))`
     )
-    .get(doctor.hospital_id) as { count: number }).count;
+    .get(doctor.id, doctor.hospital_id) as { count: number }).count;
 
   return NextResponse.json({
     stats: { patients, consultations, upcoming_appointments },

@@ -90,7 +90,8 @@ function ReadOnlyDischargeView({ form }: { form: DischargeForm }) {
   return (
     <div style={{ padding: '0 4px' }}>
       <SectionHeader number="1" title="Post-Fitting Assessment" />
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+      <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, minWidth: 420 }}>
         <thead>
           <tr style={{ background: 'rgba(27,61,94,0.06)' }}>
             <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', border: '1px solid var(--border-card)', width: '40%' }}>Aspect</th>
@@ -106,6 +107,7 @@ function ReadOnlyDischargeView({ form }: { form: DischargeForm }) {
           ))}
         </tbody>
       </table>
+      </div>
 
       <SectionHeader number="2" title="Training & Education Provided" />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
@@ -287,7 +289,8 @@ export default function DischargePage() {
             </div>
 
             <SectionHeader number="1" title="Post-Fitting Assessment" />
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, minWidth: 420 }}>
               <thead>
                 <tr style={{ background: 'rgba(27,61,94,0.06)' }}>
                   <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', border: '1px solid var(--border-card)', width: '40%' }}>Aspect</th>
@@ -310,6 +313,7 @@ export default function DischargePage() {
                 ))}
               </tbody>
             </table>
+            </div>
 
             <SectionHeader number="2" title="Training & Education Provided" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
@@ -404,6 +408,7 @@ export default function DischargePage() {
         </div>
       ) : (
         <div className="skeu-card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll">
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'rgba(27,61,94,0.04)', borderBottom: '1px solid var(--border-card)' }}>
@@ -441,6 +446,7 @@ export default function DischargePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

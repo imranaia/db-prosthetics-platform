@@ -24,10 +24,11 @@ export async function GET(req: NextRequest) {
       `SELECT a.*, p.full_name AS patient_name, p.phone AS patient_phone
        FROM appointments a
        LEFT JOIN patients p ON a.patient_id = p.id
-       WHERE a.assigned_hospital_id = ?
+       WHERE a.assigned_doctor_id = ?
+          OR (a.type = 'hospital' AND a.assigned_hospital_id = ?)
        ORDER BY a.created_at DESC`
     )
-    .all(doctor.hospital_id);
+    .all(doctor.id, doctor.hospital_id);
 
   return NextResponse.json({ appointments, doctorId: doctor.id });
 }

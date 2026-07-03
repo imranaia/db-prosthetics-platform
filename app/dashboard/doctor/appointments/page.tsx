@@ -36,15 +36,33 @@ function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-const TABS = ['all', 'requested', 'confirmed', 'completed'] as const;
+function effectiveDate(a: Appointment): string | null {
+  return a.scheduled_date || a.preferred_date || null;
+}
+
+function isToday(a: Appointment): boolean {
+  const d = effectiveDate(a);
+  if (!d || a.status !== 'confirmed') return false;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  return d.slice(0, 10) === todayStr;
+}
+
+function isUpcoming(a: Appointment): boolean {
+  return a.status === 'confirmed' && !isToday(a);
+}
+
+const TABS = ['today', 'upcoming', 'requested', 'completed', 'all'] as const;
 type Tab = typeof TABS[number];
+const TAB_LABELS: Record<Tab, string> = {
+  today: 'Today', upcoming: 'Upcoming', requested: 'Requested', completed: 'Completed', all: 'All',
+};
 
 export default function DoctorAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('all');
+  const [activeTab, setActiveTab] = useState<Tab>('today');
   const [expanded, setExpanded] = useState<number | null>(null);
 
   function load() {
@@ -75,9 +93,26 @@ export default function DoctorAppointmentsPage() {
     load();
   }
 
-  const filtered = activeTab === 'all'
-    ? appointments
-    : appointments.filter(a => a.status === activeTab);
+  function matchesTab(a: Appointment, tab: Tab): boolean {
+    if (tab === 'all') return true;
+    if (tab === 'today') return isToday(a);
+    if (tab === 'upcoming') return isUpcoming(a);
+    if (tab === 'requested') return a.status === 'requested' || a.status === 'quoted';
+    return a.status === tab;
+  }
+
+  const filtered = appointments
+    .filter(a => matchesTab(a, activeTab))
+    .sort((a, b) => {
+      const da = effectiveDate(a); const db_ = effectiveDate(b);
+      if (!da && !db_) return 0;
+      if (!da) return 1;
+      if (!db_) return -1;
+      return da.localeCompare(db_);
+    });
+
+  const todayCount = appointments.filter(isToday).length;
+  const upcomingCount = appointments.filter(isUpcoming).length;
 
   return (
     <div className="dash-content">
@@ -90,25 +125,26 @@ export default function DoctorAppointmentsPage() {
 
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        {TABS.map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '7px 16px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-              border: `1px solid ${activeTab === tab ? 'var(--primary)' : 'var(--border-card)'}`,
-              background: activeTab === tab ? 'var(--primary)' : 'transparent',
-              color: activeTab === tab ? '#fff' : 'var(--text-body)',
-            }}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            {tab !== 'all' && (
+        {TABS.map(tab => {
+          const count = tab === 'all' ? appointments.length : appointments.filter(a => matchesTab(a, tab)).length;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '7px 16px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                border: `1px solid ${activeTab === tab ? 'var(--primary)' : 'var(--border-card)'}`,
+                background: activeTab === tab ? 'var(--primary)' : 'transparent',
+                color: activeTab === tab ? '#fff' : 'var(--text-body)',
+              }}
+            >
+              {TAB_LABELS[tab]}
               <span style={{ marginLeft: 6, background: activeTab === tab ? 'rgba(255,255,255,0.3)' : 'var(--border-card)', padding: '1px 7px', borderRadius: 20, fontSize: '0.72rem' }}>
-                {appointments.filter(a => a.status === tab).length}
+                {count}
               </span>
-            )}
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -116,7 +152,7 @@ export default function DoctorAppointmentsPage() {
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading appointments...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            {appointments.length === 0 ? 'No appointments assigned to your hospital yet.' : 'No appointments in this category.'}
+            {appointments.length === 0 ? 'No appointments assigned to you yet.' : 'No appointments in this category.'}
           </div>
         ) : (
           <div className="table-scroll">

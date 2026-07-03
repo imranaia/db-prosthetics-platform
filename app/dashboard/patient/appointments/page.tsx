@@ -16,7 +16,10 @@ interface Appointment {
   payment_status: string;
   created_at: string;
   hospital_name: string | null;
+  requested_doctor_name: string | null;
+  assigned_doctor_name: string | null;
 }
+interface Doctor { id: number; full_name: string | null; specialization: string | null; state: string | null; hospital_name: string | null; }
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
@@ -38,11 +41,12 @@ function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-const INITIAL_FORM = { type: 'hospital' as 'hospital' | 'home', notes: '', preferred_date: '' };
+const INITIAL_FORM = { type: 'hospital' as 'hospital' | 'home', notes: '', preferred_date: '', requested_doctor_id: '' };
 
 export default function PatientAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -71,6 +75,7 @@ export default function PatientAppointmentsPage() {
   useEffect(() => {
     if (!user) return;
     load();
+    fetch('/api/patient/doctors').then(r => r.json()).then(d => setDoctors(Array.isArray(d) ? d : [])).catch(() => {});
   }, [user]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
@@ -85,7 +90,12 @@ export default function PatientAppointmentsPage() {
       const res = await fetch('/api/patient/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: form.type, notes: form.notes, preferred_date: form.preferred_date }),
+        body: JSON.stringify({
+          type: form.type,
+          notes: form.notes,
+          preferred_date: form.preferred_date,
+          requested_doctor_id: form.type === 'home' && form.requested_doctor_id ? form.requested_doctor_id : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setFormError(data.error || 'Failed to book appointment.'); setSubmitting(false); return; }
@@ -174,6 +184,31 @@ export default function PatientAppointmentsPage() {
               </div>
             </div>
 
+            {/* Doctor preference — home visits only */}
+            {form.type === 'home' && (
+              <div style={{ marginBottom: 16 }}>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Preferred Doctor (optional)</label>
+                <select
+                  className="skeu-input"
+                  style={{ width: '100%' }}
+                  value={form.requested_doctor_id}
+                  onChange={e => setForm({ ...form, requested_doctor_id: e.target.value })}
+                >
+                  <option value="">No preference — let DB Prosthetics assign</option>
+                  {doctors.map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.full_name || `Doctor #${d.id}`}
+                      {d.specialization ? ` — ${d.specialization}` : ''}
+                      {d.state ? ` (${d.state})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                  If you know a doctor you'd like to see, pick them here. Otherwise, DB Prosthetics will assign the best available doctor near you.
+                </div>
+              </div>
+            )}
+
             {/* Preferred date */}
             <div style={{ marginBottom: 16 }}>
               <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Preferred Date</label>
@@ -247,8 +282,15 @@ export default function PatientAppointmentsPage() {
 
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ fontSize: '0.88rem', color: 'var(--text-head)', fontWeight: 500 }}>
-                  {appt.hospital_name || 'Pending assignment'}
+                  {appt.type === 'home'
+                    ? (appt.assigned_doctor_name ? `Dr. ${appt.assigned_doctor_name}` : 'Pending doctor assignment')
+                    : (appt.hospital_name || 'Pending assignment')}
                 </div>
+                {appt.type === 'home' && appt.requested_doctor_name && !appt.assigned_doctor_name && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    You requested: Dr. {appt.requested_doctor_name}
+                  </div>
+                )}
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                   Preferred: {appt.scheduled_date ? formatDate(appt.scheduled_date) : (appt.preferred_date ? formatDate(appt.preferred_date) : 'No date set')}
                 </div>
