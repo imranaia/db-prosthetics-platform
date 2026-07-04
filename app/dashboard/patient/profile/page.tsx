@@ -6,6 +6,7 @@ import { UserCircle, Pencil, X } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import SkeuSelect from '@/components/ui/SkeuSelect';
+import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/profile-options';
 
 interface PatientProfile {
   id: number;
@@ -195,8 +196,14 @@ export default function PatientProfilePage() {
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input type="date" className="skeu-input" value={editForm.dob ?? ''} onChange={e => setEditForm({ ...editForm, dob: e.target.value })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input className="skeu-input" value={editForm.gender ?? ''} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input className="skeu-input" value={editForm.marital_status ?? ''} onChange={e => setEditForm({ ...editForm, marital_status: e.target.value })} /></div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label>
+                <SkeuSelect value={editForm.gender ?? ''} onChange={v => setEditForm({ ...editForm, gender: v })} options={GENDER_OPTIONS} placeholder="Select…" />
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label>
+                <SkeuSelect value={editForm.marital_status ?? ''} onChange={v => setEditForm({ ...editForm, marital_status: v })} options={MARITAL_STATUS_OPTIONS} placeholder="Select…" />
+              </div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input className="skeu-input" value={editForm.occupation ?? ''} onChange={e => setEditForm({ ...editForm, occupation: e.target.value })} /></div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { UserPlus, Trash2 } from 'lucide-react';
 
@@ -45,6 +46,7 @@ export default function HospitalAdminStaffPage() {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [deleting, setDeleting] = useState<number | null>(null);
+  const { confirm, dialog } = useConfirmDialog();
 
   const load = () => {
     fetch('/api/hospital-admin/staff')
@@ -107,7 +109,8 @@ export default function HospitalAdminStaffPage() {
   }
 
   async function handleDelete(staffMember: StaffMember) {
-    if (!confirm(`Remove ${staffMember.email} from staff? This cannot be undone.`)) return;
+    const ok = await confirm(`Remove ${staffMember.email} from staff? This cannot be undone.`, { title: 'Remove Staff Member', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
     setDeleting(staffMember.staff_id);
     try {
       await fetch('/api/hospital-admin/staff', {
@@ -164,6 +167,7 @@ export default function HospitalAdminStaffPage() {
 
   return (
     <div className="dash-content">
+      {dialog}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState, useRef } from 'react';
 import { Package, Plus, X, Pencil, Trash2, Check, Upload, Layers } from 'lucide-react';
 
@@ -50,6 +51,7 @@ export default function ProductsPage() {
   const [showMatForm, setShowMatForm] = useState(false);
   const [matEditId, setMatEditId] = useState<number | null>(null);
   const [matEditRow, setMatEditRow] = useState<Partial<Material>>({});
+  const { confirm, dialog } = useConfirmDialog();
 
   async function loadProducts() {
     const r = await fetch('/api/admin/products');
@@ -106,7 +108,8 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Delete this product?')) return;
+    const ok = await confirm('Delete this product?', { title: 'Delete Product', confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
     loadProducts();
   }
@@ -153,13 +156,15 @@ export default function ProductsPage() {
   }
 
   async function deleteMaterial(id: number) {
-    if (!confirm('Delete this material?')) return;
+    const ok = await confirm('Delete this material?', { title: 'Delete Material', confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     await fetch('/api/admin/materials', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     loadMaterials();
   }
 
   return (
     <div className="dash-content">
+      {dialog}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: '#05966918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

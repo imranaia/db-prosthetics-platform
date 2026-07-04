@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
@@ -22,6 +23,7 @@ export default function HospitalsPage() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const { confirm, dialog } = useConfirmDialog();
 
   async function fetchHospitals() {
     const res = await fetch('/api/admin/hospitals');
@@ -46,13 +48,15 @@ export default function HospitalsPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Delete this hospital? This cannot be undone.')) return;
+    const ok = await confirm('Delete this hospital? This cannot be undone.', { title: 'Delete Hospital', confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     await fetch(`/api/admin/hospitals/${id}`, { method: 'DELETE' });
     fetchHospitals();
   }
 
   return (
     <div className="dash-content">
+      {dialog}
       <div className="dash-page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

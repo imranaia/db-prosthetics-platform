@@ -7,6 +7,7 @@ import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import SkeuSelect from '@/components/ui/SkeuSelect';
 import SignaturePad from '@/components/forms/SignaturePad';
+import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/profile-options';
 
 const INITIAL = {
   phone: '', dob: '', address: '', state: '', lga: '',
@@ -115,11 +116,11 @@ export default function PatientOnboardingPage() {
           <div className="form-grid-2" style={{ marginBottom: 16 }}>
             <div>
               <label className="skeu-label">Sex / Gender</label>
-              <SkeuSelect value={form.gender} onChange={v => setForm({ ...form, gender: v })} options={[{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }]} placeholder="Select…" />
+              <SkeuSelect value={form.gender} onChange={v => setForm({ ...form, gender: v })} options={GENDER_OPTIONS} placeholder="Select…" />
             </div>
             <div>
               <label className="skeu-label">Marital Status</label>
-              <SkeuSelect value={form.marital_status} onChange={v => setForm({ ...form, marital_status: v })} options={['Single', 'Married', 'Widowed', 'Divorced'].map(v => ({ value: v, label: v }))} placeholder="Select…" />
+              <SkeuSelect value={form.marital_status} onChange={v => setForm({ ...form, marital_status: v })} options={MARITAL_STATUS_OPTIONS} placeholder="Select…" />
             </div>
           </div>
           <div className="form-grid-2" style={{ marginBottom: 16 }}>

@@ -7,6 +7,7 @@ import { UserCircle, Pencil, X, AlertCircle } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import SkeuSelect from '@/components/ui/SkeuSelect';
+import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/profile-options';
 
 interface POSpecialistProfile {
   id: number;
@@ -249,9 +250,15 @@ function POSpecialistProfilePageInner() {
             <div style={{ height: 1, background: 'var(--border-card)', margin: '8px 0 18px' }} />
             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Personal Information</div>
             <div className="form-grid-2" style={{ gap: 14, marginBottom: 18 }}>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input {...inp('dob')} placeholder="YYYY-MM-DD" /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label><input {...inp('gender')} placeholder="e.g. Male, Female" /></div>
-              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label><input {...inp('marital_status')} placeholder="e.g. Single, Married" /></div>
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Date of Birth</label><input type="date" className="skeu-input" value={ef.dob ?? ''} onChange={e => setEditForm({ ...ef, dob: e.target.value })} /></div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Gender</label>
+                <SkeuSelect value={ef.gender ?? ''} onChange={v => setEditForm({ ...ef, gender: v })} options={GENDER_OPTIONS} placeholder="Select…" />
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Marital Status</label>
+                <SkeuSelect value={ef.marital_status ?? ''} onChange={v => setEditForm({ ...ef, marital_status: v })} options={MARITAL_STATUS_OPTIONS} placeholder="Select…" />
+              </div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Religion</label><input {...inp('religion')} /></div>
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Occupation</label><input {...inp('occupation')} /></div>
             </div>

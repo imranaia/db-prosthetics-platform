@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { CalendarDays } from 'lucide-react';
 
@@ -53,6 +54,7 @@ export default function PatientAppointmentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [paying, setPaying] = useState<number | null>(null);
+  const { alertUser, dialog } = useConfirmDialog();
   const [paymentResult, setPaymentResult] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,12 +123,13 @@ export default function PatientAppointmentsPage() {
     if (data.authorization_url) {
       window.location.href = data.authorization_url;
     } else {
-      alert(data.error || 'Failed to initialize payment');
+      await alertUser(data.error || 'Failed to initialize payment', { title: 'Payment Error' });
     }
   }
 
   return (
     <div className="dash-content">
+      {dialog}
       {/* Payment result banners */}
       {paymentResult === 'success' && (
         <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', color: '#065f46', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: '0.9rem', fontWeight: 500 }}>
