@@ -24,7 +24,18 @@ export async function PATCH(
   const values: (string | number)[] = [];
 
   if (body.status !== undefined)              { setClauses.push('status = ?');              values.push(body.status); }
-  if (body.fulfillment_status !== undefined)  { setClauses.push('fulfillment_status = ?');  values.push(body.fulfillment_status); }
+  if (body.fulfillment_status !== undefined)  {
+    setClauses.push('fulfillment_status = ?');  values.push(body.fulfillment_status);
+    // Keep the coarse order status (used for filtering/patient display) in
+    // sync with the fulfillment stage automatically, so there's a single
+    // button-driven flow instead of two separately-set status fields.
+    if (body.status === undefined) {
+      const derivedStatus = ['dispatched', 'delivered', 'received_by_doctor', 'received_by_patient'].includes(body.fulfillment_status)
+        ? 'fulfilled'
+        : 'processing';
+      setClauses.push('status = ?'); values.push(derivedStatus);
+    }
+  }
   if (body.fulfillment_notes !== undefined)   { setClauses.push('fulfillment_notes = ?');   values.push(body.fulfillment_notes); }
 
   if (setClauses.length === 0) {

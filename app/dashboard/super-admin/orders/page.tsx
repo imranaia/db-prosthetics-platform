@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { ShoppingCart, ChevronDown, ChevronUp, Package } from 'lucide-react';
 
@@ -82,6 +83,7 @@ export default function OrdersPage() {
   const [quoteAmount, setQuoteAmount] = useState('');
   const [quoteNotes, setQuoteNotes] = useState('');
   const [quoting, setQuoting] = useState(false);
+  const { confirm, dialog } = useConfirmDialog();
 
   async function loadOrders() {
     const data = await fetch('/api/admin/orders').then(r => r.json());
@@ -114,6 +116,12 @@ export default function OrdersPage() {
     loadOrders();
   }
 
+  async function cancelOrder(id: number) {
+    const ok = await confirm('Cancel this order? This cannot be undone.', { title: 'Cancel Order', confirmLabel: 'Cancel Order', danger: true });
+    if (!ok) return;
+    await updateStatus(id, 'cancelled');
+  }
+
   async function submitQuote(id: number) {
     if (!quoteAmount) return;
     setQuoting(true);
@@ -135,6 +143,7 @@ export default function OrdersPage() {
 
   return (
     <div className="dash-content">
+      {dialog}
       <div className="dash-page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: '#b5751f18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -171,10 +180,10 @@ export default function OrdersPage() {
           <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div className="table-scroll">
               <table className="dash-table">
-                <thead><tr><th>#</th><th>Patient</th><th>Status</th><th>Total</th><th>Payment</th><th>Fulfillment</th><th>Date</th><th>Update Status</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Patient</th><th>Status</th><th>Total</th><th>Payment</th><th>Fulfillment</th><th>Date</th><th></th></tr></thead>
                 <tbody>
                   {visible.length === 0 ? (
-                    <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No orders in this category.</td></tr>
+                    <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No orders in this category.</td></tr>
                   ) : visible.flatMap(o => {
                     const ss = S_STYLE[o.status] || { bg: '#f3f4f6', color: '#6b7280' };
                     const fs = o.fulfillment_status || 'pending';
@@ -192,18 +201,13 @@ export default function OrdersPage() {
                         </td>
                         <td><span className="status-badge" style={{ background: fStyle.bg, color: fStyle.color }}>{fs.replace(/_/g, ' ')}</span></td>
                         <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                        <td onClick={e => e.stopPropagation()}>
-                          <select value={o.status} onChange={e => updateStatus(o.id, e.target.value)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--border-card)', background: '#fff', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-body)' }}>
-                            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-                          </select>
-                        </td>
                         <td>{expandedId === o.id ? <ChevronUp size={15} color="var(--text-muted)" /> : <ChevronDown size={15} color="var(--text-muted)" />}</td>
                       </tr>
                     )];
                     if (expandedId === o.id) {
                       rows.push(
                         <tr key={`${o.id}-items`}>
-                          <td colSpan={9} style={{ padding: 0, background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
+                          <td colSpan={8} style={{ padding: 0, background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
                             <div style={{ padding: '14px 20px 14px 40px' }}>
                               {o.items?.length > 0 && (
                                 <>
@@ -227,6 +231,9 @@ export default function OrdersPage() {
                                 )}
                                 {fs === 'manufacturing' && (
                                   <button onClick={() => updateFulfillment(o.id, 'dispatched')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #c2410c', background: '#fed7aa', color: '#c2410c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Mark Dispatched</button>
+                                )}
+                                {o.status !== 'cancelled' && o.status !== 'fulfilled' && (
+                                  <button onClick={() => cancelOrder(o.id)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #b91c1c', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Cancel Order</button>
                                 )}
                               </div>
                             </div>
