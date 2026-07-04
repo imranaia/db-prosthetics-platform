@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
+import { sendAdminNewOrderNotification } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -192,6 +193,25 @@ export async function POST(req: NextRequest) {
   });
 
   const orderId = createOrder();
+
+  if (patientId) {
+    try {
+      const patient = db.prepare('SELECT full_name FROM patients WHERE id = ?').get(patientId) as { full_name: string } | undefined;
+      await sendAdminNewOrderNotification({
+        orderId: orderId as number,
+        orderType: 'order',
+        patientName: patient?.full_name || `Patient #${patientId}`,
+        createdByRole,
+        items: itemDetails.map(i => ({ name: i.name, quantity: i.quantity, priceKobo: i.price_at_order })),
+        productTotalKobo: totalKobo,
+        serviceFeeKobo: 100000,
+        paymentTarget,
+        adminUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/dashboard/super-admin/orders`,
+      });
+    } catch (e) {
+      console.error('[orders] admin notification failed', e);
+    }
+  }
 
   return NextResponse.json({ success: true, order_id: orderId, total_kobo: totalKobo }, { status: 201 });
 }

@@ -35,5 +35,14 @@ export async function PATCH(req: NextRequest) {
   if (setClauses.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
   values.push(user.id);
   db.prepare(`UPDATE po_specialists SET ${setClauses.join(', ')} WHERE user_id = ?`).run(...values);
+
+  // Mirrors the patient onboarding gate for staff accounts created with a
+  // temp password: once core profile fields are filled in, mark complete.
+  const updated = db.prepare('SELECT full_name, phone, state, lga, address, profile_completed_at FROM po_specialists WHERE user_id = ?').get(user.id) as Record<string, string | null>;
+  const isComplete = ['full_name', 'phone', 'state', 'lga', 'address'].every(f => !!updated[f]);
+  if (isComplete && !updated.profile_completed_at) {
+    db.prepare(`UPDATE po_specialists SET profile_completed_at = datetime('now') WHERE user_id = ?`).run(user.id);
+  }
+
   return NextResponse.json({ success: true });
 }

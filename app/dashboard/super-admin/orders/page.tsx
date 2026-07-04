@@ -303,6 +303,9 @@ export default function OrdersPage() {
                                       onChange={e => setQuoteAmount(e.target.value)}
                                       placeholder="e.g. 250000 for ₦250,000"
                                     />
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                                      The patient pays this amount plus a flat ₦1,000 service fee on top — not deducted from it.
+                                    </div>
                                   </div>
                                   <div>
                                     <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Admin Notes</label>

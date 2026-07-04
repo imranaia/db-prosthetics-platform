@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
     `).get(recordId) as any;
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     if (order.payment_status === 'paid') return NextResponse.json({ error: 'Already paid' }, { status: 400 });
-    totalKobo = order.total_amount;
+    // total_amount is the product cost alone — the service fee is charged
+    // on top, never carved out of it, so the patient pays product + ₦1,000.
+    totalKobo = order.total_amount + (order.service_fee || PLATFORM_FLAT_FEE_KOBO);
     email = order.email;
     patientId = order.patient_id;
   } else if (body.custom_order_id) {

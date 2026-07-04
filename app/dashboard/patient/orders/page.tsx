@@ -9,6 +9,7 @@ import ConsentCaptureInline, { ConsentValue, EMPTY_CONSENT } from '@/components/
 interface StdOrder {
   id: number;
   total_amount: number;
+  service_fee: number;
   status: string;
   payment_status: string;
   fulfillment_status: string | null;
@@ -290,8 +291,18 @@ export default function PatientOrdersPage() {
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Total: {fmt(o.total_amount)}</div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                        <div>
+                          {o.payment_status !== 'paid' ? (
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                              {fmt(o.total_amount)} + {fmt(o.service_fee || 100000)} service fee
+                              {' = '}
+                              <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.total_amount + (o.service_fee || 100000))} total</strong>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Total paid: {fmt(o.total_amount + (o.service_fee || 100000))}</div>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           {(o.fulfillment_status === 'dispatched' || o.fulfillment_status === 'received_by_doctor') && (
                             <button
@@ -308,7 +319,7 @@ export default function PatientOrdersPage() {
                               onClick={() => handlePay('order', o.id)}
                               disabled={payingId === `order-${o.id}`}
                             >
-                              {payingId === `order-${o.id}` ? 'Processing...' : 'Pay Now'}
+                              {payingId === `order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.total_amount + (o.service_fee || 100000))}`}
                             </button>
                           )}
                         </div>
@@ -347,15 +358,19 @@ export default function PatientOrdersPage() {
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6, margin: '0 0 12px' }}>{o.description}</p>
 
                         {o.quoted_price && (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Quoted: {fmt(o.quoted_price)}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                              {fmt(o.quoted_price)} + ₦1,000 service fee
+                              {' = '}
+                              <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.quoted_price + 100000)} total</strong>
+                            </div>
                             {canPay && (
                               <button
                                 className="skeu-btn-accent"
                                 onClick={() => handlePay('custom_order', o.id)}
                                 disabled={payingId === `custom_order-${o.id}`}
                               >
-                                {payingId === `custom_order-${o.id}` ? 'Processing...' : 'Pay Now'}
+                                {payingId === `custom_order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.quoted_price + 100000)}`}
                               </button>
                             )}
                           </div>
@@ -511,11 +526,15 @@ export default function PatientOrdersPage() {
                       </div>
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6, margin: '0 0 10px' }}>{o.description}</p>
                       {o.quoted_price && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Quoted: {fmt(o.quoted_price)}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                            {fmt(o.quoted_price)} + ₦1,000 service fee
+                            {' = '}
+                            <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.quoted_price + 100000)} total</strong>
+                          </div>
                           {canPay && (
                             <button className="skeu-btn-accent" onClick={() => handlePay('custom_order', o.id)} disabled={payingId === `custom_order-${o.id}`}>
-                              {payingId === `custom_order-${o.id}` ? 'Processing...' : 'Pay Now'}
+                              {payingId === `custom_order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.quoted_price + 100000)}`}
                             </button>
                           )}
                         </div>

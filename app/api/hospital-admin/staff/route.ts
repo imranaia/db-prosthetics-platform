@@ -113,9 +113,10 @@ export async function POST(req: NextRequest) {
   addStaff();
 
   try {
-    const { sendWelcomeHospitalAdmin } = await import('@/lib/email');
-    await sendWelcomeHospitalAdmin({
+    const { sendWelcomeStaffMember } = await import('@/lib/email');
+    await sendWelcomeStaffMember({
       to: email,
+      role: role as 'doctor' | 'po_specialist',
       hospitalName: hospital.name,
       tempPassword: password,
       loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/login`,

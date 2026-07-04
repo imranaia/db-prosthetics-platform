@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { sendWelcomeHospitalAdmin } from '@/lib/email';
+import { sendWelcomeStaffMember } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -70,8 +70,9 @@ export async function POST(req: NextRequest) {
 
   // Send welcome email — don't fail the request if email fails
   try {
-    await sendWelcomeHospitalAdmin({
+    await sendWelcomeStaffMember({
       to: admin_email,
+      role: 'hospital_admin',
       hospitalName: name,
       tempPassword: admin_password,
       loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbprosthetics.com'}/login`,

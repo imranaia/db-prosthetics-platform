@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
+import { sendAdminNewOrderNotification } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -170,6 +171,27 @@ export async function POST(req: NextRequest) {
       body.consent.clinician_signature ?? null,
       user.role,
     );
+  }
+
+  if (newOrderId && patientIdForConsent) {
+    try {
+      const patient = db.prepare('SELECT full_name FROM patients WHERE id = ?').get(patientIdForConsent) as { full_name: string } | undefined;
+      const createdByRole = user.role === 'super_admin' ? 'doctor' : user.role;
+      await sendAdminNewOrderNotification({
+        orderId: newOrderId as number,
+        orderType: 'custom_order',
+        patientName: patient?.full_name || `Patient #${patientIdForConsent}`,
+        createdByRole,
+        description: body.description.trim(),
+        category: body.category || null,
+        productTotalKobo: null, // quoted by admin after review
+        serviceFeeKobo: 100000,
+        paymentTarget,
+        adminUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/dashboard/super-admin/orders`,
+      });
+    } catch (e) {
+      console.error('[orders/custom] admin notification failed', e);
+    }
   }
 
   return NextResponse.json({ success: true }, { status: 201 });

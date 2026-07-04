@@ -70,18 +70,27 @@ function ctaButton(label: string, url: string): string {
   </div>`;
 }
 
-export async function sendWelcomeHospitalAdmin(opts: {
+const ROLE_LABELS: Record<string, string> = {
+  hospital_admin: 'Hospital Administrator',
+  doctor: 'Doctor',
+  po_specialist: 'P&O Specialist',
+};
+
+export async function sendWelcomeStaffMember(opts: {
   to: string;
-  hospitalName: string;
+  role: 'hospital_admin' | 'doctor' | 'po_specialist';
+  hospitalName?: string | null;
   tempPassword: string;
   loginUrl: string;
 }): Promise<void> {
-  const { to, hospitalName, tempPassword, loginUrl } = opts;
+  const { to, role, hospitalName, tempPassword, loginUrl } = opts;
+  const roleLabel = ROLE_LABELS[role] || 'Staff Member';
+  const atHospital = hospitalName ? ` for <strong>${hospitalName}</strong>` : '';
 
   const content = `
     <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">Welcome to DB Prosthetics</h2>
     <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
-      You have been set up as the <strong>Hospital Administrator</strong> for <strong>${hospitalName}</strong> on the DB Prosthetics platform.
+      You have been set up as a <strong>${roleLabel}</strong>${atHospital} on the DB Prosthetics platform.
     </p>
 
     <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
@@ -94,7 +103,7 @@ export async function sendWelcomeHospitalAdmin(opts: {
     ])}
 
     <p style="margin:16px 0 4px;font-size:13px;color:#6b7280;line-height:1.6;">
-      Keep these credentials safe. Once you sign in, you will be prompted to choose a new password.
+      Keep these credentials safe. Once you sign in, you will be prompted to choose a new password and complete your profile.
     </p>
 
     ${ctaButton('Sign In to Your Dashboard', loginUrl)}
@@ -108,11 +117,11 @@ export async function sendWelcomeHospitalAdmin(opts: {
     await getResend().emails.send({
       from: FROM,
       to,
-      subject: `Welcome to DB Prosthetics — Your Admin Account for ${hospitalName}`,
+      subject: `Welcome to DB Prosthetics — Your ${roleLabel} Account${hospitalName ? ` for ${hospitalName}` : ''}`,
       html: baseTemplate(content),
     });
   } catch (err) {
-    console.error('[email] sendWelcomeHospitalAdmin failed:', err);
+    console.error('[email] sendWelcomeStaffMember failed:', err);
   }
 }
 
@@ -159,5 +168,97 @@ export async function sendWelcomePatient(opts: {
     });
   } catch (err) {
     console.error('[email] sendWelcomePatient failed:', err);
+  }
+}
+
+function naira(kobo: number): string {
+  return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0 });
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  upper_limb: 'Upper Limb', lower_limb: 'Lower Limb', facial: 'Facial', spinal: 'Spinal', other: 'Other',
+};
+const CREATOR_LABELS: Record<string, string> = {
+  patient: 'the patient', doctor: 'a doctor', po_specialist: 'a P&O specialist', super_admin: 'a super admin',
+};
+
+/** Notify the Super Admin whenever a patient/doctor/PO specialist places an order. */
+export async function sendAdminNewOrderNotification(opts: {
+  orderId: number;
+  orderType: 'order' | 'custom_order';
+  patientName: string;
+  createdByRole: string;
+  items?: Array<{ name: string; quantity: number; priceKobo: number }>;
+  description?: string;
+  category?: string | null;
+  productTotalKobo?: number | null;
+  serviceFeeKobo: number;
+  paymentTarget: string;
+  adminUrl: string;
+}): Promise<void> {
+  const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+  if (!adminEmail) return;
+
+  const {
+    orderId, orderType, patientName, createdByRole, items, description, category,
+    productTotalKobo, serviceFeeKobo, paymentTarget, adminUrl,
+  } = opts;
+
+  const itemsRows = items && items.length > 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e5e0d8;border-radius:8px;overflow:hidden;">
+        ${items.map(i => `<tr>
+          <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #f0ece4;">${i.name} &times;${i.quantity}</td>
+          <td style="padding:10px 14px;font-size:13px;color:#1b3d5e;font-weight:700;text-align:right;border-bottom:1px solid #f0ece4;">${naira(i.priceKobo * i.quantity)}</td>
+        </tr>`).join('')}
+      </table>`
+    : '';
+
+  const totalLine = productTotalKobo != null
+    ? `<p style="margin:0 0 4px;font-size:14px;color:#374151;">Product total: <strong>${naira(productTotalKobo)}</strong></p>
+       <p style="margin:0 0 20px;font-size:14px;color:#374151;">Service fee: <strong>${naira(serviceFeeKobo)}</strong> &middot; Patient pays: <strong style="color:#0f2438;">${naira(productTotalKobo + serviceFeeKobo)}</strong></p>`
+    : `<p style="margin:0 0 20px;font-size:14px;color:#6b7280;">No price set yet — quote this order to let the patient know what they'll pay (plus the ₦1,000 service fee).</p>`;
+
+  const content = `
+    <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">New ${orderType === 'custom_order' ? 'Custom' : 'Product'} Order</h2>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      Placed by ${CREATOR_LABELS[createdByRole] || createdByRole} for <strong>${patientName}</strong>.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;border:1px solid #e5e0d8;border-radius:8px;margin-bottom:16px;">
+      <tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;width:140px;">Order</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">#${orderId}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;">Patient</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">${patientName}</td>
+      </tr>
+      ${category ? `<tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;">Category</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">${CATEGORY_LABELS[category] || category}</td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;">Who pays</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">${paymentTarget === 'patient' ? 'Patient' : 'Requester'}</td>
+      </tr>
+    </table>
+
+    ${description ? `<p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;"><strong>Description:</strong> ${description}</p>` : ''}
+
+    ${itemsRows}
+    ${totalLine}
+
+    ${ctaButton('View Order', adminUrl)}
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: adminEmail,
+      subject: `New Order #${orderId} — ${patientName}`,
+      html: baseTemplate(content),
+    });
+  } catch (err) {
+    console.error('[email] sendAdminNewOrderNotification failed:', err);
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect, useState } from 'react';
-import { UserCircle, Pencil, X } from 'lucide-react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { UserCircle, Pencil, X, AlertCircle } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import SkeuSelect from '@/components/ui/SkeuSelect';
@@ -48,7 +49,17 @@ function Field({ label, value }: { label: string; value: string | null | undefin
 }
 
 export default function DoctorProfilePage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
+      <DoctorProfilePageInner />
+    </Suspense>
+  );
+}
+
+function DoctorProfilePageInner() {
   const { user, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const requiredMode = searchParams.get('required') === '1';
   const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -79,6 +90,12 @@ export default function DoctorProfilePage() {
     if (!user || loading) return;
     loadProfile();
   }, [user, loading]);
+
+  // Arrived here via the profile-completion gate — jump straight into edit mode.
+  useEffect(() => {
+    if (requiredMode && doctor && !editing) startEdit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requiredMode, doctor]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
@@ -160,6 +177,13 @@ export default function DoctorProfilePage() {
           <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Profile</h1>
         </div>
       </div>
+
+      {requiredMode && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontSize: '0.88rem' }}>
+          <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+          <span>Please complete your profile below before continuing — this only needs to be done once.</span>
+        </div>
+      )}
 
       {/* Professional Info */}
       <div className="skeu-card" style={{ padding: 24, marginBottom: 20 }}>
