@@ -13,15 +13,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  const event = JSON.parse(body) as { event: string; data: { status: string; reference: string; metadata?: { appointment_id?: number } } };
+  const event = JSON.parse(body) as {
+    event: string;
+    data: { status: string; reference: string; metadata?: { type?: string; record_id?: number; appointment_id?: number } };
+  };
 
   if (event.event === 'charge.success' && event.data.status === 'success') {
     const { reference, metadata } = event.data;
     const db = getDb();
 
-    if (metadata?.appointment_id) {
+    // metadata.appointment_id is the legacy shape from before orders/custom
+    // orders were wired up — kept so in-flight transactions still resolve.
+    const type = metadata?.type || (metadata?.appointment_id ? 'appointment' : null);
+    const recordId = metadata?.record_id ?? metadata?.appointment_id;
+
+    if (type === 'appointment' && recordId) {
       db.prepare(`UPDATE appointments SET payment_status = 'paid', status = 'confirmed' WHERE id = ? AND paystack_ref = ?`)
-        .run(metadata.appointment_id, reference);
+        .run(recordId, reference);
+    } else if (type === 'order' && recordId) {
+      db.prepare(`UPDATE orders SET payment_status = 'paid', status = 'processing' WHERE id = ? AND paystack_ref = ?`)
+        .run(recordId, reference);
+    } else if (type === 'custom_order' && recordId) {
+      db.prepare(`UPDATE custom_orders SET payment_status = 'paid', status = 'paid' WHERE id = ? AND paystack_ref = ?`)
+        .run(recordId, reference);
     }
   }
 

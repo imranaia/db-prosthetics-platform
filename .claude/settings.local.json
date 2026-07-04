@@ -103,7 +103,11 @@
       "Bash(rm -f /tmp/gha.txt /tmp/gpo.txt /tmp/gp.txt)",
       "Bash(node _verify_fix.js)",
       "Bash(rm -f _verify_fix.js _verify_grid_fix.png _check_orders.js)",
-      "Bash(rm -rf _orders_shots)"
+      "Bash(rm -rf _orders_shots)",
+      "Bash(railway variables *)",
+      "Bash(openssl rand *)",
+      "Bash(rm -f /tmp/pt.txt)",
+      "Bash(git status *)"
     ]
   }
 }
