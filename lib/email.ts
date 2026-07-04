@@ -171,6 +171,48 @@ export async function sendWelcomePatient(opts: {
   }
 }
 
+export async function sendPasswordReset(opts: {
+  to: string;
+  fullName?: string | null;
+  tempPassword: string;
+  loginUrl: string;
+}): Promise<void> {
+  const { to, fullName, tempPassword, loginUrl } = opts;
+
+  const content = `
+    <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">Your Password Was Reset</h2>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      ${fullName ? `Hi ${fullName}, an` : 'An'} administrator has reset your DB Prosthetics account password.
+    </p>
+
+    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
+      Use the temporary password below to sign in. You will be asked to set a new password immediately.
+    </p>
+
+    ${credentialsBox([
+      { label: 'Email', value: to },
+      { label: 'Temp. Password', value: tempPassword },
+    ])}
+
+    ${ctaButton('Sign In', loginUrl)}
+
+    <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;line-height:1.6;text-align:center;">
+      If you did not request this change, please contact the DB Prosthetics support team immediately.
+    </p>
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: 'DB Prosthetics — Your Password Was Reset',
+      html: baseTemplate(content),
+    });
+  } catch (err) {
+    console.error('[email] sendPasswordReset failed:', err);
+  }
+}
+
 function naira(kobo: number): string {
   return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0 });
 }

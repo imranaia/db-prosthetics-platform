@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2, Pencil, KeyRound, Check, X } from 'lucide-react';
 
 interface StaffMember {
   role: 'doctor' | 'po_specialist';
@@ -46,7 +46,12 @@ export default function HospitalAdminStaffPage() {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [deleting, setDeleting] = useState<number | null>(null);
-  const { confirm, dialog } = useConfirmDialog();
+  const { confirm, alertUser, dialog } = useConfirmDialog();
+
+  const [editingStaffId, setEditingStaffId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<Partial<StaffMember>>({});
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [resettingId, setResettingId] = useState<number | null>(null);
 
   const load = () => {
     fetch('/api/hospital-admin/staff')
@@ -126,11 +131,61 @@ export default function HospitalAdminStaffPage() {
     setDeleting(null);
   }
 
+  function startEdit(s: StaffMember) {
+    setEditingStaffId(s.staff_id);
+    setEditForm({ ...s });
+  }
+
+  async function saveEdit(role: 'doctor' | 'po_specialist') {
+    if (editingStaffId == null) return;
+    setSavingEdit(true);
+    const res = await fetch('/api/hospital-admin/staff', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff_id: editingStaffId, role, ...editForm }),
+    });
+    setSavingEdit(false);
+    if (res.ok) { setEditingStaffId(null); setEditForm({}); load(); }
+    else { const d = await res.json(); await alertUser(d.error || 'Failed to save changes.', { title: 'Could Not Save' }); }
+  }
+
+  async function handleResetPassword(s: StaffMember) {
+    const ok = await confirm(`Reset the password for ${s.email}? They'll be emailed a new temporary password and must set a new one on next login.`, { title: 'Reset Password', confirmLabel: 'Reset Password' });
+    if (!ok) return;
+    setResettingId(s.staff_id);
+    const res = await fetch('/api/hospital-admin/staff/reset-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff_id: s.staff_id, role: s.role }),
+    });
+    setResettingId(null);
+    if (res.ok) await alertUser(`A new temporary password has been emailed to ${s.email}.`, { title: 'Password Reset' });
+    else { const d = await res.json(); await alertUser(d.error || 'Failed to reset password.', { title: 'Could Not Reset Password' }); }
+  }
+
   function StaffCard({ s }: { s: StaffMember }) {
+    if (editingStaffId === s.staff_id) {
+      return (
+        <div style={{ padding: '14px 18px', borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
+          <div className="form-grid-2" style={{ gap: 10, marginBottom: 12 }}>
+            <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Email</label><input className="skeu-input" type="email" value={editForm.email ?? ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+            {s.role === 'doctor' && (
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
+            )}
+            <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+            {s.role === 'doctor' && (
+              <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Specialization</label><input className="skeu-input" value={editForm.specialization ?? ''} onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} /></div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => saveEdit(s.role)} disabled={savingEdit} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 16px', borderRadius: 7, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}><Check size={13} />{savingEdit ? 'Saving…' : 'Save'}</button>
+            <button onClick={() => { setEditingStaffId(null); setEditForm({}); }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-muted)' }}><X size={13} />Cancel</button>
+          </div>
+        </div>
+      );
+    }
     const displayName = (s.role === 'doctor' && s.full_name) ? s.full_name : s.email;
     const initial = displayName.charAt(0).toUpperCase();
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '14px 18px', borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)', fontSize: '0.85rem', flexShrink: 0 }}>
             {initial}
@@ -153,14 +208,29 @@ export default function HospitalAdminStaffPage() {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => handleDelete(s)}
-          disabled={deleting === s.staff_id}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid #fee2e2', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-        >
-          <Trash2 size={14} />
-          {deleting === s.staff_id ? 'Removing...' : 'Remove'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => startEdit(s)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.07)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+          >
+            <Pencil size={13} /> Edit
+          </button>
+          <button
+            onClick={() => handleResetPassword(s)}
+            disabled={resettingId === s.staff_id}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(180,117,31,0.3)', background: 'rgba(180,117,31,0.08)', color: '#b45719', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+          >
+            <KeyRound size={13} /> {resettingId === s.staff_id ? 'Resetting…' : 'Reset Password'}
+          </button>
+          <button
+            onClick={() => handleDelete(s)}
+            disabled={deleting === s.staff_id}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid #fee2e2', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+          >
+            <Trash2 size={14} />
+            {deleting === s.staff_id ? 'Removing...' : 'Remove'}
+          </button>
+        </div>
       </div>
     );
   }

@@ -5,7 +5,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
-import { Building2, Plus, Trash2, X } from 'lucide-react';
+import { Building2, Plus, Trash2, X, Pencil, KeyRound, Check } from 'lucide-react';
 
 interface Hospital {
   id: number; name: string; state: string; lga?: string;
@@ -23,7 +23,12 @@ export default function HospitalsPage() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const { confirm, dialog } = useConfirmDialog();
+  const { confirm, alertUser, dialog } = useConfirmDialog();
+
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Hospital>>({});
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [resettingId, setResettingId] = useState<number | null>(null);
 
   async function fetchHospitals() {
     const res = await fetch('/api/admin/hospitals');
@@ -52,6 +57,33 @@ export default function HospitalsPage() {
     if (!ok) return;
     await fetch(`/api/admin/hospitals/${id}`, { method: 'DELETE' });
     fetchHospitals();
+  }
+
+  function startEdit(h: Hospital) {
+    setEditId(h.id);
+    setEditForm({ name: h.name, state: h.state, lga: h.lga || '', landmark: h.landmark || '', address: h.address || '', admin_email: h.admin_email || '' });
+  }
+
+  async function saveEdit() {
+    if (editId == null) return;
+    setSavingEdit(true);
+    const res = await fetch(`/api/admin/hospitals/${editId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm),
+    });
+    setSavingEdit(false);
+    if (res.ok) { setEditId(null); setEditForm({}); fetchHospitals(); }
+    else { const d = await res.json(); await alertUser(d.error || 'Failed to save changes.', { title: 'Could Not Save' }); }
+  }
+
+  async function handleResetPassword(h: Hospital) {
+    const ok = await confirm(`Reset the password for ${h.admin_email}? They'll be emailed a new temporary password and must set a new one on next login.`, { title: 'Reset Password', confirmLabel: 'Reset Password' });
+    if (!ok) return;
+    setResettingId(h.id);
+    const res = await fetch(`/api/admin/hospitals/${h.id}/reset-password`, { method: 'POST' });
+    setResettingId(null);
+    if (res.ok) await alertUser(`A new temporary password has been emailed to ${h.admin_email}.`, { title: 'Password Reset' });
+    else { const d = await res.json(); await alertUser(d.error || 'Failed to reset password.', { title: 'Could Not Reset Password' }); }
   }
 
   return (
@@ -143,7 +175,35 @@ export default function HospitalsPage() {
             <tbody>
               {hospitals.length === 0 ? (
                 <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No hospitals yet. Add your first one above.</td></tr>
-              ) : hospitals.map(h => (
+              ) : hospitals.map(h => editId === h.id ? (
+                <tr key={h.id}>
+                  <td colSpan={5} style={{ padding: '16px' }}>
+                    <div className="form-grid-2" style={{ gap: 10, marginBottom: 12 }}>
+                      <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Hospital Name</label><input className="skeu-input" value={editForm.name ?? ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
+                      <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Admin Email</label><input className="skeu-input" type="email" value={editForm.admin_email ?? ''} onChange={e => setEditForm({ ...editForm, admin_email: e.target.value })} /></div>
+                      <div>
+                        <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
+                        <select className="skeu-select" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value, lga: '' })}>
+                          {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
+                        <select className="skeu-select" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} disabled={!editForm.state}>
+                          <option value="">Select LGA</option>
+                          {getLGAs(editForm.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
+                      <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Landmark</label><input className="skeu-input" value={editForm.landmark ?? ''} onChange={e => setEditForm({ ...editForm, landmark: e.target.value })} /></div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={saveEdit} disabled={savingEdit} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 16px', borderRadius: 7, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}><Check size={13} />{savingEdit ? 'Saving…' : 'Save'}</button>
+                      <button onClick={() => { setEditId(null); setEditForm({}); }} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Cancel</button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
                 <tr key={h.id}>
                   <td style={{ fontWeight: 600, color: 'var(--text-head)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -158,9 +218,17 @@ export default function HospitalsPage() {
                   <td style={{ color: 'var(--text-muted)' }}>{h.admin_email || '—'}</td>
                   <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(h.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                   <td>
-                    <button onClick={() => handleDelete(h.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.07)', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      <Trash2 size={13} /> Delete
-                    </button>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => startEdit(h)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.07)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        <Pencil size={13} /> Edit
+                      </button>
+                      <button onClick={() => handleResetPassword(h)} disabled={resettingId === h.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(180,117,31,0.3)', background: 'rgba(180,117,31,0.08)', color: '#b45719', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        <KeyRound size={13} /> {resettingId === h.id ? 'Resetting…' : 'Reset Password'}
+                      </button>
+                      <button onClick={() => handleDelete(h.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.07)', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
