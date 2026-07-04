@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
-import { ShoppingCart, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { ShoppingCart, Package } from 'lucide-react';
 
 interface OrderItem { product_name: string; quantity: number; price_at_order: number; }
 interface Order {
@@ -74,11 +74,9 @@ export default function OrdersPage() {
   // Standard orders
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState('all');
-  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Custom orders
   const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
-  const [expandedCust, setExpandedCust] = useState<number | null>(null);
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [quoteAmount, setQuoteAmount] = useState('');
   const [quoteNotes, setQuoteNotes] = useState('');
@@ -177,183 +175,157 @@ export default function OrdersPage() {
             ))}
           </div>
 
-          <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div className="table-scroll">
-              <table className="dash-table">
-                <thead><tr><th>#</th><th>Patient</th><th>Status</th><th>Total</th><th>Payment</th><th>Fulfillment</th><th>Date</th><th></th></tr></thead>
-                <tbody>
-                  {visible.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No orders in this category.</td></tr>
-                  ) : visible.flatMap(o => {
-                    const ss = S_STYLE[o.status] || { bg: '#f3f4f6', color: '#6b7280' };
-                    const fs = o.fulfillment_status || 'pending';
-                    const fStyle = FULFILLMENT_STYLE[fs] || { bg: '#f3f4f6', color: '#6b7280' };
-                    const rows: React.ReactElement[] = [(
-                      <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}>
-                        <td style={{ color: 'var(--text-muted)', fontFamily: 'monospace' }}>#{o.id}</td>
-                        <td style={{ fontWeight: 600, color: 'var(--text-head)' }}>{o.patient_name}</td>
-                        <td><span className="status-badge" style={{ background: ss.bg, color: ss.color }}>{o.status}</span></td>
-                        <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(o.total_amount)}</td>
-                        <td>
-                          <span className="status-badge" style={{ background: o.payment_status === 'paid' ? 'rgba(22,163,74,0.12)' : 'rgba(234,179,8,0.12)', color: o.payment_status === 'paid' ? '#16a34a' : '#a16207' }}>
-                            {o.payment_status}
-                          </span>
-                        </td>
-                        <td><span className="status-badge" style={{ background: fStyle.bg, color: fStyle.color }}>{fs.replace(/_/g, ' ')}</span></td>
-                        <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                        <td>{expandedId === o.id ? <ChevronUp size={15} color="var(--text-muted)" /> : <ChevronDown size={15} color="var(--text-muted)" />}</td>
-                      </tr>
-                    )];
-                    if (expandedId === o.id) {
-                      rows.push(
-                        <tr key={`${o.id}-items`}>
-                          <td colSpan={8} style={{ padding: 0, background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
-                            <div style={{ padding: '14px 20px 14px 40px' }}>
-                              {o.items?.length > 0 && (
-                                <>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: '10px' }}>Order Items</div>
-                                  {o.items.map((item, i) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
-                                      <Package size={13} color="var(--primary)" style={{ flexShrink: 0 }} />
-                                      <span style={{ fontSize: '0.875rem', fontWeight: 500, flex: 1 }}>{item.product_name}</span>
-                                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>x{item.quantity}</span>
-                                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
-                                    </div>
-                                  ))}
-                                </>
-                              )}
-                              <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
-                                {fs === 'pending' && (
-                                  <button onClick={() => updateFulfillment(o.id, 'confirmed')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #1d4ed8', background: '#dbeafe', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Confirm Order</button>
-                                )}
-                                {fs === 'confirmed' && (
-                                  <button onClick={() => updateFulfillment(o.id, 'manufacturing')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #6d28d9', background: '#f3e8ff', color: '#6d28d9', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Mark Manufacturing</button>
-                                )}
-                                {fs === 'manufacturing' && (
-                                  <button onClick={() => updateFulfillment(o.id, 'dispatched')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #c2410c', background: '#fed7aa', color: '#c2410c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Mark Dispatched</button>
-                                )}
-                                {o.status !== 'cancelled' && o.status !== 'fulfilled' && (
-                                  <button onClick={() => cancelOrder(o.id)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid #b91c1c', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Cancel Order</button>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    }
-                    return rows;
-                  })}
-                </tbody>
-              </table>
+          {visible.length === 0 ? (
+            <div className="skeu-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>No orders in this category.</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              {visible.map(o => {
+                const ss = S_STYLE[o.status] || { bg: '#f3f4f6', color: '#6b7280' };
+                const fs = o.fulfillment_status || 'pending';
+                const fStyle = FULFILLMENT_STYLE[fs] || { bg: '#f3f4f6', color: '#6b7280' };
+                return (
+                  <div key={o.id} className="skeu-card" style={{ padding: 16, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>#{o.id}</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-head)' }}>{o.patient_name}</div>
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <span className="status-badge" style={{ background: ss.bg, color: ss.color }}>{o.status}</span>
+                      <span className="status-badge" style={{ background: o.payment_status === 'paid' ? 'rgba(22,163,74,0.12)' : 'rgba(234,179,8,0.12)', color: o.payment_status === 'paid' ? '#16a34a' : '#a16207' }}>
+                        {o.payment_status}
+                      </span>
+                      <span className="status-badge" style={{ background: fStyle.bg, color: fStyle.color }}>{fs.replace(/_/g, ' ')}</span>
+                    </div>
+
+                    {o.items?.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        {o.items.map((item, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                            <Package size={12} color="var(--primary)" style={{ flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.82rem', fontWeight: 500, flex: 1 }}>{item.product_name}</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>x{item.quantity}</span>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid var(--border-card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total</span>
+                      <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>{fmt(o.total_amount)}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {fs === 'pending' && (
+                        <button onClick={() => updateFulfillment(o.id, 'confirmed')} style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid #1d4ed8', background: '#dbeafe', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Confirm Order</button>
+                      )}
+                      {fs === 'confirmed' && (
+                        <button onClick={() => updateFulfillment(o.id, 'manufacturing')} style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid #6d28d9', background: '#f3e8ff', color: '#6d28d9', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Mark Manufacturing</button>
+                      )}
+                      {fs === 'manufacturing' && (
+                        <button onClick={() => updateFulfillment(o.id, 'dispatched')} style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid #c2410c', background: '#fed7aa', color: '#c2410c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Mark Dispatched</button>
+                      )}
+                      {o.status !== 'cancelled' && o.status !== 'fulfilled' && (
+                        <button onClick={() => cancelOrder(o.id)} style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid #b91c1c', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Cancel Order</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </>
       ) : (
         /* Custom Orders Tab */
-        <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="table-scroll">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Who Ordered</th>
-                  <th>Patient</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Quoted Price</th>
-                  <th>Created</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {customOrders.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No custom orders yet.</td></tr>
-                ) : customOrders.flatMap(o => {
-                  const ss = CUSTOM_S_STYLE[o.status] || { bg: '#f3f4f6', color: '#6b7280' };
-                  const isExpanded = expandedCust === o.id;
-                  const rows: React.ReactElement[] = [(
-                    <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => setExpandedCust(isExpanded ? null : o.id)}>
-                      <td style={{ fontWeight: 500, color: 'var(--text-head)' }}>{creatorLabel(o)}</td>
-                      <td style={{ color: 'var(--text-body)' }}>{o.patient_name || '—'}</td>
-                      <td style={{ color: 'var(--text-body)' }}>{o.category ? (CATEGORIES[o.category] || o.category) : '—'}</td>
-                      <td><span className="status-badge" style={{ background: ss.bg, color: ss.color }}>{o.status}</span></td>
-                      <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{o.quoted_price ? fmt(o.quoted_price) : '—'}</td>
-                      <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                      <td>{isExpanded ? <ChevronUp size={15} color="var(--text-muted)" /> : <ChevronDown size={15} color="var(--text-muted)" />}</td>
-                    </tr>
-                  )];
+        customOrders.length === 0 ? (
+          <div className="skeu-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>No custom orders yet.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+            {customOrders.map(o => {
+              const ss = CUSTOM_S_STYLE[o.status] || { bg: '#f3f4f6', color: '#6b7280' };
+              return (
+                <div key={o.id} className="skeu-card" style={{ padding: 16, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-head)' }}>{o.patient_name || '—'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ordered by {creatorLabel(o)}</div>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                  </div>
 
-                  if (isExpanded) {
-                    rows.push(
-                      <tr key={`${o.id}-exp`}>
-                        <td colSpan={7} style={{ padding: '18px 24px', background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-card)' }}>
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Description</div>
-                            <div style={{ fontSize: '0.88rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{o.description}</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <span className="status-badge" style={{ background: ss.bg, color: ss.color }}>{o.status}</span>
+                    {o.category && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{CATEGORIES[o.category] || o.category}</span>}
+                  </div>
+
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.5, marginBottom: 10 }}>{o.description}</div>
+
+                  {o.admin_notes && (
+                    <div style={{ marginBottom: 10, padding: '8px 10px', background: 'rgba(27,61,94,0.04)', borderRadius: 8 }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>Admin Notes</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-body)' }}>{o.admin_notes}</div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid var(--border-card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: o.status === 'pending' ? 10 : 0 }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quoted Price</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>{o.quoted_price ? fmt(o.quoted_price) : '—'}</span>
+                  </div>
+
+                  {o.status === 'pending' && (
+                    quoteId === o.id ? (
+                      <div style={{ marginTop: 10, padding: 14, borderRadius: 10, border: '1px solid var(--border-card)', background: 'rgba(27,61,94,0.03)' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 10 }}>Set Quote</div>
+                        <div style={{ marginBottom: 10 }}>
+                          <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Quoted Price (₦) <span style={{ color: '#dc2626' }}>*</span></label>
+                          <input
+                            type="number" min="0" step="0.01"
+                            className="skeu-input" style={{ width: '100%' }}
+                            value={quoteAmount}
+                            onChange={e => setQuoteAmount(e.target.value)}
+                            placeholder="e.g. 250000 for ₦250,000"
+                          />
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                            Plus a flat ₦1,000 service fee on top — not deducted from it.
                           </div>
-                          {o.admin_notes && (
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Admin Notes</div>
-                              <div style={{ fontSize: '0.85rem', color: 'var(--text-body)' }}>{o.admin_notes}</div>
-                            </div>
-                          )}
-                          {o.status === 'pending' && (
-                            quoteId === o.id ? (
-                              <div style={{ marginTop: 14, padding: 16, borderRadius: 10, border: '1px solid var(--border-card)', background: 'rgba(27,61,94,0.03)' }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>Set Quote</div>
-                                <div className="form-grid-2" style={{ gap: 12, marginBottom: 12 }}>
-                                  <div>
-                                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Quoted Price (₦) <span style={{ color: '#dc2626' }}>*</span></label>
-                                    <input
-                                      type="number" min="0" step="0.01"
-                                      className="skeu-input" style={{ width: '100%' }}
-                                      value={quoteAmount}
-                                      onChange={e => setQuoteAmount(e.target.value)}
-                                      placeholder="e.g. 250000 for ₦250,000"
-                                    />
-                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                                      The patient pays this amount plus a flat ₦1,000 service fee on top — not deducted from it.
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Admin Notes</label>
-                                    <input
-                                      type="text"
-                                      className="skeu-input" style={{ width: '100%' }}
-                                      value={quoteNotes}
-                                      onChange={e => setQuoteNotes(e.target.value)}
-                                      placeholder="Optional notes for the requester"
-                                    />
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: 10 }}>
-                                  <button className="skeu-btn-primary" onClick={() => submitQuote(o.id)} disabled={quoting || !quoteAmount} style={{ flex: 1 }}>
-                                    {quoting ? 'Saving...' : 'Set Quote & Notify'}
-                                  </button>
-                                  <button onClick={() => { setQuoteId(null); setQuoteAmount(''); setQuoteNotes(''); }} style={{ padding: '10px 18px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontWeight: 600, color: 'var(--text-body)', fontSize: '0.88rem' }}>
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={e => { e.stopPropagation(); setQuoteId(o.id); setQuoteAmount(''); setQuoteNotes(''); }}
-                                style={{ marginTop: 10, padding: '8px 18px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.4)', background: 'rgba(59,130,246,0.08)', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-                              >
-                                Set Quote
-                              </button>
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  }
-
-                  return rows;
-                })}
-              </tbody>
-            </table>
+                        </div>
+                        <div style={{ marginBottom: 12 }}>
+                          <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Admin Notes</label>
+                          <input
+                            type="text"
+                            className="skeu-input" style={{ width: '100%' }}
+                            value={quoteNotes}
+                            onChange={e => setQuoteNotes(e.target.value)}
+                            placeholder="Optional notes for the requester"
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="skeu-btn-primary" onClick={() => submitQuote(o.id)} disabled={quoting || !quoteAmount} style={{ flex: 1, padding: '8px' }}>
+                            {quoting ? 'Saving...' : 'Set Quote & Notify'}
+                          </button>
+                          <button onClick={() => { setQuoteId(null); setQuoteAmount(''); setQuoteNotes(''); }} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontWeight: 600, color: 'var(--text-body)', fontSize: '0.85rem' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setQuoteId(o.id); setQuoteAmount(''); setQuoteNotes(''); }}
+                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.4)', background: 'rgba(59,130,246,0.08)', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                      >
+                        Set Quote
+                      </button>
+                    )
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )
       )}
     </div>
   );

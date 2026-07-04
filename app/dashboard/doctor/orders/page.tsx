@@ -123,7 +123,6 @@ export default function DoctorOrdersPage() {
   const [stdSubmitting, setStdSubmitting] = useState(false);
   const [stdMsg, setStdMsg] = useState('');
   const [stdErr, setStdErr] = useState('');
-  const [expandedStd, setExpandedStd] = useState<number | null>(null);
   const [confirmingReceipt, setConfirmingReceipt] = useState<number | null>(null);
 
   // Custom order state
@@ -459,58 +458,45 @@ export default function DoctorOrdersPage() {
           {stdOrders.length > 0 && (
             <div>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>Past Orders</h3>
-              <div className="skeu-card" style={{ overflow: 'hidden' }}>
-                <div className="table-scroll">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: 'rgba(27,61,94,0.04)', borderBottom: '1px solid var(--border-card)' }}>
-                      {['#', 'Patient', 'Total', 'Status', 'Payment', 'Date', ''].map(h => (
-                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stdOrders.map(o => (
-                      <>
-                        <tr key={o.id} style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer' }} onClick={() => setExpandedStd(expandedStd === o.id ? null : o.id)}>
-                          <td style={{ padding: '10px 12px', fontSize: '0.82rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>#{o.id}</td>
-                          <td style={{ padding: '10px 12px', fontSize: '0.88rem', fontWeight: 500, color: 'var(--text-head)' }}>{o.patient_name}</td>
-                          <td style={{ padding: '10px 12px', fontSize: '0.88rem', fontWeight: 600, color: 'var(--primary)' }}>{fmt(o.total_amount)}</td>
-                          <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#b45309' }}>{o.status}</span></td>
-                          <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: o.payment_status === 'paid' ? '#d1fae5' : '#fef3c7', color: o.payment_status === 'paid' ? '#065f46' : '#b45309' }}>{o.payment_status}</span></td>
-                          <td style={{ padding: '10px 12px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</td>
-                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>{expandedStd === o.id ? <ChevronUp size={14} color="var(--text-muted)" /> : <ChevronDown size={14} color="var(--text-muted)" />}</td>
-                        </tr>
-                        {expandedStd === o.id && (
-                          <tr key={`${o.id}-exp`}>
-                            <td colSpan={7} style={{ padding: '12px 20px 12px 32px', background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-card)' }}>
-                              {o.items?.map((item, i) => (
-                                <div key={i} style={{ display: 'flex', gap: 10, padding: '4px 0', fontSize: '0.85rem', color: 'var(--text-body)' }}>
-                                  <Package size={12} color="var(--primary)" style={{ marginTop: 2, flexShrink: 0 }} />
-                                  <span style={{ flex: 1 }}>{item.product_name}</span>
-                                  <span>x{item.quantity}</span>
-                                  <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
-                                </div>
-                              ))}
-                              {o.fulfillment_status === 'dispatched' && (
-                                <div style={{ marginTop: 12 }}>
-                                  <button
-                                    onClick={() => confirmReceipt(o.id)}
-                                    disabled={confirmingReceipt === o.id}
-                                    style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #0f766e', background: '#ccfbf1', color: '#0f766e', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-                                  >
-                                    {confirmingReceipt === o.id ? 'Confirming...' : 'Confirm Receipt (Device With Me)'}
-                                  </button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                {stdOrders.map(o => (
+                  <div key={o.id} className="skeu-card" style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)' }}>{o.patient_name}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>#{o.id}</div>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>{formatDate(o.created_at)}</div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#b45309' }}>{o.status}</span>
+                      <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: o.payment_status === 'paid' ? '#d1fae5' : '#fef3c7', color: o.payment_status === 'paid' ? '#065f46' : '#b45309' }}>{o.payment_status}</span>
+                    </div>
+                    {o.items?.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        {o.items.map((item, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, padding: '4px 0', fontSize: '0.82rem', color: 'var(--text-body)', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                            <Package size={12} color="var(--primary)" style={{ marginTop: 2, flexShrink: 0 }} />
+                            <span style={{ flex: 1 }}>{item.product_name}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>x{item.quantity}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-card)', display: 'flex', justifyContent: 'space-between', marginBottom: o.fulfillment_status === 'dispatched' ? 10 : 0 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total</span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--primary)' }}>{fmt(o.total_amount)}</span>
+                    </div>
+                    {o.fulfillment_status === 'dispatched' && (
+                      <button
+                        onClick={() => confirmReceipt(o.id)}
+                        disabled={confirmingReceipt === o.id}
+                        style={{ width: '100%', padding: '7px 12px', borderRadius: 8, border: '1px solid #0f766e', background: '#ccfbf1', color: '#0f766e', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                      >
+                        {confirmingReceipt === o.id ? 'Confirming...' : 'Confirm Receipt (Device With Me)'}
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -678,7 +664,7 @@ export default function DoctorOrdersPage() {
           {customOrders.length > 0 && (
             <div>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>My Custom Orders</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
                 {customOrders.map(o => {
                   const ss = CUSTOM_STATUS_STYLE[o.status] || { bg: '#f3f4f6', color: '#374151' };
                   const isExpanded = expandedCust === o.id;

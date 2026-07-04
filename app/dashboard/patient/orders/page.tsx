@@ -262,7 +262,7 @@ export default function PatientOrdersPage() {
             {stdOrders.length > 0 && (
               <div>
                 <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Product Orders</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                   {stdOrders.map(o => (
                     <div key={o.id} className="skeu-card" style={{ padding: 18 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
@@ -334,7 +334,7 @@ export default function PatientOrdersPage() {
             {customOrders.length > 0 && (
               <div>
                 <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Custom Orders</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                   {customOrders.map(o => {
                     const ss = CUSTOM_STATUS_STYLE[o.status] || { bg: '#f3f4f6', color: '#374151' };
                     const canPay = o.status === 'quoted' && o.payment_status !== 'paid';
