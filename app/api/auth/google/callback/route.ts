@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/login?error=google_cancelled', req.url));
+    return NextResponse.redirect(`${baseUrl}/login?error=google_cancelled`);
   }
 
   try {
@@ -66,12 +66,12 @@ export async function GET(req: NextRequest) {
     const token = await signToken({ id: row.id, email: row.email, role: row.role });
     const opts  = cookieOptions(token);
     const dest  = ROLE_PATHS[row.role] || '/dashboard/patient';
-    const res   = NextResponse.redirect(new URL(dest, req.url));
+    const res   = NextResponse.redirect(`${baseUrl}${dest}`);
     res.cookies.set(opts);
     return res;
 
   } catch (err) {
     console.error('[google-oauth]', err);
-    return NextResponse.redirect(new URL('/login?error=google_failed', req.url));
+    return NextResponse.redirect(`${baseUrl}/login?error=google_failed`);
   }
 }
