@@ -28,6 +28,9 @@ interface CustomOrder {
   payment_status: string;
   admin_notes: string | null;
   created_at: string;
+  reorder_of_order_id: number | null;
+  reorder_of_custom_order_id: number | null;
+  reorder_reason: string | null;
 }
 
 const STATUS_OPTIONS = ['pending', 'processing', 'fulfilled', 'cancelled'];
@@ -259,6 +262,11 @@ export default function OrdersPage() {
 
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                     <span className="status-badge" style={{ background: ss.bg, color: ss.color }}>{o.status}</span>
+                    {(o.reorder_of_order_id || o.reorder_of_custom_order_id) && (
+                      <span className="status-badge" style={{ background: 'rgba(124,58,237,0.12)', color: '#7c3aed' }}>
+                        Reorder of {o.reorder_of_order_id ? `Order #${o.reorder_of_order_id}` : `Custom Order #${o.reorder_of_custom_order_id}`}
+                      </span>
+                    )}
                     {o.category && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{CATEGORIES[o.category] || o.category}</span>}
                   </div>
 

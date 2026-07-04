@@ -1,10 +1,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect, useState, useRef } from 'react';
-import { ShoppingCart, Package, Upload, X } from 'lucide-react';
-import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
-import ConsentCaptureInline, { ConsentValue, EMPTY_CONSENT } from '@/components/forms/ConsentCaptureInline';
+import { useEffect, useState } from 'react';
+import { ShoppingCart, Package, RotateCcw } from 'lucide-react';
 
 interface StdOrder {
   id: number;
@@ -25,13 +23,8 @@ interface CustomOrder {
   quoted_price: number | null;
   payment_status: string;
   created_at: string;
-}
-
-interface Material {
-  id: number;
-  name: string;
-  description: string | null;
-  in_stock: number;
+  reorder_of_order_id: number | null;
+  reorder_of_custom_order_id: number | null;
 }
 
 const CUSTOM_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
@@ -43,14 +36,6 @@ const CUSTOM_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   fulfilled: { bg: '#f3f4f6', color: '#374151' },
   cancelled: { bg: '#fee2e2', color: '#b91c1c' },
 };
-
-const CATEGORIES = [
-  { value: 'upper_limb', label: 'Upper Limb' },
-  { value: 'lower_limb', label: 'Lower Limb' },
-  { value: 'facial', label: 'Facial' },
-  { value: 'spinal', label: 'Spinal' },
-  { value: 'other', label: 'Other' },
-];
 
 const CATEGORIES_MAP: Record<string, string> = {
   upper_limb: 'Upper Limb',
@@ -71,10 +56,6 @@ function formatDate(dt: string) {
 export default function PatientOrdersPage() {
   const { user, loading } = useAuth();
 
-  // Tab
-  const [activeTab, setActiveTab] = useState<'orders' | 'custom'>('orders');
-
-  // Existing orders data
   const [stdOrders, setStdOrders] = useState<StdOrder[]>([]);
   const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -82,35 +63,22 @@ export default function PatientOrdersPage() {
   const [payErr, setPayErr] = useState('');
   const [confirmingReceipt, setConfirmingReceipt] = useState<number | null>(null);
 
-  // Custom order form state
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [custCategory, setCustCategory] = useState('');
-  const [custDesc, setCustDesc] = useState('');
-  const [custMaterialId, setCustMaterialId] = useState('');
-  const [custBodyParts, setCustBodyParts] = useState<BodyPart[]>([]);
-  const [custPhotosAffected, setCustPhotosAffected] = useState<string[]>([]);
-  const [custPhotosUnaffected, setCustPhotosUnaffected] = useState<string[]>([]);
-  const [uploadingAffected, setUploadingAffected] = useState(false);
-  const [uploadingUnaffected, setUploadingUnaffected] = useState(false);
-  const [custConsent, setCustConsent] = useState<ConsentValue>({ ...EMPTY_CONSENT });
-  const [custSubmitting, setCustSubmitting] = useState(false);
-  const [custErr, setCustErr] = useState('');
-  const [custMsg, setCustMsg] = useState('');
-
-  const photoAffectedRef = useRef<HTMLInputElement>(null);
-  const photoUnaffectedRef = useRef<HTMLInputElement>(null);
+  // Reorder request state
+  const [reorderKey, setReorderKey] = useState<string | null>(null);
+  const [reorderReason, setReorderReason] = useState('');
+  const [reorderSubmitting, setReorderSubmitting] = useState(false);
+  const [reorderErr, setReorderErr] = useState('');
+  const [reorderMsg, setReorderMsg] = useState('');
 
   async function load() {
     try {
-      const [stdRes, custRes, matRes] = await Promise.all([
+      const [stdRes, custRes] = await Promise.all([
         fetch('/api/orders'),
         fetch('/api/orders/custom'),
-        fetch('/api/materials'),
       ]);
-      const [stdData, custData, matData] = await Promise.all([stdRes.json(), custRes.json(), matRes.json()]);
+      const [stdData, custData] = await Promise.all([stdRes.json(), custRes.json()]);
       setStdOrders(Array.isArray(stdData) ? stdData : []);
       setCustomOrders(Array.isArray(custData) ? custData : []);
-      setMaterials(Array.isArray(matData) ? matData : []);
     } finally {
       setDataLoading(false);
     }
@@ -124,8 +92,6 @@ export default function PatientOrdersPage() {
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'patient') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-
-  const selectedMaterial = materials.find(m => m.id === Number(custMaterialId));
 
   async function confirmReceipt(orderId: number) {
     setConfirmingReceipt(orderId);
@@ -159,54 +125,70 @@ export default function PatientOrdersPage() {
     setPayingId(null);
   }
 
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>, type: 'affected' | 'unaffected') {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (type === 'affected') setUploadingAffected(true);
-    else setUploadingUnaffected(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.url) {
-      if (type === 'affected') setCustPhotosAffected(prev => [...prev, data.url]);
-      else setCustPhotosUnaffected(prev => [...prev, data.url]);
-    }
-    if (type === 'affected') { setUploadingAffected(false); if (photoAffectedRef.current) photoAffectedRef.current.value = ''; }
-    else { setUploadingUnaffected(false); if (photoUnaffectedRef.current) photoUnaffectedRef.current.value = ''; }
+  function startReorder(key: string) {
+    setReorderKey(key);
+    setReorderReason('');
+    setReorderErr('');
   }
 
-  async function handleCustOrder(e: React.FormEvent) {
-    e.preventDefault();
-    setCustErr(''); setCustMsg('');
-    if (!custDesc.trim()) { setCustErr('Description is required.'); return; }
-    if (!custConsent.patient_guardian_signature) { setCustErr('Your signature is required to submit a fabrication request.'); return; }
-    setCustSubmitting(true);
+  async function submitReorder(kind: 'order' | 'custom_order', id: number) {
+    if (!reorderReason.trim()) { setReorderErr('Please tell us why you need a reorder.'); return; }
+    setReorderSubmitting(true);
+    setReorderErr('');
     try {
       const res = await fetch('/api/orders/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category: custCategory || undefined,
-          description: custDesc,
-          body_parts: custBodyParts.length > 0 ? JSON.stringify(custBodyParts) : undefined,
-          material_id: custMaterialId ? Number(custMaterialId) : undefined,
-          photos_affected: custPhotosAffected.length > 0 ? custPhotosAffected : undefined,
-          photos_unaffected: custPhotosUnaffected.length > 0 ? custPhotosUnaffected : undefined,
-          consent: custConsent,
+          description: `Reorder request for ${kind === 'order' ? 'Order' : 'Custom Order'} #${id} — ${reorderReason.trim()}`,
+          reorder_reason: reorderReason.trim(),
+          ...(kind === 'order' ? { reorder_of_order_id: id } : { reorder_of_custom_order_id: id }),
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setCustErr(data.error || 'Failed to submit.'); setCustSubmitting(false); return; }
-      setCustMsg('Custom order submitted. Our team will review and quote a price.');
-      setCustCategory(''); setCustDesc(''); setCustMaterialId('');
-      setCustBodyParts([]); setCustPhotosAffected([]); setCustPhotosUnaffected([]);
-      setCustConsent({ ...EMPTY_CONSENT });
+      if (!res.ok) { setReorderErr(data.error || 'Failed to submit reorder request.'); setReorderSubmitting(false); return; }
+      setReorderKey(null);
+      setReorderReason('');
+      setReorderMsg('Reorder request submitted. Our team will review and get back to you.');
+      setTimeout(() => setReorderMsg(''), 6000);
       load();
     } catch {
-      setCustErr('Network error. Please try again.');
+      setReorderErr('Network error. Please try again.');
     }
-    setCustSubmitting(false);
+    setReorderSubmitting(false);
+  }
+
+  function ReorderBlock({ kind, id }: { kind: 'order' | 'custom_order'; id: number }) {
+    const key = `${kind}-${id}`;
+    if (reorderKey === key) {
+      return (
+        <div style={{ marginTop: 10, padding: 12, borderRadius: 8, border: '1px solid var(--border-card)', background: 'rgba(27,61,94,0.03)' }}>
+          <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Why do you need a reorder?</label>
+          <textarea
+            className="skeu-input" style={{ width: '100%', minHeight: 60, resize: 'vertical' }}
+            value={reorderReason} onChange={e => setReorderReason(e.target.value)}
+            placeholder="e.g. it broke, it's too short now, it's worn out…"
+          />
+          {reorderErr && <div style={{ marginTop: 6, fontSize: '0.8rem', color: '#b91c1c' }}>{reorderErr}</div>}
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button className="skeu-btn-accent" onClick={() => submitReorder(kind, id)} disabled={reorderSubmitting} style={{ padding: '7px 16px', fontSize: '0.82rem' }}>
+              {reorderSubmitting ? 'Submitting…' : 'Submit Request'}
+            </button>
+            <button onClick={() => setReorderKey(null)} style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontWeight: 600, color: 'var(--text-body)', fontSize: '0.82rem' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={() => startReorder(key)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+      >
+        <RotateCcw size={13} /> Request Reorder
+      </button>
+    );
   }
 
   const hasOrders = stdOrders.length > 0 || customOrders.length > 0;
@@ -223,308 +205,129 @@ export default function PatientOrdersPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid var(--border-card)' }}>
-        {(['orders', 'custom'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '10px 22px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-              border: 'none', background: 'transparent',
-              color: activeTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-              marginBottom: -2,
-            }}
-          >
-            {tab === 'orders' ? 'My Orders' : 'Custom Order'}
-          </button>
-        ))}
+      <div style={{ marginBottom: 20, padding: '12px 16px', background: 'rgba(27,61,94,0.05)', borderRadius: 10, fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.5 }}>
+        New orders are placed by your doctor, P&amp;O specialist, or the clinic — but if something you already have needs replacing (broken, outgrown, worn out), you can request a reorder below.
       </div>
 
       {payErr && (
         <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{payErr}</div>
       )}
+      {reorderMsg && (
+        <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{reorderMsg}</div>
+      )}
 
       {dataLoading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading...</div>
-      ) : activeTab === 'orders' ? (
-        /* ── MY ORDERS TAB ── */
-        !hasOrders ? (
-          <div className="skeu-card" style={{ padding: '60px 24px', textAlign: 'center' }}>
-            <ShoppingCart size={40} color="var(--text-muted)" style={{ margin: '0 auto 16px' }} />
-            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 8 }}>No orders yet</div>
-            <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>When your doctor or specialist sends you an invoice, it will appear here.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-            {/* Standard Orders */}
-            {stdOrders.length > 0 && (
-              <div>
-                <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Product Orders</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                  {stdOrders.map(o => (
-                    <div key={o.id} className="skeu-card" style={{ padding: 18 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-                        <div>
-                          <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>Order #{o.id}</div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#b45309' }}>{o.status}</span>
-                          <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: o.payment_status === 'paid' ? '#d1fae5' : '#fee2e2', color: o.payment_status === 'paid' ? '#065f46' : '#b91c1c' }}>
-                            {o.payment_status === 'paid' ? 'Paid' : 'Payment Due'}
-                          </span>
-                        </div>
+      ) : !hasOrders ? (
+        <div className="skeu-card" style={{ padding: '60px 24px', textAlign: 'center' }}>
+          <ShoppingCart size={40} color="var(--text-muted)" style={{ margin: '0 auto 16px' }} />
+          <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 8 }}>No orders yet</div>
+          <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>When your doctor or specialist sends you an invoice, it will appear here.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          {/* Standard Orders */}
+          {stdOrders.length > 0 && (
+            <div>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Product Orders</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                {stdOrders.map(o => (
+                  <div key={o.id} className="skeu-card" style={{ padding: 18 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>Order #{o.id}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</div>
                       </div>
-
-                      {o.items?.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
-                          {o.items.map((item, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none', fontSize: '0.85rem' }}>
-                              <Package size={12} color="var(--primary)" style={{ flexShrink: 0 }} />
-                              <span style={{ flex: 1, color: 'var(--text-body)' }}>{item.product_name}</span>
-                              <span style={{ color: 'var(--text-muted)' }}>x{item.quantity}</span>
-                              <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                        <div>
-                          {o.payment_status !== 'paid' ? (
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                              {fmt(o.total_amount)} + {fmt(o.service_fee || 100000)} service fee
-                              {' = '}
-                              <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.total_amount + (o.service_fee || 100000))} total</strong>
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Total paid: {fmt(o.total_amount + (o.service_fee || 100000))}</div>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {(o.fulfillment_status === 'dispatched' || o.fulfillment_status === 'received_by_doctor') && (
-                            <button
-                              onClick={() => confirmReceipt(o.id)}
-                              disabled={confirmingReceipt === o.id}
-                              style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #065f46', background: '#d1fae5', color: '#065f46', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-                            >
-                              {confirmingReceipt === o.id ? 'Confirming...' : "Confirm I've Received This"}
-                            </button>
-                          )}
-                          {o.payment_status !== 'paid' && (
-                            <button
-                              className="skeu-btn-accent"
-                              onClick={() => handlePay('order', o.id)}
-                              disabled={payingId === `order-${o.id}`}
-                            >
-                              {payingId === `order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.total_amount + (o.service_fee || 100000))}`}
-                            </button>
-                          )}
-                        </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#b45309' }}>{o.status}</span>
+                        <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: o.payment_status === 'paid' ? '#d1fae5' : '#fee2e2', color: o.payment_status === 'paid' ? '#065f46' : '#b91c1c' }}>
+                          {o.payment_status === 'paid' ? 'Paid' : 'Payment Due'}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Custom Orders */}
-            {customOrders.length > 0 && (
-              <div>
-                <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Custom Orders</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                  {customOrders.map(o => {
-                    const ss = CUSTOM_STATUS_STYLE[o.status] || { bg: '#f3f4f6', color: '#374151' };
-                    const canPay = o.status === 'quoted' && o.payment_status !== 'paid';
-                    return (
-                      <div key={o.id} className="skeu-card" style={{ padding: 18 }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                          <div>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>
-                              {o.category ? CATEGORIES_MAP[o.category] || o.category : 'Custom Order'}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</div>
+                    {o.items?.length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        {o.items.map((item, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: i < o.items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none', fontSize: '0.85rem' }}>
+                            <Package size={12} color="var(--primary)" style={{ flexShrink: 0 }} />
+                            <span style={{ flex: 1, color: 'var(--text-body)' }}>{item.product_name}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>x{item.quantity}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.price_at_order * item.quantity)}</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: ss.bg, color: ss.color }}>{o.status}</span>
-                            {o.payment_status === 'paid' && (
-                              <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#d1fae5', color: '#065f46' }}>Paid</span>
-                            )}
-                          </div>
-                        </div>
+                        ))}
+                      </div>
+                    )}
 
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6, margin: '0 0 12px' }}>{o.description}</p>
-
-                        {o.quoted_price && (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                              {fmt(o.quoted_price)} + ₦1,000 service fee
-                              {' = '}
-                              <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.quoted_price + 100000)} total</strong>
-                            </div>
-                            {canPay && (
-                              <button
-                                className="skeu-btn-accent"
-                                onClick={() => handlePay('custom_order', o.id)}
-                                disabled={payingId === `custom_order-${o.id}`}
-                              >
-                                {payingId === `custom_order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.quoted_price + 100000)}`}
-                              </button>
-                            )}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        {o.payment_status !== 'paid' ? (
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                            {fmt(o.total_amount)} + {fmt(o.service_fee || 100000)} service fee
+                            {' = '}
+                            <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.total_amount + (o.service_fee || 100000))} total</strong>
                           </div>
+                        ) : (
+                          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>Total paid: {fmt(o.total_amount + (o.service_fee || 100000))}</div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )
-      ) : (
-        /* ── CUSTOM ORDER TAB ── */
-        <div>
-          <div className="skeu-card" style={{ padding: 24, marginBottom: 24 }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 20 }}>Submit a Custom Order</h2>
-            <form onSubmit={handleCustOrder}>
-
-              {/* Category */}
-              <div style={{ marginBottom: 18 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Category</label>
-                <select className="skeu-select" style={{ width: '100%', maxWidth: 320 }} value={custCategory} onChange={e => setCustCategory(e.target.value)}>
-                  <option value="">Select category…</option>
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
-              </div>
-
-              {/* Body Part Selector */}
-              <div style={{ marginBottom: 20 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Affected Body Part(s)</label>
-                <BodySelector value={custBodyParts} onChange={setCustBodyParts} />
-              </div>
-
-              {/* Description */}
-              <div style={{ marginBottom: 18 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Description / Requirements <span style={{ color: '#dc2626' }}>*</span></label>
-                <textarea className="skeu-input" style={{ width: '100%', minHeight: 100, resize: 'vertical' }} value={custDesc} onChange={e => setCustDesc(e.target.value)} placeholder="Describe your needs, measurements, functional requirements…" required />
-              </div>
-
-              {/* Material selection */}
-              <div style={{ marginBottom: 18 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Preferred Material</label>
-                {materials.length === 0 ? (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '10px 0' }}>No materials available. Our team will advise.</div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
-                    <button type="button" onClick={() => setCustMaterialId('')}
-                      style={{ padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: `2px solid ${!custMaterialId ? 'var(--primary)' : 'var(--border-card)'}`, background: !custMaterialId ? 'rgba(27,61,94,0.07)' : 'transparent' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: !custMaterialId ? 'var(--primary)' : 'var(--text-body)' }}>No preference</div>
-                    </button>
-                    {materials.map(m => (
-                      <button key={m.id} type="button" onClick={() => setCustMaterialId(String(m.id))}
-                        style={{ padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: `2px solid ${custMaterialId === String(m.id) ? (m.in_stock ? 'var(--primary)' : '#f87171') : 'var(--border-card)'}`, background: custMaterialId === String(m.id) ? (m.in_stock ? 'rgba(27,61,94,0.07)' : 'rgba(239,68,68,0.05)') : 'transparent' }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: custMaterialId === String(m.id) ? (m.in_stock ? 'var(--primary)' : '#b91c1c') : 'var(--text-head)' }}>{m.name}</div>
-                        {m.description && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{m.description}</div>}
-                        <div style={{ marginTop: 4 }}>
-                          <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: m.in_stock ? '#d1fae5' : '#fee2e2', color: m.in_stock ? '#065f46' : '#b91c1c' }}>
-                            {m.in_stock ? 'In Stock' : 'Out of Stock'}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {selectedMaterial && !selectedMaterial.in_stock && (
-                  <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef3c7', borderRadius: 8, fontSize: '0.82rem', color: '#b45309' }}>
-                    This material is currently out of stock. Your order will be placed but fulfillment may be delayed.
-                  </div>
-                )}
-              </div>
-
-              {/* Photo upload - two sections */}
-              <div style={{ marginBottom: 20 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Reference Photos</label>
-                <div className="form-grid-2" style={{ gap: 16 }}>
-                  {/* Affected limb photos */}
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 8 }}>Affected Limb/Part <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                      {custPhotosAffected.map((url, i) => (
-                        <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button type="button" onClick={() => setCustPhotosAffected(prev => prev.filter((_, j) => j !== i))}
-                            style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                            <X size={10} />
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {(o.fulfillment_status === 'dispatched' || o.fulfillment_status === 'received_by_doctor') && (
+                          <button
+                            onClick={() => confirmReceipt(o.id)}
+                            disabled={confirmingReceipt === o.id}
+                            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #065f46', background: '#d1fae5', color: '#065f46', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            {confirmingReceipt === o.id ? 'Confirming...' : "Confirm I've Received This"}
                           </button>
-                        </div>
-                      ))}
-                      <button type="button" onClick={() => photoAffectedRef.current?.click()} disabled={uploadingAffected}
-                        style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
-                        <Upload size={16} />
-                        <span style={{ fontSize: '0.65rem' }}>{uploadingAffected ? 'Uploading…' : 'Add Photo'}</span>
-                      </button>
-                      <input ref={photoAffectedRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'affected')} />
-                    </div>
-                  </div>
-
-                  {/* Unaffected/healthy reference */}
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-body)', marginBottom: 4 }}>Unaffected Reference Limb <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>Leave empty if not applicable (e.g., bilateral amputation)</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                      {custPhotosUnaffected.map((url, i) => (
-                        <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button type="button" onClick={() => setCustPhotosUnaffected(prev => prev.filter((_, j) => j !== i))}
-                            style={{ position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                            <X size={10} />
+                        )}
+                        {o.payment_status !== 'paid' && (
+                          <button
+                            className="skeu-btn-accent"
+                            onClick={() => handlePay('order', o.id)}
+                            disabled={payingId === `order-${o.id}`}
+                          >
+                            {payingId === `order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.total_amount + (o.service_fee || 100000))}`}
                           </button>
-                        </div>
-                      ))}
-                      <button type="button" onClick={() => photoUnaffectedRef.current?.click()} disabled={uploadingUnaffected}
-                        style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed var(--border-card)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
-                        <Upload size={16} />
-                        <span style={{ fontSize: '0.65rem' }}>{uploadingUnaffected ? 'Uploading…' : 'Add Photo'}</span>
-                      </button>
-                      <input ref={photoUnaffectedRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e, 'unaffected')} />
+                        )}
+                      </div>
                     </div>
+
+                    {o.payment_status === 'paid' && <ReorderBlock kind="order" id={o.id} />}
                   </div>
-                </div>
+                ))}
               </div>
+            </div>
+          )}
 
-              <ConsentCaptureInline value={custConsent} onChange={setCustConsent} />
-
-              {custErr && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custErr}</div>}
-              {custMsg && <div style={{ background: '#d1fae5', color: '#065f46', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 12 }}>{custMsg}</div>}
-
-              <button type="submit" className="skeu-btn-accent" disabled={custSubmitting} style={{ width: '100%' }}>
-                {custSubmitting ? 'Submitting...' : 'Submit Custom Order'}
-              </button>
-            </form>
-          </div>
-
-          {/* Past custom orders */}
+          {/* Custom Orders */}
           {customOrders.length > 0 && (
             <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 12 }}>My Custom Orders</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 14 }}>Custom Orders</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                 {customOrders.map(o => {
                   const ss = CUSTOM_STATUS_STYLE[o.status] || { bg: '#f3f4f6', color: '#374151' };
                   const canPay = o.status === 'quoted' && o.payment_status !== 'paid';
+                  const isReorder = !!(o.reorder_of_order_id || o.reorder_of_custom_order_id);
                   return (
                     <div key={o.id} className="skeu-card" style={{ padding: 18 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
                         <div>
                           <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>
-                            {o.category ? CATEGORIES_MAP[o.category] || o.category : 'Custom Order'}
+                            {isReorder ? 'Reorder Request' : (o.category ? CATEGORIES_MAP[o.category] || o.category : 'Custom Order')}
                           </div>
                           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</div>
                         </div>
-                        <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: ss.bg, color: ss.color }}>{o.status}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: ss.bg, color: ss.color }}>{o.status}</span>
+                          {o.payment_status === 'paid' && (
+                            <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#d1fae5', color: '#065f46' }}>Paid</span>
+                          )}
+                        </div>
                       </div>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6, margin: '0 0 10px' }}>{o.description}</p>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6, margin: '0 0 12px' }}>{o.description}</p>
+
                       {o.quoted_price && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -533,12 +336,18 @@ export default function PatientOrdersPage() {
                             <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>{fmt(o.quoted_price + 100000)} total</strong>
                           </div>
                           {canPay && (
-                            <button className="skeu-btn-accent" onClick={() => handlePay('custom_order', o.id)} disabled={payingId === `custom_order-${o.id}`}>
+                            <button
+                              className="skeu-btn-accent"
+                              onClick={() => handlePay('custom_order', o.id)}
+                              disabled={payingId === `custom_order-${o.id}`}
+                            >
                               {payingId === `custom_order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.quoted_price + 100000)}`}
                             </button>
                           )}
                         </div>
                       )}
+
+                      {o.status === 'fulfilled' && <ReorderBlock kind="custom_order" id={o.id} />}
                     </div>
                   );
                 })}

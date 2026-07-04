@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     rows = db.prepare(`
       SELECT co.*
       FROM custom_orders co
-      WHERE co.patient_id = ? AND co.payment_target = 'patient'
+      WHERE co.patient_id = ?
       ORDER BY co.created_at DESC
     `).all(patient.id);
   } else {
@@ -91,6 +91,9 @@ export async function POST(req: NextRequest) {
     patient_id?: number;
     payment_target?: string;
     consultation_id?: number;
+    reorder_of_order_id?: number;
+    reorder_of_custom_order_id?: number;
+    reorder_reason?: string;
     consent?: {
       patient_guardian_name?: string;
       patient_guardian_signature?: string | null;
@@ -104,16 +107,40 @@ export async function POST(req: NextRequest) {
   if (!body.description?.trim()) {
     return NextResponse.json({ error: 'Description is required.' }, { status: 400 });
   }
+
+  const db = getDb();
+
+  // Patients can't submit a brand-new fabrication order from scratch — only
+  // request a reorder/replacement of a device they already have. New orders
+  // must go through a doctor, P&O specialist, or super admin.
+  if (user.role === 'patient') {
+    if (!body.reorder_of_order_id && !body.reorder_of_custom_order_id) {
+      return NextResponse.json({ error: 'A reorder request must reference an existing order.' }, { status: 400 });
+    }
+    const patientForCheck = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as { id: number } | undefined;
+    if (!patientForCheck) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    if (body.reorder_of_order_id) {
+      const owns = db.prepare('SELECT id FROM orders WHERE id = ? AND patient_id = ?').get(body.reorder_of_order_id, patientForCheck.id);
+      if (!owns) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
+    }
+    if (body.reorder_of_custom_order_id) {
+      const owns = db.prepare('SELECT id FROM custom_orders WHERE id = ? AND patient_id = ?').get(body.reorder_of_custom_order_id, patientForCheck.id);
+      if (!owns) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
+    }
+    if (!body.reorder_reason?.trim()) {
+      return NextResponse.json({ error: 'Please tell us why you need a reorder.' }, { status: 400 });
+    }
+  }
+
   // A patient isn't always attached yet (doctor/po_specialist can leave this
   // order unassigned for now) — consent is inherently patient-specific, so
-  // only require it once a patient is actually named. Patient-initiated
-  // requests always name themselves, so it always applies there.
-  const patientKnown = user.role === 'patient' || !!body.patient_id;
+  // only require it once a patient is actually named. Reorder requests skip
+  // this since they reference a device already covered by prior consent.
+  const patientKnown = (user.role === 'patient' && !body.reorder_of_order_id && !body.reorder_of_custom_order_id) || !!body.patient_id;
   if (patientKnown && !body.consent?.patient_guardian_signature) {
     return NextResponse.json({ error: 'Patient / Guardian signature is required to place a fabrication order.' }, { status: 400 });
   }
 
-  const db = getDb();
   const photosStr = body.photos ? JSON.stringify(body.photos) : null;
   const photosAffectedStr = body.photos_affected ? JSON.stringify(body.photos_affected) : null;
   const photosUnaffectedStr = body.photos_unaffected ? JSON.stringify(body.photos_unaffected) : null;
@@ -144,9 +171,9 @@ export async function POST(req: NextRequest) {
     const patient = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as { id: number } | undefined;
     if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
     const result = db.prepare(`
-      INSERT INTO custom_orders (patient_id, created_by_role, category, description, photos, photos_affected, photos_unaffected, body_parts, material_id, payment_target)
-      VALUES (?, 'patient', ?, ?, ?, ?, ?, ?, ?, 'creator')
-    `).run(patient.id, body.category || null, body.description.trim(), photosStr, photosAffectedStr, photosUnaffectedStr, body.body_parts || null, body.material_id || null);
+      INSERT INTO custom_orders (patient_id, created_by_role, category, description, photos, photos_affected, photos_unaffected, body_parts, material_id, payment_target, reorder_of_order_id, reorder_of_custom_order_id, reorder_reason)
+      VALUES (?, 'patient', ?, ?, ?, ?, ?, ?, ?, 'patient', ?, ?, ?)
+    `).run(patient.id, body.category || null, body.description.trim(), photosStr, photosAffectedStr, photosUnaffectedStr, body.body_parts || null, body.material_id || null, body.reorder_of_order_id || null, body.reorder_of_custom_order_id || null, body.reorder_reason?.trim() || null);
     newOrderId = result.lastInsertRowid;
     patientIdForConsent = patient.id;
   }
