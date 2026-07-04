@@ -5,6 +5,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { UserPlus, Trash2, Pencil, KeyRound, Check, X } from 'lucide-react';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface StaffMember {
   role: 'doctor' | 'po_specialist';
@@ -82,6 +83,7 @@ export default function HospitalAdminStaffPage() {
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
+    if (!isPasswordValid(form.password)) { setFormError(PASSWORD_REQUIREMENT_MESSAGE); return; }
     setSubmitting(true);
     try {
       const res = await fetch('/api/hospital-admin/staff', {

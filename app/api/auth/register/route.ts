@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import getDb from '@/lib/db';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,9 +15,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (password.length < 8) {
+    if (!isPasswordValid(password)) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters.' },
+        { error: PASSWORD_REQUIREMENT_MESSAGE },
         { status: 400 }
       );
     }

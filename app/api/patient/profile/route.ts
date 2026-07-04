@@ -11,7 +11,12 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
 
-  const patient = db.prepare('SELECT * FROM patients WHERE user_id = ?').get(user.id);
+  const patient = db.prepare(`
+    SELECT p.*, u.email
+    FROM patients p
+    JOIN users u ON p.user_id = u.id
+    WHERE p.user_id = ?
+  `).get(user.id);
 
   if (!patient) {
     return NextResponse.json({ error: 'Patient record not found' }, { status: 404 });

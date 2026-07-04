@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 import { sendWelcomeStaffMember } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
@@ -43,6 +44,9 @@ export async function POST(req: NextRequest) {
 
   if (!name || !state || !admin_email || !admin_password) {
     return NextResponse.json({ error: 'Name, state, admin email and password are required' }, { status: 400 });
+  }
+  if (!isPasswordValid(admin_password)) {
+    return NextResponse.json({ error: PASSWORD_REQUIREMENT_MESSAGE }, { status: 400 });
   }
 
   const db = getDb();

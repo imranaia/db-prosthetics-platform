@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -40,7 +41,7 @@ export async function PATCH(req: NextRequest) {
 
   // Password change
   if (body.current_password && body.new_password) {
-    if (body.new_password.length < 8) return NextResponse.json({ error: 'New password must be at least 8 characters.' }, { status: 400 });
+    if (!isPasswordValid(body.new_password)) return NextResponse.json({ error: PASSWORD_REQUIREMENT_MESSAGE }, { status: 400 });
     const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id) as { password_hash: string } | undefined;
     if (!row) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     const valid = await bcrypt.compare(body.current_password, row.password_hash);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import getDb from '@/lib/db';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -9,8 +10,8 @@ export async function POST(req: NextRequest) {
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { new_password } = await req.json() as { new_password: string };
-  if (!new_password || new_password.length < 8) {
-    return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+  if (!new_password || !isPasswordValid(new_password)) {
+    return NextResponse.json({ error: PASSWORD_REQUIREMENT_MESSAGE }, { status: 400 });
   }
 
   const hash = await bcrypt.hash(new_password, 12);

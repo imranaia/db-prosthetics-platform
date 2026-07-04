@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import { Building2, Plus, Trash2, X, Pencil, KeyRound, Check } from 'lucide-react';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface Hospital {
   id: number; name: string; state: string; lga?: string;
@@ -45,6 +46,7 @@ export default function HospitalsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isPasswordValid(form.admin_password)) { setError(PASSWORD_REQUIREMENT_MESSAGE); return; }
     setSubmitting(true); setError('');
     const res = await fetch('/api/admin/hospitals', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -145,7 +147,7 @@ export default function HospitalsPage() {
               </div>
               <div>
                 <label className="skeu-label">Admin Password</label>
-                <input className="skeu-input" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} required placeholder="Temporary login password" />
+                <input className="skeu-input" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} required placeholder="8+ chars, mixed case, number & symbol" />
                 <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                   The hospital admin will receive a login email and be prompted to change this password on first login.
                 </p>

@@ -7,10 +7,12 @@ import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import SkeuSelect from '@/components/ui/SkeuSelect';
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/profile-options';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface PatientProfile {
   id: number;
   full_name: string;
+  email: string;
   phone: string;
   dob: string;
   address: string;
@@ -141,8 +143,8 @@ export default function PatientProfilePage() {
       setPwError('New passwords do not match.');
       return;
     }
-    if (pwForm.new_password.length < 8) {
-      setPwError('New password must be at least 8 characters.');
+    if (!isPasswordValid(pwForm.new_password)) {
+      setPwError(PASSWORD_REQUIREMENT_MESSAGE);
       return;
     }
     setPwSubmitting(true);
@@ -238,6 +240,7 @@ export default function PatientProfilePage() {
           <>
             <div className="form-grid-2" style={{ gap: '0 32px' }}>
               <Field label="Full Name" value={patient.full_name} />
+              <Field label="Email" value={patient.email} />
               <Field label="Date of Birth" value={patient.dob} />
               <Field label="Phone" value={patient.phone} />
               <Field label="Gender" value={patient.gender} />

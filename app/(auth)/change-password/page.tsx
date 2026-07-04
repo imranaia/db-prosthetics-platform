@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DBLogo from '@/components/ui/DBLogo';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 const ROLE_REDIRECTS: Record<string, string> = {
   super_admin: '/dashboard/super-admin',
@@ -33,7 +34,7 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setError('');
     if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!isPasswordValid(form.password)) { setError(PASSWORD_REQUIREMENT_MESSAGE); return; }
     setLoading(true);
     const res = await fetch('/api/auth/change-password', {
       method: 'POST',
@@ -95,7 +96,7 @@ export default function ChangePasswordPage() {
                 id="new-password"
                 type={showPass ? 'text' : 'password'}
                 className="skeu-input"
-                placeholder="At least 8 characters"
+                placeholder="At least 8 chars, mixed case, number & symbol"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
                 required

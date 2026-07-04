@@ -15,7 +15,10 @@ export const SESSION_COOKIE  = 'dbp_session';
 export const MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 function getSecret() {
-  const s = process.env.SESSION_SECRET || 'dbp-fallback-secret-change-in-production-env';
+  const s = process.env.SESSION_SECRET;
+  if (!s) {
+    throw new Error('SESSION_SECRET environment variable is not set. Set it before starting the app.');
+  }
   return new TextEncoder().encode(s);
 }
 

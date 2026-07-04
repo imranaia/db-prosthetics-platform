@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DBLogo from '@/components/ui/DBLogo';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 const ROLE_REDIRECTS: Record<string, string> = {
   super_admin:    '/dashboard/super-admin',
@@ -45,8 +46,8 @@ export default function RegisterPage() {
       setError('Passwords do not match.');
       return;
     }
-    if (form.password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (!isPasswordValid(form.password)) {
+      setError(PASSWORD_REQUIREMENT_MESSAGE);
       return;
     }
 
@@ -178,7 +179,7 @@ export default function RegisterPage() {
                   id="password"
                   type={showPass ? 'text' : 'password'}
                   className="skeu-input"
-                  placeholder="Min. 8 characters"
+                  placeholder="8+ chars, mixed case, number & symbol"
                   value={form.password}
                   onChange={e => update('password', e.target.value)}
                   required

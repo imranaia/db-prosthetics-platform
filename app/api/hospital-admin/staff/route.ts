@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 async function getHospital(userId: number) {
   const db = getDb();
@@ -64,6 +65,9 @@ export async function POST(req: NextRequest) {
 
   if (!role || !email || !password) {
     return NextResponse.json({ error: 'role, email, and password are required.' }, { status: 400 });
+  }
+  if (!isPasswordValid(password)) {
+    return NextResponse.json({ error: PASSWORD_REQUIREMENT_MESSAGE }, { status: 400 });
   }
   if (role !== 'doctor' && role !== 'po_specialist') {
     return NextResponse.json({ error: 'Invalid role. Must be doctor or po_specialist.' }, { status: 400 });

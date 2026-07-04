@@ -8,6 +8,7 @@ import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
 import SkeuSelect from '@/components/ui/SkeuSelect';
 import { GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/profile-options';
+import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface DoctorProfile {
   id: number;
@@ -153,7 +154,7 @@ function DoctorProfilePageInner() {
     setPwError('');
     setPwSuccess('');
     if (pwForm.new_password !== pwForm.confirm_password) { setPwError('New passwords do not match.'); return; }
-    if (pwForm.new_password.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (!isPasswordValid(pwForm.new_password)) { setPwError(PASSWORD_REQUIREMENT_MESSAGE); return; }
     setPwSubmitting(true);
     try {
       const res = await fetch('/api/profile', {
