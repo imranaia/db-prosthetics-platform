@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { sendOrderReceiptEmail } from '@/lib/receipt-notify';
 
 const REDIRECT_PATH: Record<string, string> = {
   appointment: '/dashboard/patient/appointments',
@@ -37,9 +38,13 @@ export async function GET(req: NextRequest) {
     if (type === 'appointment') {
       db.prepare(`UPDATE appointments SET payment_status = 'paid', status = 'confirmed' WHERE id = ? AND paystack_ref = ?`).run(recordId, ref);
     } else if (type === 'order') {
+      const before = db.prepare('SELECT payment_status FROM orders WHERE id = ?').get(recordId) as { payment_status: string } | undefined;
       db.prepare(`UPDATE orders SET payment_status = 'paid', status = 'processing' WHERE id = ? AND paystack_ref = ?`).run(recordId, ref);
+      if (before && before.payment_status !== 'paid') await sendOrderReceiptEmail(db, 'order', recordId);
     } else if (type === 'custom_order') {
+      const before = db.prepare('SELECT payment_status FROM custom_orders WHERE id = ?').get(recordId) as { payment_status: string } | undefined;
       db.prepare(`UPDATE custom_orders SET payment_status = 'paid', status = 'paid' WHERE id = ? AND paystack_ref = ?`).run(recordId, ref);
+      if (before && before.payment_status !== 'paid') await sendOrderReceiptEmail(db, 'custom_order', recordId);
     }
   }
 

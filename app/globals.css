@@ -592,6 +592,17 @@ img { max-width: 100%; }
   }
 }
 
+/* Printing a receipt (or anything else): hide the dashboard chrome so only
+   the page content prints, and let it use the full page width. */
+@media print {
+  .sidebar-drawer, .sidebar-overlay, .mobile-topbar, .no-print {
+    display: none !important;
+  }
+  .main-with-sidebar {
+    margin-left: 0 !important;
+  }
+}
+
 /* Dashboard content padding */
 .dash-content {
   padding: 28px 20px;

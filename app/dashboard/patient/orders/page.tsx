@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { ShoppingCart, Package, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
+import { ShoppingCart, Package, RotateCcw, Receipt } from 'lucide-react';
 
 interface StdOrder {
   id: number;
@@ -290,6 +291,11 @@ export default function PatientOrdersPage() {
                             {payingId === `order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.total_amount + (o.service_fee || 100000))}`}
                           </button>
                         )}
+                        {o.payment_status === 'paid' && (
+                          <Link href={`/dashboard/patient/receipt/order/${o.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+                            <Receipt size={14} /> View Receipt
+                          </Link>
+                        )}
                       </div>
                     </div>
 
@@ -343,6 +349,11 @@ export default function PatientOrdersPage() {
                             >
                               {payingId === `custom_order-${o.id}` ? 'Processing...' : `Pay ${fmt(o.quoted_price + 100000)}`}
                             </button>
+                          )}
+                          {o.payment_status === 'paid' && (
+                            <Link href={`/dashboard/patient/receipt/custom_order/${o.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+                              <Receipt size={14} /> View Receipt
+                            </Link>
                           )}
                         </div>
                       )}

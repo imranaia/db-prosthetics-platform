@@ -213,6 +213,38 @@ export async function sendPasswordReset(opts: {
   }
 }
 
+export async function sendReceiptEmail(opts: {
+  to: string;
+  fullName: string;
+  amountKobo: number;
+  receiptUrl: string;
+}): Promise<void> {
+  const { to, fullName, amountKobo, receiptUrl } = opts;
+  const amount = '₦' + (amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0 });
+
+  const content = `
+    <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">Payment Received</h2>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      Hi ${fullName}, thank you — we've received your payment of <strong>${amount}</strong>.
+    </p>
+    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
+      You can view and download your receipt any time from your patient portal.
+    </p>
+    ${ctaButton('View Receipt', receiptUrl)}
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: 'DB Prosthetics — Payment Receipt',
+      html: baseTemplate(content),
+    });
+  } catch (err) {
+    console.error('[email] sendReceiptEmail failed:', err);
+  }
+}
+
 function naira(kobo: number): string {
   return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0 });
 }
