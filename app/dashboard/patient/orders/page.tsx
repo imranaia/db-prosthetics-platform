@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Package, RotateCcw, Receipt } from 'lucide-react';
@@ -89,6 +90,8 @@ export default function PatientOrdersPage() {
     if (!user || loading) return;
     load();
   }, [user, loading]);
+
+  useAutoRefresh(load, 30000, !!user && !loading);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }

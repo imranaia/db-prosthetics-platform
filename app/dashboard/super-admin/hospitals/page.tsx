@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
@@ -36,6 +37,8 @@ export default function HospitalsPage() {
   }
 
   useEffect(() => { if (user) fetchHospitals(); }, [user]);
+
+  useAutoRefresh(fetchHospitals, 30000, !!user);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }

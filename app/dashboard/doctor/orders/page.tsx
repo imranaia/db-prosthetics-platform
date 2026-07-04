@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState, useRef } from 'react';
 import { ShoppingCart, Package, ChevronDown, ChevronUp, Plus, X, Upload } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
@@ -198,6 +199,8 @@ export default function DoctorOrdersPage() {
     if (!user || loading) return;
     load();
   }, [user, loading]);
+
+  useAutoRefresh(load, 30000, !!user && !loading);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }

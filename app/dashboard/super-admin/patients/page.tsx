@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
@@ -81,6 +82,8 @@ export default function PatientsPage() {
     const res = await fetch('/api/admin/patients');
     if (res.ok) setPatients(await res.json());
   }
+
+  useAutoRefresh(fetchPatients, 30000, !!user);
 
   useEffect(() => {
     if (!user) return;
