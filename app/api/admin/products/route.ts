@@ -27,23 +27,25 @@ export async function POST(req: NextRequest) {
     type: string;
     price: number;
     description: string;
-    in_stock: number;
     image_url?: string;
     dimensions?: string;
     material?: string;
     quantity?: number;
   };
 
-  const { name, category, type, price, description, in_stock, image_url, dimensions, material, quantity } = body;
+  const { name, category, type, price, description, image_url, dimensions, material, quantity } = body;
 
   if (!name || !category || !type || price == null) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
+  // in_stock is derived from quantity, not set independently, so the two
+  // can never show contradicting stock status on the product card.
+  const qty = quantity ?? 0;
   const db = getDb();
   const result = db.prepare(
     `INSERT INTO products (name, category, type, price, description, in_stock, image_url, dimensions, material, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(name, category, type, Math.round(price * 100), description || '', in_stock ?? 1, image_url || null, dimensions || null, material || null, quantity ?? 0);
+  ).run(name, category, type, Math.round(price * 100), description || '', qty > 0 ? 1 : 0, image_url || null, dimensions || null, material || null, qty);
 
   return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
 }

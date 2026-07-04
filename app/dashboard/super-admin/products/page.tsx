@@ -19,7 +19,7 @@ interface Material {
 const CAT: Record<string, string> = { upper_limb: 'Upper Limb', lower_limb: 'Lower Limb', facial: 'Facial', spinal: 'Spinal' };
 const TYP: Record<string, string> = { complete: 'Complete Device', part: 'Part / Component' };
 
-const EMPTY_PRODUCT = { name: '', category: '', type: '', price: '', description: '', in_stock: true, image_url: '', dimensions: '', material: '', quantity: '0' };
+const EMPTY_PRODUCT = { name: '', category: '', type: '', price: '', description: '', image_url: '', dimensions: '', material: '', quantity: '0' };
 const EMPTY_MATERIAL = { name: '', description: '', in_stock: true };
 
 function fmt(kobo: number) {
@@ -95,7 +95,6 @@ export default function ProductsPage() {
       body: JSON.stringify({
         name: form.name, category: form.category, type: form.type,
         price: parseFloat(form.price), description: form.description,
-        in_stock: form.in_stock ? 1 : 0,
         image_url: form.image_url || undefined,
         dimensions: form.dimensions || undefined,
         material: form.material || undefined,
@@ -126,7 +125,7 @@ export default function ProductsPage() {
       body: JSON.stringify({
         name: editRow.name, category: editRow.category, type: editRow.type,
         price: parseFloat(editRow.priceNaira || '0'), description: editRow.description,
-        in_stock: editRow.in_stock, image_url: editRow.image_url ?? null,
+        image_url: editRow.image_url ?? null,
         dimensions: editRow.dimensions, material: editRow.material,
         quantity: editRow.quantity ?? 0,
       }),
@@ -268,12 +267,7 @@ export default function ProductsPage() {
                   <div>
                     <label className="skeu-label">Units Available</label>
                     <input className="skeu-input" type="number" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="0" />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.88rem', color: 'var(--text-body)', userSelect: 'none' }}>
-                      <input type="checkbox" checked={form.in_stock} onChange={e => setForm({ ...form, in_stock: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
-                      In Stock
-                    </label>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>Stock status is set automatically from this — 0 means Out of Stock.</div>
                   </div>
                 </div>
                 <div>
@@ -328,9 +322,6 @@ export default function ProductsPage() {
                         <input className="skeu-input" value={editRow.dimensions ?? ''} onChange={e => setEditRow({ ...editRow, dimensions: e.target.value })} style={{ fontSize: '0.82rem' }} placeholder="Dimensions" />
                         <input className="skeu-input" value={editRow.material ?? ''} onChange={e => setEditRow({ ...editRow, material: e.target.value })} style={{ fontSize: '0.82rem' }} placeholder="Material" />
                         <input className="skeu-input" type="number" min="0" value={editRow.quantity ?? 0} onChange={e => setEditRow({ ...editRow, quantity: parseInt(e.target.value) || 0 })} style={{ fontSize: '0.82rem' }} placeholder="Units Available" />
-                        <select className="skeu-select" value={editRow.in_stock ?? 1} onChange={e => setEditRow({ ...editRow, in_stock: parseInt(e.target.value) })} style={{ fontSize: '0.82rem' }}>
-                          <option value={1}>In Stock</option><option value={0}>Out of Stock</option>
-                        </select>
                       </div>
                       <textarea className="skeu-input" value={editRow.description ?? ''} onChange={e => setEditRow({ ...editRow, description: e.target.value })} style={{ fontSize: '0.82rem', resize: 'vertical', marginBottom: 10 }} rows={2} placeholder="Description" />
                       <div style={{ display: 'flex', gap: 8 }}>
@@ -356,12 +347,12 @@ export default function ProductsPage() {
                         {p.dimensions && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>Size: {p.dimensions}</div>}
                         {p.description && <div style={{ fontSize: '0.78rem', color: 'var(--text-body)', lineHeight: 1.5, marginBottom: 8 }}>{p.description}</div>}
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-                          {(p.quantity ?? 0) > 0 ? `${p.quantity} units` : <span style={{ color: '#b45309' }}>Out of Stock (Order Available)</span>}
+                          {(p.quantity ?? 0) > 0 ? `${p.quantity} units available` : <span style={{ color: '#b91c1c' }}>No units left</span>}
                         </div>
                         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border-card)' }}>
                           <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>{fmt(p.price)}</span>
-                          <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: p.in_stock ? '#d1fae5' : '#fee2e2', color: p.in_stock ? '#065f46' : '#b91c1c' }}>
-                            {p.in_stock ? 'In Stock' : 'Out of Stock'}
+                          <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: (p.quantity ?? 0) > 0 ? '#d1fae5' : '#fee2e2', color: (p.quantity ?? 0) > 0 ? '#065f46' : '#b91c1c' }}>
+                            {(p.quantity ?? 0) > 0 ? 'Available' : 'Out of Stock'}
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>

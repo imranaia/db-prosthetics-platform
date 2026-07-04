@@ -19,7 +19,6 @@ export async function PATCH(
     type?: string;
     price?: number;
     description?: string;
-    in_stock?: number;
     image_url?: string | null;
     dimensions?: string;
     material?: string;
@@ -35,11 +34,15 @@ export async function PATCH(
   if (body.type !== undefined)        { setClauses.push('type = ?');        values.push(body.type); }
   if (body.price !== undefined)       { setClauses.push('price = ?');       values.push(Math.round(body.price * 100)); }
   if (body.description !== undefined) { setClauses.push('description = ?'); values.push(body.description); }
-  if (body.in_stock !== undefined)    { setClauses.push('in_stock = ?');    values.push(body.in_stock); }
   if (body.image_url !== undefined)   { setClauses.push('image_url = ?');   values.push(body.image_url); }
   if (body.dimensions !== undefined)  { setClauses.push('dimensions = ?');  values.push(body.dimensions); }
   if (body.material !== undefined)    { setClauses.push('material = ?');    values.push(body.material); }
-  if (body.quantity !== undefined)    { setClauses.push('quantity = ?');    values.push(body.quantity); }
+  // in_stock is derived from quantity, not set independently, so the two
+  // can never show contradicting stock status on the product card.
+  if (body.quantity !== undefined) {
+    setClauses.push('quantity = ?');  values.push(body.quantity);
+    setClauses.push('in_stock = ?');  values.push(body.quantity > 0 ? 1 : 0);
+  }
 
   if (setClauses.length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
