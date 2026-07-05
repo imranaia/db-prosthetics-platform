@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
+import { sendWelcomeStaffMember } from '@/lib/email';
 
 export async function PATCH(
   req: NextRequest,
@@ -23,7 +25,7 @@ export async function PATCH(
   };
 
   const db = getDb();
-  const hospital = db.prepare('SELECT admin_user_id FROM hospitals WHERE id = ?').get(id) as { admin_user_id: number | null } | undefined;
+  const hospital = db.prepare('SELECT name, admin_user_id FROM hospitals WHERE id = ?').get(id) as { name: string; admin_user_id: number | null } | undefined;
   if (!hospital) return NextResponse.json({ error: 'Hospital not found' }, { status: 404 });
 
   if (body.admin_email !== undefined) {
@@ -32,7 +34,29 @@ export async function PATCH(
     const clash = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(newEmail, hospital.admin_user_id ?? -1);
     if (clash) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
     if (hospital.admin_user_id) {
-      db.prepare('UPDATE users SET email = ? WHERE id = ?').run(newEmail, hospital.admin_user_id);
+      const current = db.prepare('SELECT email FROM users WHERE id = ?').get(hospital.admin_user_id) as { email: string } | undefined;
+      if (current && current.email !== newEmail) {
+        // Email is changing — the old password is tied to the old address,
+        // so issue a fresh temp password and email login credentials to
+        // the new address rather than leaving them locked out.
+        const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+        const hash = await bcrypt.hash(tempPassword, 12);
+        db.prepare('UPDATE users SET email = ?, password_hash = ?, must_change_password = 1 WHERE id = ?')
+          .run(newEmail, hash, hospital.admin_user_id);
+        try {
+          await sendWelcomeStaffMember({
+            to: newEmail,
+            role: 'hospital_admin',
+            hospitalName: hospital.name,
+            tempPassword,
+            loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/login`,
+          });
+        } catch (e) {
+          console.error('[hospitals PATCH] credentials email failed:', e);
+        }
+      } else {
+        db.prepare('UPDATE users SET email = ? WHERE id = ?').run(newEmail, hospital.admin_user_id);
+      }
     }
   }
 

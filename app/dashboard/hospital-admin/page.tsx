@@ -131,35 +131,22 @@ export default function HospitalAdminPage() {
             No consultations recorded yet.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-card)' }}>
-                  {['Patient', 'Chief Complaint', 'Assessor', 'Device', 'Date'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentConsultations.map((c, i) => (
-                  <tr key={c.id} style={{ borderBottom: i < recentConsultations.length - 1 ? '1px solid var(--border-card)' : 'none' }}>
-                    <td style={{ padding: '12px', color: 'var(--text-head)', fontWeight: 500 }}>{c.patient_name}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-body)' }}>{c.chief_complaint || '\u2014'}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-body)' }}>{c.assessor_name || '\u2014'}</td>
-                    <td style={{ padding: '12px', color: 'var(--text-body)' }}>
-                      {c.recommended_device ? (
-                        <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500 }}>
-                          {c.recommended_device}
-                        </span>
-                      ) : '\u2014'}
-                    </td>
-                    <td style={{ padding: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+            {recentConsultations.map(c => (
+              <div key={c.id} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-head)', fontSize: '0.9rem' }}>{c.patient_name}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-body)', marginBottom: 6, lineHeight: 1.4 }}>{c.chief_complaint || '\u2014'}</div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: c.recommended_device ? 8 : 0 }}>Assessor: {c.assessor_name || '\u2014'}</div>
+                {c.recommended_device && (
+                  <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 500 }}>
+                    {c.recommended_device}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

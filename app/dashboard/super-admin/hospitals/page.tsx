@@ -3,10 +3,10 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
-import { Building2, Plus, Trash2, X, Pencil, KeyRound, Check } from 'lucide-react';
+import { Building2, Plus, Trash2, X, Pencil, KeyRound, Check, ArrowLeft, Search, MapPin } from 'lucide-react';
 import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface Hospital {
@@ -21,6 +21,9 @@ const optionalStyle: React.CSSProperties = { fontWeight: 400, color: 'var(--text
 export default function HospitalsPage() {
   const { user, loading } = useAuth();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [stateSearch, setStateSearch] = useState('');
+  const [hospitalSearch, setHospitalSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +46,24 @@ export default function HospitalsPage() {
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+
+  const countByState = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const h of hospitals) m[h.state] = (m[h.state] || 0) + 1;
+    return m;
+  }, [hospitals]);
+
+  const filteredStates = NIGERIA_STATES.filter(s => s.toLowerCase().includes(stateSearch.toLowerCase()));
+
+  const hospitalsInState = selectedState
+    ? hospitals.filter(h => h.state === selectedState && h.name.toLowerCase().includes(hospitalSearch.toLowerCase()))
+    : [];
+
+  function openAddForm() {
+    setForm({ ...emptyForm, state: selectedState || '' });
+    setError('');
+    setShowForm(true);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,153 +115,184 @@ export default function HospitalsPage() {
   return (
     <div className="dash-content">
       {dialog}
-      <div className="dash-page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Building2 size={20} color="var(--primary)" />
-          </div>
-          <div>
-            <h1 className="font-display" style={{ fontSize: '1.75rem', color: 'var(--text-head)', fontWeight: 600 }}>Hospitals</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{hospitals.length} registered</p>
-          </div>
-        </div>
-        <button className="skeu-btn-primary" onClick={() => setShowForm(s => !s)} style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '7px' }}>
-          {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Add Hospital</>}
-        </button>
-      </div>
 
-      {showForm && (
-        <div className="inline-form-card">
-          <h2 className="font-display" style={{ fontSize: '1.2rem', color: 'var(--text-head)', marginBottom: '20px', fontWeight: 600 }}>New Hospital</h2>
-          {error && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>{error}</div>}
-          <form onSubmit={handleSubmit}>
-            <div className="form-grid-2">
-              <div>
-                <label className="skeu-label">Hospital Name</label>
-                <input className="skeu-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="e.g. Lagos General Hospital" />
+      {!selectedState ? (
+        <>
+          <div className="dash-page-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={20} color="var(--primary)" />
               </div>
               <div>
-                <label className="skeu-label">State</label>
-                <select className="skeu-select" value={form.state} onChange={e => setForm({ ...form, state: e.target.value, lga: '' })} required>
-                  <option value="">Select state</option>
-                  {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="skeu-label">LGA<span style={optionalStyle}>(optional)</span></label>
-                <select className="skeu-select" value={form.lga} onChange={e => setForm({ ...form, lga: e.target.value })} disabled={!form.state}>
-                  <option value="">Select LGA</option>
-                  {getLGAs(form.state).map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="skeu-label">Address<span style={optionalStyle}>(optional)</span></label>
-                <input className="skeu-input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Full street address" />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="skeu-label">Landmark<span style={optionalStyle}>(optional)</span></label>
-                <input className="skeu-input" value={form.landmark} onChange={e => setForm({ ...form, landmark: e.target.value })} placeholder="e.g. Near Central Mosque, opposite Shoprite" />
-              </div>
-              <div>
-                <label className="skeu-label">Admin Email</label>
-                <input className="skeu-input" type="email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} required placeholder="admin@hospital.com" />
-              </div>
-              <div>
-                <label className="skeu-label">Admin Password</label>
-                <input className="skeu-input" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} required placeholder="8+ chars, mixed case, number & symbol" />
-                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                  The hospital admin will receive a login email and be prompted to change this password on first login.
-                </p>
+                <h1 className="font-display" style={{ fontSize: '1.75rem', color: 'var(--text-head)', fontWeight: 600 }}>Hospitals</h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{hospitals.length} registered — select a state to view</p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button className="skeu-btn-primary" type="submit" disabled={submitting} style={{ padding: '10px 24px' }}>
-                {submitting ? 'Creating…' : 'Create Hospital'}
-              </button>
-              <button type="button" onClick={() => setShowForm(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          </div>
 
-      <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-scroll">
-          <table className="dash-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>State / LGA</th>
-                <th>Admin Email</th>
-                <th>Date Added</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {hospitals.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No hospitals yet. Add your first one above.</td></tr>
-              ) : hospitals.map(h => editId === h.id ? (
-                <tr key={h.id}>
-                  <td colSpan={5} style={{ padding: '16px' }}>
-                    <div className="form-grid-2" style={{ gap: 10, marginBottom: 12 }}>
-                      <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Hospital Name</label><input className="skeu-input" value={editForm.name ?? ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-                      <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Admin Email</label><input className="skeu-input" type="email" value={editForm.admin_email ?? ''} onChange={e => setEditForm({ ...editForm, admin_email: e.target.value })} /></div>
-                      <div>
-                        <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>State</label>
-                        <select className="skeu-select" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value, lga: '' })}>
+          <div style={{ position: 'relative', maxWidth: 320, margin: '20px 0' }}>
+            <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input className="skeu-input" placeholder="Search states…" value={stateSearch} onChange={e => setStateSearch(e.target.value)} style={{ paddingLeft: 34, width: '100%' }} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
+            {filteredStates.map(s => {
+              const count = countByState[s] || 0;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setSelectedState(s)}
+                  className="skeu-card"
+                  style={{ padding: '18px 16px', textAlign: 'left', cursor: 'pointer', border: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <MapPin size={15} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, color: 'var(--text-head)', fontSize: '0.92rem' }}>{s}</span>
+                  </div>
+                  <span style={{
+                    alignSelf: 'flex-start', padding: '2px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600,
+                    background: count > 0 ? '#d1fae5' : 'rgba(27,61,94,0.06)', color: count > 0 ? '#065f46' : 'var(--text-muted)',
+                  }}>
+                    {count} {count === 1 ? 'hospital' : 'hospitals'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="dash-page-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                onClick={() => { setSelectedState(null); setHospitalSearch(''); setShowForm(false); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}
+              >
+                <ArrowLeft size={15} /> All States
+              </button>
+              <div>
+                <h1 className="font-display" style={{ fontSize: '1.5rem', color: 'var(--text-head)', fontWeight: 600 }}>{selectedState}</h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{hospitalsInState.length} hospital{hospitalsInState.length === 1 ? '' : 's'}</p>
+              </div>
+            </div>
+            <button className="skeu-btn-primary" onClick={() => (showForm ? setShowForm(false) : openAddForm())} style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Add Hospital</>}
+            </button>
+          </div>
+
+          {showForm && (
+            <div className="inline-form-card">
+              <h2 className="font-display" style={{ fontSize: '1.2rem', color: 'var(--text-head)', marginBottom: '20px', fontWeight: 600 }}>New Hospital in {selectedState}</h2>
+              {error && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>{error}</div>}
+              <form onSubmit={handleSubmit}>
+                <div className="form-grid-2">
+                  <div>
+                    <label className="skeu-label">Hospital Name</label>
+                    <input className="skeu-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="e.g. Lagos General Hospital" />
+                  </div>
+                  <div>
+                    <label className="skeu-label">LGA<span style={optionalStyle}>(optional)</span></label>
+                    <select className="skeu-select" value={form.lga} onChange={e => setForm({ ...form, lga: e.target.value })}>
+                      <option value="">Select LGA</option>
+                      {getLGAs(form.state).map(l => <option key={l} value={l}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label className="skeu-label">Address<span style={optionalStyle}>(optional)</span></label>
+                    <input className="skeu-input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Full street address" />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label className="skeu-label">Landmark<span style={optionalStyle}>(optional)</span></label>
+                    <input className="skeu-input" value={form.landmark} onChange={e => setForm({ ...form, landmark: e.target.value })} placeholder="e.g. Near Central Mosque, opposite Shoprite" />
+                  </div>
+                  <div>
+                    <label className="skeu-label">Admin Email</label>
+                    <input className="skeu-input" type="email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} required placeholder="admin@hospital.com" />
+                  </div>
+                  <div>
+                    <label className="skeu-label">Admin Password</label>
+                    <input className="skeu-input" type="password" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} required placeholder="8+ chars, mixed case, number & symbol" />
+                    <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      The hospital admin will receive a login email and be prompted to change this password on first login.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button className="skeu-btn-primary" type="submit" disabled={submitting} style={{ padding: '10px 24px' }}>
+                    {submitting ? 'Creating…' : 'Create Hospital'}
+                  </button>
+                  <button type="button" onClick={() => setShowForm(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div style={{ position: 'relative', maxWidth: 320, margin: '20px 0' }}>
+            <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input className="skeu-input" placeholder="Search hospitals in this state…" value={hospitalSearch} onChange={e => setHospitalSearch(e.target.value)} style={{ paddingLeft: 34, width: '100%' }} />
+          </div>
+
+          {hospitalsInState.length === 0 ? (
+            <div className="skeu-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              No hospitals in {selectedState} yet. Add the first one above.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              {hospitalsInState.map(h => (
+                <div key={h.id} className="skeu-card" style={{ padding: 18 }}>
+                  {editId === h.id ? (
+                    <div>
+                      <input className="skeu-input" value={editForm.name ?? ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ marginBottom: 8, fontSize: '0.85rem' }} placeholder="Hospital Name" />
+                      <input className="skeu-input" type="email" value={editForm.admin_email ?? ''} onChange={e => setEditForm({ ...editForm, admin_email: e.target.value })} style={{ marginBottom: 8, fontSize: '0.85rem' }} placeholder="Admin Email" />
+                      <div className="form-grid-2" style={{ gap: 8, marginBottom: 8 }}>
+                        <select className="skeu-select" value={editForm.state ?? ''} onChange={e => setEditForm({ ...editForm, state: e.target.value, lga: '' })} style={{ fontSize: '0.82rem' }}>
                           {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
-                      </div>
-                      <div>
-                        <label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>LGA</label>
-                        <select className="skeu-select" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} disabled={!editForm.state}>
+                        <select className="skeu-select" value={editForm.lga ?? ''} onChange={e => setEditForm({ ...editForm, lga: e.target.value })} disabled={!editForm.state} style={{ fontSize: '0.82rem' }}>
                           <option value="">Select LGA</option>
                           {getLGAs(editForm.state ?? '').map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                       </div>
-                      <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Address</label><input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} /></div>
-                      <div style={{ gridColumn: '1 / -1' }}><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Landmark</label><input className="skeu-input" value={editForm.landmark ?? ''} onChange={e => setEditForm({ ...editForm, landmark: e.target.value })} /></div>
+                      <input className="skeu-input" value={editForm.address ?? ''} onChange={e => setEditForm({ ...editForm, address: e.target.value })} style={{ marginBottom: 8, fontSize: '0.85rem' }} placeholder="Address" />
+                      <input className="skeu-input" value={editForm.landmark ?? ''} onChange={e => setEditForm({ ...editForm, landmark: e.target.value })} style={{ marginBottom: 10, fontSize: '0.85rem' }} placeholder="Landmark" />
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={saveEdit} disabled={savingEdit} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px', borderRadius: 7, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}><Check size={13} />{savingEdit ? 'Saving…' : 'Save'}</button>
+                        <button onClick={() => { setEditId(null); setEditForm({}); }} style={{ flex: 1, padding: '8px', borderRadius: 7, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Cancel</button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={saveEdit} disabled={savingEdit} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 16px', borderRadius: 7, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}><Check size={13} />{savingEdit ? 'Saving…' : 'Save'}</button>
-                      <button onClick={() => { setEditId(null); setEditForm({}); }} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Cancel</button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={h.id}>
-                  <td style={{ fontWeight: 600, color: 'var(--text-head)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Building2 size={14} color="var(--primary)" style={{ flexShrink: 0 }} />
-                      {h.name}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 500, color: 'var(--text-body)' }}>{h.state}</div>
-                    {h.lga && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{h.lga}</div>}
-                  </td>
-                  <td style={{ color: 'var(--text-muted)' }}>{h.admin_email || '—'}</td>
-                  <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(h.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <button onClick={() => startEdit(h)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.07)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                        <Pencil size={13} /> Edit
-                      </button>
-                      <button onClick={() => handleResetPassword(h)} disabled={resettingId === h.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(180,117,31,0.3)', background: 'rgba(180,117,31,0.08)', color: '#b45719', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                        <KeyRound size={13} /> {resettingId === h.id ? 'Resetting…' : 'Reset Password'}
-                      </button>
-                      <button onClick={() => handleDelete(h.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.07)', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                        <Trash2 size={13} /> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <Building2 size={15} color="var(--primary)" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-head)' }}>{h.name}</span>
+                      </div>
+                      {h.lga && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>{h.lga}</div>}
+                      {h.address && <div style={{ fontSize: '0.78rem', color: 'var(--text-body)', marginBottom: 6 }}>{h.address}</div>}
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>Admin: {h.admin_email || '—'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                        Added {new Date(h.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button onClick={() => startEdit(h)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.07)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
+                          <Pencil size={13} /> Edit
+                        </button>
+                        <button onClick={() => handleResetPassword(h)} disabled={resettingId === h.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(180,117,31,0.3)', background: 'rgba(180,117,31,0.08)', color: '#b45719', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
+                          <KeyRound size={13} /> {resettingId === h.id ? 'Resetting…' : 'Reset Password'}
+                        </button>
+                        <button onClick={() => handleDelete(h.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.07)', color: '#b91c1c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

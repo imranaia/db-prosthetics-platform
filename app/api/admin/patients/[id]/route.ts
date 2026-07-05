@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
+import { sendWelcomePatient } from '@/lib/email';
 
 export async function PATCH(
   req: NextRequest,
@@ -24,7 +26,7 @@ export async function PATCH(
   };
 
   const db = getDb();
-  const patient = db.prepare('SELECT user_id FROM patients WHERE id = ?').get(id) as { user_id: number } | undefined;
+  const patient = db.prepare('SELECT user_id, full_name FROM patients WHERE id = ?').get(id) as { user_id: number; full_name: string } | undefined;
   if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
 
   if (body.email !== undefined) {
@@ -32,7 +34,25 @@ export async function PATCH(
     if (!newEmail) return NextResponse.json({ error: 'Email cannot be empty' }, { status: 400 });
     const clash = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(newEmail, patient.user_id);
     if (clash) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
-    db.prepare('UPDATE users SET email = ? WHERE id = ?').run(newEmail, patient.user_id);
+    const current = db.prepare('SELECT email FROM users WHERE id = ?').get(patient.user_id) as { email: string } | undefined;
+    if (current && current.email !== newEmail) {
+      const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+      const hash = await bcrypt.hash(tempPassword, 12);
+      db.prepare('UPDATE users SET email = ?, password_hash = ?, must_change_password = 1 WHERE id = ?')
+        .run(newEmail, hash, patient.user_id);
+      try {
+        await sendWelcomePatient({
+          to: newEmail,
+          fullName: patient.full_name,
+          tempPassword,
+          loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/login`,
+        });
+      } catch (e) {
+        console.error('[patients PATCH] credentials email failed:', e);
+      }
+    } else {
+      db.prepare('UPDATE users SET email = ? WHERE id = ?').run(newEmail, patient.user_id);
+    }
   }
 
   const setClauses: string[] = [];

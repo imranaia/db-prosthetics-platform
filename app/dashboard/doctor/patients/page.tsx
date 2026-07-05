@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
 
 interface Patient {
   id: number;
@@ -57,80 +57,75 @@ export default function DoctorPatientsPage() {
           </div>
           <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Patients</h1>
         </div>
-        <input
-          type="search"
-          className="skeu-input"
-          placeholder="Search by name or phone..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ width: 280 }}
-        />
+        <div style={{ position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <input
+            type="search"
+            className="skeu-input"
+            placeholder="Search by name or phone..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: 280, paddingLeft: 36 }}
+          />
+        </div>
       </div>
 
-      <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {dataLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading patients...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            {patients.length === 0 ? 'No patients in your consultation history.' : 'No patients match your search.'}
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
-                  {['Full Name', 'Phone', 'State', 'Last Consultation', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(p => {
-                  const isExp = expanded === p.id;
-                  return (
-                    <>
-                      <tr
-                        key={p.id}
-                        style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer', background: isExp ? 'rgba(27,61,94,0.04)' : undefined }}
-                        onClick={() => setExpanded(isExp ? null : p.id)}
-                      >
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-head)' }}>{p.full_name}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)' }}>{p.phone || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)' }}>{p.state || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(p.last_consultation)}</td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
-                        </td>
-                      </tr>
-                      {isExp && (
-                        <tr key={`${p.id}-exp`} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                          <td colSpan={5} style={{ padding: '16px 24px', background: 'rgba(27,61,94,0.03)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem' }}>
-                              {[
-                                { label: 'Date of Birth', value: p.dob || '—' },
-                                { label: 'LGA', value: p.lga || '—' },
-                                { label: 'State', value: p.state || '—' },
-                                { label: 'Address', value: p.address || '—' },
-                              ].map(f => (
-                                <div key={f.label}>
-                                  <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 2 }}>{f.label}</div>
-                                  <div style={{ color: 'var(--text-body)' }}>{f.value}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {dataLoading ? (
+        <div className="skeu-card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading patients...</div>
+      ) : filtered.length === 0 ? (
+        <div className="skeu-card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+          {patients.length === 0 ? 'No patients in your consultation history.' : 'No patients match your search.'}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16, alignItems: 'start' }}>
+          {filtered.map(p => {
+            const isExp = expanded === p.id;
+            return (
+              <div
+                key={p.id}
+                className="skeu-card"
+                style={{ padding: 16, gridColumn: isExp ? '1 / -1' : undefined, cursor: 'pointer' }}
+                onClick={() => setExpanded(isExp ? null : p.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <User size={14} color="#fff" />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-head)', fontSize: '0.9rem' }}>{p.full_name}</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{p.phone || '—'}{p.state ? ` · ${p.state}` : ''}</div>
+                    </div>
+                  </div>
+                  {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                </div>
+
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                  Last consultation: {formatDate(p.last_consultation)}
+                </div>
+
+                {isExp && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem' }}>
+                      {[
+                        { label: 'Date of Birth', value: p.dob || '—' },
+                        { label: 'LGA', value: p.lga || '—' },
+                        { label: 'State', value: p.state || '—' },
+                        { label: 'Address', value: p.address || '—' },
+                      ].map(f => (
+                        <div key={f.label}>
+                          <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 2 }}>{f.label}</div>
+                          <div style={{ color: 'var(--text-body)' }}>{f.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

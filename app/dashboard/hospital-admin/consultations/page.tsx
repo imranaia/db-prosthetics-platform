@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { Stethoscope, ChevronDown, ChevronUp } from 'lucide-react';
+import { Stethoscope, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import SignaturePad from '@/components/forms/SignaturePad';
 
 interface Consultation {
@@ -160,75 +160,64 @@ export default function HospitalAdminConsultationsPage() {
           </div>
           <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>Consultations</h1>
         </div>
-        <input
-          type="search"
-          className="skeu-input"
-          placeholder="Search patient or complaint..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ width: 280 }}
-        />
+        <div style={{ position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <input
+            type="search"
+            className="skeu-input"
+            placeholder="Search patient or complaint..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: 280, paddingLeft: 36 }}
+          />
+        </div>
       </div>
 
-      <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {dataLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading consultations...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            {consultations.length === 0 ? 'No consultations recorded yet.' : 'No consultations match your search.'}
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
-                  {['Patient', 'Chief Complaint', 'Assessor', 'Recommended Device', 'Date', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c) => {
-                  const isExp = expanded === c.id;
-                  return (
-                    <>
-                      <tr
-                        key={c.id}
-                        style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer', background: isExp ? 'rgba(27,61,94,0.04)' : undefined }}
-                        onClick={() => setExpanded(isExp ? null : c.id)}
-                      >
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-head)' }}>{c.patient_name || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)', maxWidth: 200 }}>{c.chief_complaint || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)' }}>{c.assessor_name || '—'}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-body)' }}>
-                          {c.recommended_device ? (
-                            <span style={{ background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500 }}>
-                              {c.recommended_device}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
-                        </td>
-                      </tr>
-                      {isExp && (
-                        <tr key={`${c.id}-exp`} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                          <td colSpan={6} style={{ padding: '20px 24px', background: 'rgba(27,61,94,0.02)' }}>
-                            <ConsultationDetail c={c} />
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {dataLoading ? (
+        <div className="skeu-card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading consultations...</div>
+      ) : filtered.length === 0 ? (
+        <div className="skeu-card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+          {consultations.length === 0 ? 'No consultations recorded yet.' : 'No consultations match your search.'}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, alignItems: 'start' }}>
+          {filtered.map((c) => {
+            const isExp = expanded === c.id;
+            return (
+              <div
+                key={c.id}
+                className="skeu-card"
+                style={{ padding: 16, gridColumn: isExp ? '1 / -1' : undefined, cursor: 'pointer' }}
+                onClick={() => setExpanded(isExp ? null : c.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-head)', fontSize: '0.92rem' }}>{c.patient_name || '—'}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{formatDate(c.created_at)} · {c.assessor_name || '—'}</div>
+                  </div>
+                  {isExp ? <ChevronUp size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} /> : <ChevronDown size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />}
+                </div>
+
+                {c.chief_complaint && !isExp && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-body)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.chief_complaint}</div>
+                )}
+
+                {c.recommended_device && (
+                  <span style={{ display: 'inline-block', marginTop: 8, background: '#1b3d5e12', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 500 }}>
+                    {c.recommended_device}
+                  </span>
+                )}
+
+                {isExp && (
+                  <div onClick={e => e.stopPropagation()}>
+                    <ConsultationDetail c={c} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

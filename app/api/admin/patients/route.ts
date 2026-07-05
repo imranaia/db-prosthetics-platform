@@ -12,7 +12,10 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
   const patients = db.prepare(`
-    SELECT p.*, u.email AS portal_email
+    SELECT p.*, u.email AS portal_email,
+      (SELECT MIN(a.scheduled_date) FROM appointments a
+       WHERE a.patient_id = p.id AND a.scheduled_date >= datetime('now')
+         AND a.status NOT IN ('cancelled', 'completed')) AS next_appointment_date
     FROM patients p
     LEFT JOIN users u ON p.user_id = u.id
     ORDER BY p.created_at DESC

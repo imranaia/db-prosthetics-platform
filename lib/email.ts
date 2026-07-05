@@ -213,6 +213,131 @@ export async function sendPasswordReset(opts: {
   }
 }
 
+export async function sendLockoutConfirmation(opts: {
+  to: string;
+  fullName?: string | null;
+  confirmUrl: string;
+}): Promise<void> {
+  const { to, fullName, confirmUrl } = opts;
+
+  const content = `
+    <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">Your Account Was Locked</h2>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      ${fullName ? `Hi ${fullName}, we` : 'We'} noticed 5 failed sign-in attempts on your DB Prosthetics account, so it has been temporarily locked as a precaution.
+    </p>
+
+    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
+      If this was you, click below to confirm and we'll send you a new temporary password. If you didn't try to sign in, you can safely ignore this email — your account stays locked either way until you confirm.
+    </p>
+
+    ${ctaButton('Confirm & Reset My Password', confirmUrl)}
+
+    <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;line-height:1.6;text-align:center;">
+      This link expires in 30 minutes. If you didn't attempt to sign in, please contact the DB Prosthetics support team.
+    </p>
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: 'DB Prosthetics — Confirm Account Unlock',
+      html: baseTemplate(content),
+    });
+  } catch (err) {
+    console.error('[email] sendLockoutConfirmation failed:', err);
+  }
+}
+
+export async function sendLockoutResetComplete(opts: {
+  to: string;
+  tempPassword: string;
+  loginUrl: string;
+}): Promise<void> {
+  const { to, tempPassword, loginUrl } = opts;
+
+  const content = `
+    <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">Your Account Is Unlocked</h2>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      Thanks for confirming. Your account has been unlocked and a new temporary password has been generated.
+    </p>
+
+    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
+      Use the temporary password below to sign in. You will be asked to set a new password immediately.
+    </p>
+
+    ${credentialsBox([
+      { label: 'Email', value: to },
+      { label: 'Temp. Password', value: tempPassword },
+    ])}
+
+    ${ctaButton('Sign In', loginUrl)}
+
+    <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;line-height:1.6;text-align:center;">
+      If you didn't request this, please contact the DB Prosthetics support team immediately.
+    </p>
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject: 'DB Prosthetics — Your Account Is Unlocked',
+      html: baseTemplate(content),
+    });
+  } catch (err) {
+    console.error('[email] sendLockoutResetComplete failed:', err);
+  }
+}
+
+export async function sendErrorAlert(opts: {
+  message: string;
+  routePath?: string;
+  routeType?: string;
+}): Promise<void> {
+  const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+  if (!adminEmail) return;
+
+  const { message, routePath, routeType } = opts;
+
+  const content = `
+    <h2 style="margin:0 0 6px;font-size:22px;color:#0f2438;font-weight:700;">Unhandled Server Error</h2>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      The DB Prosthetics platform just logged an unhandled error. This email is throttled to at most one every 5 minutes even if the error keeps happening.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;border:1px solid #e5e0d8;border-radius:8px;margin-bottom:16px;">
+      ${routePath ? `<tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;width:100px;">Route</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">${routePath}${routeType ? ` (${routeType})` : ''}</td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;vertical-align:top;">Message</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;font-family:monospace,monospace;word-break:break-all;">${message}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;">Time</td>
+        <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">${new Date().toISOString()}</td>
+      </tr>
+    </table>
+
+    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+      Check the Railway deploy logs for the full stack trace.
+    </p>
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: adminEmail,
+      subject: 'DB Prosthetics — Unhandled Server Error',
+      html: baseTemplate(content),
+    });
+  } catch (err) {
+    console.error('[email] sendErrorAlert failed:', err);
+  }
+}
+
 export async function sendReceiptEmail(opts: {
   to: string;
   fullName: string;

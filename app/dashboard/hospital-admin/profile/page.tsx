@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { UserCircle, Pencil, X, AlertCircle } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
 import { getLGAs } from '@/lib/nigeria-lgas';
@@ -57,6 +57,7 @@ export default function HospitalAdminProfilePage() {
 
 function HospitalAdminProfilePageInner() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const requiredMode = searchParams.get('required') === '1';
   const [profile, setProfile] = useState<HospitalAdminProfile | null>(null);
@@ -135,8 +136,9 @@ function HospitalAdminProfilePageInner() {
       const data = await res.json();
       if (!res.ok) { setEditError(data.error || 'Failed to update profile.'); }
       else {
-        setEditSuccess('Profile updated successfully.');
+        setEditSuccess(requiredMode ? 'Profile complete — you can now use the rest of the dashboard.' : 'Profile updated successfully.');
         setEditing(false);
+        if (requiredMode) router.replace('/dashboard/hospital-admin/profile');
         loadProfile();
       }
     } catch { setEditError('Network error. Please try again.'); }

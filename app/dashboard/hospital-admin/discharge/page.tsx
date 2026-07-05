@@ -59,7 +59,7 @@ function DischargeDetail({ form }: { form: DischargeForm }) {
     <div style={{ padding: '16px 0' }}>
       <SectionHeader number="1" title="Post-Fitting Assessment" />
       <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, minWidth: 420 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
         <thead>
           <tr style={{ background: 'rgba(27,61,94,0.06)' }}>
             <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', border: '1px solid var(--border-card)', width: '40%' }}>Aspect</th>
