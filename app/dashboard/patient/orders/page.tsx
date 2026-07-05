@@ -316,7 +316,10 @@ export default function PatientOrdersPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                 {customOrders.map(o => {
                   const ss = CUSTOM_STATUS_STYLE[o.status] || { bg: '#f3f4f6', color: '#374151' };
-                  const canPay = o.status === 'quoted' && o.payment_status !== 'paid';
+                  // Not gated on status === 'quoted' — once a price is set, the
+                  // bill must stay payable regardless of any later status change,
+                  // the same fix already applied to appointments.
+                  const canPay = o.payment_status !== 'paid' && !!o.quoted_price;
                   const isReorder = !!(o.reorder_of_order_id || o.reorder_of_custom_order_id);
                   return (
                     <div key={o.id} className="skeu-card" style={{ padding: 18 }}>

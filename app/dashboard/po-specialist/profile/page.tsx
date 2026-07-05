@@ -29,7 +29,16 @@ interface POSpecialistProfile {
   next_of_kin_name: string | null;
   next_of_kin_relationship: string | null;
   next_of_kin_phone: string | null;
+  profile_completed_at: string | null;
 }
+
+const REQUIRED_FIELDS = [
+  { key: 'full_name', label: 'Full Name' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'state', label: 'State' },
+  { key: 'lga', label: 'LGA' },
+  { key: 'address', label: 'Address' },
+] as const;
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
@@ -94,9 +103,12 @@ function POSpecialistProfilePageInner() {
     loadProfile();
   }, [user, loading]);
 
-  // Arrived here via the profile-completion gate — jump straight into edit mode.
+  // Arrived here via the profile-completion gate — jump straight into edit
+  // mode. Gated on profile_completed_at (server truth), not just the URL
+  // flag, so this can't re-fire and yank the user back into edit mode right
+  // after a successful save (the ?required=1 param clears asynchronously).
   useEffect(() => {
-    if (requiredMode && profile && !editing) startEdit();
+    if (requiredMode && profile && !profile.profile_completed_at && !editing) startEdit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requiredMode, profile]);
 
@@ -142,9 +154,14 @@ function POSpecialistProfilePageInner() {
       const data = await res.json();
       if (!res.ok) { setEditError(data.error || 'Failed to update profile.'); }
       else {
-        setEditSuccess(requiredMode ? 'Profile complete — you can now use the rest of the dashboard.' : 'Profile updated successfully.');
-        setEditing(false);
-        if (requiredMode) router.replace('/dashboard/po-specialist/profile');
+        const missing = REQUIRED_FIELDS.filter(f => !editForm[f.key]);
+        if (missing.length > 0) {
+          setEditError(`Saved — but please also fill in: ${missing.map(f => f.label).join(', ')} to complete your profile.`);
+        } else {
+          setEditSuccess(requiredMode ? 'Profile complete — you can now use the rest of the dashboard.' : 'Profile updated successfully.');
+          setEditing(false);
+          if (requiredMode) router.replace('/dashboard/po-specialist/profile');
+        }
         loadProfile();
       }
     } catch { setEditError('Network error. Please try again.'); }

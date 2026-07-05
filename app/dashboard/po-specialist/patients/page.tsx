@@ -27,10 +27,6 @@ export default function POPatientsPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
 
-  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
-  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'po_specialist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-
   useEffect(() => {
     fetch('/api/po-specialist/patients')
       .then(r => r.json())
@@ -41,6 +37,10 @@ export default function POPatientsPage() {
       .catch(() => setDataLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'po_specialist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   const filtered = patients.filter(p => {
     const q = search.toLowerCase();

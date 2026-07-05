@@ -68,11 +68,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'patient_id is required' }, { status: 400 });
   }
 
+  // A doctor may only create discharge forms for patients they've actually
+  // consulted — mirrors the scoping already enforced on GET above.
+  const hasConsulted = db.prepare(
+    'SELECT 1 FROM consultations WHERE doctor_id = ? AND patient_id = ? LIMIT 1'
+  ).get(doctor.id, body.patient_id);
+  if (!hasConsulted) {
+    return NextResponse.json({ error: 'You can only create discharge forms for patients you have consulted.' }, { status: 403 });
+  }
+
   // Hospital attribution follows the linked consultation (chosen there as a
   // hospital or Personal) rather than a fixed hospital on the doctor record.
-  const hospitalId = body.consultation_id
-    ? ((db.prepare('SELECT hospital_id FROM consultations WHERE id = ?').get(body.consultation_id) as { hospital_id: number | null } | undefined)?.hospital_id ?? null)
-    : null;
+  // The consultation must also belong to this doctor, or its hospital_id
+  // could be inherited from an unrelated consultation.
+  let hospitalId: number | null = null;
+  if (body.consultation_id) {
+    const consultation = db.prepare(
+      'SELECT hospital_id FROM consultations WHERE id = ? AND doctor_id = ?'
+    ).get(body.consultation_id, doctor.id) as { hospital_id: number | null } | undefined;
+    if (!consultation) {
+      return NextResponse.json({ error: 'Consultation not found or does not belong to you.' }, { status: 403 });
+    }
+    hospitalId = consultation.hospital_id ?? null;
+  }
 
   const result = db.prepare(`
     INSERT INTO discharge_forms (
