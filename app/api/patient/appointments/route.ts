@@ -54,6 +54,9 @@ export async function POST(req: NextRequest) {
   if (!type || (type !== 'home' && type !== 'hospital')) {
     return NextResponse.json({ error: 'type must be "home" or "hospital".' }, { status: 400 });
   }
+  if (!preferred_date) {
+    return NextResponse.json({ error: 'Preferred date is required.' }, { status: 400 });
+  }
 
   // Requesting a specific doctor only makes sense for home visits.
   const doctorId = type === 'home' && requested_doctor_id ? parseInt(requested_doctor_id) : null;

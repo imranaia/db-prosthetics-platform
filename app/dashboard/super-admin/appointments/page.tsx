@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { CalendarDays, Home, Building2, MapPin, UserCheck } from 'lucide-react';
 
@@ -12,7 +13,7 @@ interface Appointment {
   assigned_doctor_id: number | null; assigned_to_admin: number; created_at: string;
   patient_state: string | null; patient_lga: string | null; patient_address: string | null;
   requested_doctor_id: number | null; requested_doctor_name: string | null;
-  assigned_doctor_name: string | null;
+  assigned_doctor_name: string | null; payment_status: string;
 }
 interface Hospital { id: number; name: string; }
 interface Doctor { id: number; full_name: string | null; email: string; specialization: string | null; state: string | null; }
@@ -42,6 +43,7 @@ function sortByProximity(doctors: Doctor[], patientState: string | null) {
 
 export default function AppointmentsPage() {
   const { user, loading } = useAuth();
+  const { alertUser, dialog } = useConfirmDialog();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -100,7 +102,8 @@ export default function AppointmentsPage() {
   }
 
   async function updateStatus(id: number, status: string) {
-    await fetch(`/api/admin/appointments/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    const res = await fetch(`/api/admin/appointments/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    if (!res.ok) { const d = await res.json(); await alertUser(d.error || 'Failed to update appointment.', { title: 'Could Not Update' }); return; }
     load();
   }
 
@@ -108,6 +111,7 @@ export default function AppointmentsPage() {
 
   return (
     <div className="dash-content">
+      {dialog}
       <div className="dash-page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: '#dc262618', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -238,9 +242,13 @@ export default function AppointmentsPage() {
                     )
                   )}
                   {(a.status === 'quoted' || a.status === 'confirmed') && a.assigned_to_admin === 1 && (
-                    <button onClick={() => updateStatus(a.id, 'completed')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
-                      Mark Complete
-                    </button>
+                    a.payment_status !== 'unpaid' ? (
+                      <button onClick={() => updateStatus(a.id, 'completed')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
+                        Mark Complete
+                      </button>
+                    ) : (
+                      <div style={{ fontSize: '0.75rem', color: '#b91c1c' }}>Unpaid — cannot mark complete</div>
+                    )
                   )}
                   {a.quoted_price && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Quote: {fmt(a.quoted_price)}</div>}
                   {a.assigned_to_admin ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Assigned to Super Admin</div>

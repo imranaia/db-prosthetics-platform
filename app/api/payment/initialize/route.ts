@@ -36,8 +36,11 @@ export async function POST(req: NextRequest) {
     `).get(recordId) as any;
     if (!appt) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     if (appt.payment_status === 'paid') return NextResponse.json({ error: 'Already paid' }, { status: 400 });
-    if (!appt.quoted_price) return NextResponse.json({ error: 'No price set for this appointment' }, { status: 400 });
-    totalKobo = appt.quoted_price + (appt.service_fee || PLATFORM_FLAT_FEE_KOBO);
+    if (appt.payment_status === 'not_required') return NextResponse.json({ error: 'No payment is required for this appointment' }, { status: 400 });
+    // quoted_price only applies to home visits — hospital visits still owe
+    // the flat service fee, so don't require a quote to be set.
+    totalKobo = (appt.quoted_price || 0) + (appt.service_fee || PLATFORM_FLAT_FEE_KOBO);
+    if (totalKobo <= 0) return NextResponse.json({ error: 'No amount due for this appointment' }, { status: 400 });
     email = appt.email;
     patientId = appt.patient_id;
   } else if (body.order_id) {

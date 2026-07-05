@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useEffect, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -60,6 +61,7 @@ const TAB_LABELS: Record<Tab, string> = {
 
 export default function DoctorAppointmentsPage() {
   const { user, loading } = useAuth();
+  const { alertUser, dialog } = useConfirmDialog();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -89,10 +91,11 @@ export default function DoctorAppointmentsPage() {
   if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   async function markComplete(id: number) {
-    await fetch('/api/doctor/appointments', {
+    const res = await fetch('/api/doctor/appointments', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: 'completed' }),
     });
+    if (!res.ok) { const d = await res.json(); await alertUser(d.error || 'Failed to update appointment.', { title: 'Could Not Update' }); return; }
     load();
   }
 
@@ -116,6 +119,7 @@ export default function DoctorAppointmentsPage() {
 
   return (
     <div className="dash-content">
+      {dialog}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <CalendarDays size={22} color="var(--primary)" />
@@ -190,12 +194,16 @@ export default function DoctorAppointmentsPage() {
 
                 {a.status === 'confirmed' && a.assigned_doctor_id === doctorId && (
                   <div onClick={e => e.stopPropagation()} style={{ marginTop: 10 }}>
-                    <button
-                      onClick={() => markComplete(a.id)}
-                      style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #059669', background: '#05966912', color: '#059669', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
-                    >
-                      Mark Complete
-                    </button>
+                    {a.payment_status !== 'unpaid' ? (
+                      <button
+                        onClick={() => markComplete(a.id)}
+                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #059669', background: '#05966912', color: '#059669', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
+                      >
+                        Mark Complete
+                      </button>
+                    ) : (
+                      <div style={{ fontSize: '0.75rem', color: '#b91c1c' }}>Unpaid — cannot mark complete</div>
+                    )}
                   </div>
                 )}
 

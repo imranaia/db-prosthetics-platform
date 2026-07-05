@@ -24,10 +24,13 @@ export async function PATCH(
   const db = getDb();
 
   if (body.status === 'completed') {
-    const appointment = db.prepare('SELECT assigned_to_admin FROM appointments WHERE id = ?').get(id) as { assigned_to_admin: number } | undefined;
+    const appointment = db.prepare('SELECT assigned_to_admin, payment_status FROM appointments WHERE id = ?').get(id) as { assigned_to_admin: number; payment_status: string } | undefined;
     if (!appointment) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     if (!appointment.assigned_to_admin) {
       return NextResponse.json({ error: 'Only the doctor running this appointment can mark it complete.' }, { status: 403 });
+    }
+    if (appointment.payment_status === 'unpaid') {
+      return NextResponse.json({ error: 'This appointment has an unpaid bill. It must be paid before it can be marked complete.' }, { status: 400 });
     }
   }
 

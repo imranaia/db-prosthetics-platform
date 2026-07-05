@@ -217,14 +217,19 @@ export default function PatientAppointmentsPage() {
 
             {/* Preferred date */}
             <div style={{ marginBottom: 16 }}>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Preferred Date</label>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Preferred Date <span style={{ color: '#dc2626' }}>*</span></label>
               <input
                 type="date"
                 className="skeu-input"
                 style={{ width: '100%' }}
                 value={form.preferred_date}
                 onChange={e => setForm({ ...form, preferred_date: e.target.value })}
+                required
+                min={new Date().toISOString().slice(0, 10)}
               />
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                If this date doesn't work, we'll follow up to agree on a new one.
+              </div>
             </div>
 
             {/* Notes */}
@@ -303,12 +308,13 @@ export default function PatientAppointmentsPage() {
                 {appt.notes && (
                   <div style={{ fontSize: '0.82rem', color: 'var(--text-body)', marginTop: 4 }}>{appt.notes}</div>
                 )}
-                {appt.status === 'quoted' && appt.quoted_price != null && (
-                  <div style={{ marginTop: 10 }}>
+                {appt.status !== 'requested' && appt.status !== 'cancelled' && appt.payment_status === 'unpaid' && (
+                  <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)' }}>
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-                      Quoted: ₦{(appt.quoted_price / 100).toLocaleString('en-NG')} + ₦{((appt.service_fee || 100000) / 100).toLocaleString('en-NG')} service fee
-                      {' = '}
-                      <strong style={{ color: 'var(--text-head)' }}>₦{((appt.quoted_price + (appt.service_fee || 100000)) / 100).toLocaleString('en-NG')} total</strong>
+                      {appt.quoted_price != null
+                        ? <>Quoted: ₦{(appt.quoted_price / 100).toLocaleString('en-NG')} + ₦{((appt.service_fee || 100000) / 100).toLocaleString('en-NG')} service fee{' = '}</>
+                        : 'Service fee: '}
+                      <strong style={{ color: 'var(--text-head)' }}>₦{(((appt.quoted_price || 0) + (appt.service_fee || 100000)) / 100).toLocaleString('en-NG')}{appt.quoted_price != null ? ' total' : ''} — unpaid</strong>
                     </div>
                     <button
                       className="skeu-btn-accent"
@@ -316,7 +322,7 @@ export default function PatientAppointmentsPage() {
                       onClick={() => handlePayNow(appt.id)}
                       disabled={paying === appt.id}
                     >
-                      {paying === appt.id ? 'Redirecting\u2026' : `Pay \u20a6${((appt.quoted_price + (appt.service_fee || 100000)) / 100).toLocaleString('en-NG')}`}
+                      {paying === appt.id ? 'Redirecting\u2026' : `Pay \u20a6${(((appt.quoted_price || 0) + (appt.service_fee || 100000)) / 100).toLocaleString('en-NG')}`}
                     </button>
                   </div>
                 )}

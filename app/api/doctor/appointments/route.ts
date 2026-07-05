@@ -54,8 +54,8 @@ export async function PATCH(req: NextRequest) {
   if (!body.id) return NextResponse.json({ error: 'Appointment id required' }, { status: 400 });
 
   const appointment = db
-    .prepare('SELECT assigned_doctor_id FROM appointments WHERE id = ?')
-    .get(body.id) as { assigned_doctor_id: number | null } | undefined;
+    .prepare('SELECT assigned_doctor_id, payment_status FROM appointments WHERE id = ?')
+    .get(body.id) as { assigned_doctor_id: number | null; payment_status: string } | undefined;
 
   if (!appointment) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
   if (appointment.assigned_doctor_id !== doctor.id) {
@@ -63,6 +63,10 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (body.status === undefined) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+
+  if (body.status === 'completed' && appointment.payment_status === 'unpaid') {
+    return NextResponse.json({ error: 'This appointment has an unpaid bill. It must be paid before it can be marked complete.' }, { status: 400 });
+  }
 
   db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(body.status, body.id);
 
