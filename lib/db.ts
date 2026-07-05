@@ -100,7 +100,7 @@ function seedAdmin(database: Database.Database): void {
 
   if (existing) return; // already seeded
 
-  const email    = process.env.ADMIN_SEED_EMAIL    || 'admin@dbprosthetics.com';
+  const email    = process.env.ADMIN_SEED_EMAIL    || 'admin@dbpando.com';
   const password = process.env.ADMIN_SEED_PASSWORD || 'ChangeMe123!';
 
   // bcryptjs sync hash — fine for a one-time startup operation

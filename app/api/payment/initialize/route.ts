@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      email: email || `patient-${patientId}@dbprosthetics.com`,
+      email: email || `patient-${patientId}@dbpando.com`,
       amount: totalKobo,
       reference: `${type}-${recordId}-${Date.now()}`,
       callback_url: callbackUrl,

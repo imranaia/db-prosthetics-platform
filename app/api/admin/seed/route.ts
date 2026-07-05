@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Database reset and seeded. All accounts use password: 1234',
       accounts: [
-        { role: 'super_admin',    email: 'admin@dbprosthetics.com',  password: '1234', note: 'Or your ADMIN_SEED_EMAIL env var' },
+        { role: 'super_admin',    email: 'admin@dbpando.com',  password: '1234', note: 'Or your ADMIN_SEED_EMAIL env var' },
         { role: 'hospital_admin', email: 'hospitaladmin@test.com',   password: '1234' },
         { role: 'doctor',         email: 'doctor@test.com',          password: '1234' },
         { role: 'po_specialist',  email: 'specialist@test.com',      password: '1234' },

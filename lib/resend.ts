@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-const FROM = 'DB Prosthetics <noreply@dbprosthetics.com>';
+const FROM = 'DB Prosthetics <noreply@dbpando.com>';
 const ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL!;
 
 /** Send login credentials to a newly onboarded hospital admin. */

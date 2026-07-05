@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       role: 'hospital_admin',
       hospitalName: name,
       tempPassword: admin_password,
-      loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbprosthetics.com'}/login`,
+      loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbpando.com'}/login`,
     });
   } catch (e) {
     console.error('[hospitals POST] Email send failed:', e);

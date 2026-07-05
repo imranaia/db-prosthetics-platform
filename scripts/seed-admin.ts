@@ -8,7 +8,7 @@
 import bcrypt from 'bcryptjs';
 import getDb from '../lib/db';
 
-const EMAIL = process.env.ADMIN_EMAIL || 'admin@dbprosthetics.com';
+const EMAIL = process.env.ADMIN_EMAIL || 'admin@dbpando.com';
 const PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
 
 async function main() {

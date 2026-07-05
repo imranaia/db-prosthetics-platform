@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         to: email,
         fullName: full_name.trim(),
         tempPassword: result.tempPassword,
-        loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbprosthetics.com'}/login`,
+        loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbpando.com'}/login`,
       });
     } catch (e) {
       console.error('[patients POST] Email send failed:', e);

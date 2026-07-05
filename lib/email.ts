@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY || 'placeholder');
 }
-const FROM = process.env.EMAIL_FROM || 'DB Prosthetics <noreply@dbprosthetics.com>';
+const FROM = process.env.EMAIL_FROM || 'DB Prosthetics <noreply@dbpando.com>';
 
 function baseTemplate(content: string): string {
   return `<!DOCTYPE html>
