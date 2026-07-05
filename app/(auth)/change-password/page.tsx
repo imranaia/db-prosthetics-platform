@@ -24,7 +24,7 @@ export default function ChangePasswordPage() {
     fetch('/api/auth/me')
       .then(r => r.json())
       .then(d => {
-        if (d.role) setRole(d.role);
+        if (d.user?.role) setRole(d.user.role);
         else window.location.href = '/login';
       })
       .catch(() => { window.location.href = '/login'; });

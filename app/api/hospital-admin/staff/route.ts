@@ -26,13 +26,16 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
 
+  // Excludes a Super Admin operating in "Doctor Mode" — their doctors/
+  // po_specialists row is otherwise indistinguishable from real staff, and
+  // hospital admins must never be able to view or manage that account.
   const doctors = db
     .prepare(
       `SELECT 'doctor' as role, u.id as user_id, u.email, d.id as staff_id,
               d.full_name, d.phone, d.specialization, d.state, d.lga, d.address,
               d.years_experience, d.qualifications
        FROM doctors d JOIN users u ON d.user_id = u.id
-       WHERE d.hospital_id = ?`
+       WHERE d.hospital_id = ? AND u.role = 'doctor'`
     )
     .all(hospital.id);
 
@@ -40,7 +43,7 @@ export async function GET(req: NextRequest) {
     .prepare(
       `SELECT 'po_specialist' as role, u.id as user_id, u.email, p.id as staff_id
        FROM po_specialists p JOIN users u ON p.user_id = u.id
-       WHERE p.hospital_id = ?`
+       WHERE p.hospital_id = ? AND u.role = 'po_specialist'`
     )
     .all(hospital.id);
 
@@ -159,7 +162,11 @@ export async function PATCH(req: NextRequest) {
 
   const db = getDb();
   const table = role === 'doctor' ? 'doctors' : 'po_specialists';
-  const staffRow = db.prepare(`SELECT user_id FROM ${table} WHERE id = ? AND hospital_id = ?`).get(staff_id, hospital.id) as { user_id: number } | undefined;
+  // Join on users.role so a Super Admin's "Doctor Mode" profile never
+  // matches here — hospital admins must not be able to view or edit it.
+  const staffRow = db.prepare(
+    `SELECT s.user_id FROM ${table} s JOIN users u ON s.user_id = u.id WHERE s.id = ? AND s.hospital_id = ? AND u.role = ?`
+  ).get(staff_id, hospital.id, role) as { user_id: number } | undefined;
   if (!staffRow) return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
 
   if (email !== undefined) {
@@ -226,15 +233,19 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'staff_id and role are required.' }, { status: 400 });
   }
 
-  const db = getDb();
-
-  if (role === 'doctor') {
-    db.prepare('DELETE FROM doctors WHERE id = ? AND hospital_id = ?').run(staff_id, hospital.id);
-  } else if (role === 'po_specialist') {
-    db.prepare('DELETE FROM po_specialists WHERE id = ? AND hospital_id = ?').run(staff_id, hospital.id);
-  } else {
+  if (role !== 'doctor' && role !== 'po_specialist') {
     return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
   }
+
+  const db = getDb();
+  const table = role === 'doctor' ? 'doctors' : 'po_specialists';
+  // Same guard as PATCH — never let this match a Super Admin's Doctor Mode row.
+  const staffRow = db.prepare(
+    `SELECT s.id FROM ${table} s JOIN users u ON s.user_id = u.id WHERE s.id = ? AND s.hospital_id = ? AND u.role = ?`
+  ).get(staff_id, hospital.id, role);
+  if (!staffRow) return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
+
+  db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(staff_id);
 
   return NextResponse.json({ success: true });
 }

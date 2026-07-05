@@ -26,7 +26,11 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
   const table = role === 'doctor' ? 'doctors' : 'po_specialists';
-  const staffRow = db.prepare(`SELECT user_id, full_name FROM ${table} WHERE id = ? AND hospital_id = ?`).get(staff_id, hospital.id) as { user_id: number; full_name: string | null } | undefined;
+  // Join on users.role so a Super Admin's "Doctor Mode" profile can never
+  // match — hospital admins must not be able to reset that account's password.
+  const staffRow = db.prepare(
+    `SELECT s.user_id, s.full_name FROM ${table} s JOIN users u ON s.user_id = u.id WHERE s.id = ? AND s.hospital_id = ? AND u.role = ?`
+  ).get(staff_id, hospital.id, role) as { user_id: number; full_name: string | null } | undefined;
   if (!staffRow) return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
 
   const result = await resetUserPassword(staffRow.user_id, staffRow.full_name);

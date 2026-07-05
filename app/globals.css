@@ -492,6 +492,16 @@ img { max-width: 100%; }
    DASHBOARD SHELL — RESPONSIVE
    ───────────────────────────────────────────── */
 
+/* 100vh on mobile browsers is measured against the viewport with the
+   address bar collapsed, which is taller than what's actually visible —
+   it clips the bottom of a fixed, full-height sidebar (the Sign Out /
+   Switch row) until the user scrolls. 100dvh tracks the real visible
+   viewport; the 100vh line is a fallback for browsers that lack it. */
+.sidebar-drawer {
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* Sidebar nav link — now flex for icon support */
 .sidebar-nav-link {
   display: flex;

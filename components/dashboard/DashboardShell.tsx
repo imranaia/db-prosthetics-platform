@@ -91,7 +91,7 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
         className={`sidebar-drawer${open ? ' open' : ''}`}
         style={{
           position: 'fixed', top: 0, left: 0,
-          width: '240px', height: '100vh',
+          width: '240px',
           background: 'var(--primary)',
           display: 'flex', flexDirection: 'column',
           zIndex: 100,
