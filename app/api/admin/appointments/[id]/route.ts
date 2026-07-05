@@ -37,7 +37,15 @@ export async function PATCH(
   const setClauses: string[] = [];
   const values: (string | number | null)[] = [];
 
-  if (body.quoted_price !== undefined)         { setClauses.push('quoted_price = ?');         values.push(Math.round(body.quoted_price * 100)); }
+  // The frontend (super-admin/appointments/page.tsx submitQuote) already
+  // converts naira to kobo before sending — multiplying by 100 again here
+  // inflated every quote 100x (e.g. a ₦50,000 quote was stored as ₦5,000,000).
+  if (body.quoted_price !== undefined) {
+    if (!Number.isFinite(body.quoted_price) || body.quoted_price <= 0) {
+      return NextResponse.json({ error: 'quoted_price must be a positive number.' }, { status: 400 });
+    }
+    setClauses.push('quoted_price = ?'); values.push(Math.round(body.quoted_price));
+  }
   if (body.assigned_hospital_id !== undefined) { setClauses.push('assigned_hospital_id = ?'); values.push(body.assigned_hospital_id); }
   if (body.assigned_doctor_id !== undefined)   { setClauses.push('assigned_doctor_id = ?');   values.push(body.assigned_doctor_id ?? null); }
   if (body.assigned_to_admin !== undefined)    { setClauses.push('assigned_to_admin = ?');    values.push(body.assigned_to_admin ? 1 : 0); }

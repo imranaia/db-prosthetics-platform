@@ -73,10 +73,15 @@ export default function AppointmentsPage() {
 
   async function submitQuote(id: number) {
     const kobo = Math.round(parseFloat(quoteAmount) * 100);
-    await fetch(`/api/admin/appointments/${id}`, {
+    if (!Number.isFinite(kobo) || kobo <= 0) {
+      await alertUser('Enter a valid amount greater than zero before setting the quote.', { title: 'Invalid Amount' });
+      return;
+    }
+    const res = await fetch(`/api/admin/appointments/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quoted_price: kobo, status: 'quoted' }),
     });
+    if (!res.ok) { const d = await res.json(); await alertUser(d.error || 'Failed to set quote.', { title: 'Could Not Set Quote' }); return; }
     setQuoteId(null); setQuoteAmount(''); load();
   }
 
@@ -194,7 +199,7 @@ export default function AppointmentsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>₦</span>
                         <input type="number" min="0" value={quoteAmount} onChange={e => setQuoteAmount(e.target.value)} placeholder="Amount" style={{ width: 100, padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem' }} />
-                        <button onClick={() => submitQuote(a.id)} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Set</button>
+                        <button onClick={() => submitQuote(a.id)} disabled={!quoteAmount} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: quoteAmount ? 'pointer' : 'not-allowed', fontSize: '0.8rem', fontWeight: 500, opacity: quoteAmount ? 1 : 0.6 }}>Set</button>
                         <button onClick={() => setQuoteId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
                       </div>
                     ) : (
