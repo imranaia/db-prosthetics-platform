@@ -83,6 +83,11 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const callbackUrl = `${baseUrl}/api/payment/callback`;
   const subaccount = process.env.PAYSTACK_SUBACCOUNT_CODE || null;
+  // A split only makes sense if something is actually left over for the
+  // subaccount — if the whole bill is exactly the platform's flat fee (e.g.
+  // an appointment with no separate quote), transaction_charge would equal
+  // amount and Paystack rejects that as an invalid split.
+  const useSplit = subaccount && totalKobo > PLATFORM_FLAT_FEE_KOBO;
 
   const paystackRes = await fetch('https://api.paystack.co/transaction/initialize', {
     method: 'POST',
@@ -96,7 +101,7 @@ export async function POST(req: NextRequest) {
       reference: `${type}-${recordId}-${Date.now()}`,
       callback_url: callbackUrl,
       metadata: { type, record_id: recordId },
-      ...(subaccount ? {
+      ...(useSplit ? {
         subaccount,
         transaction_charge: PLATFORM_FLAT_FEE_KOBO,
         bearer: 'subaccount', // subaccount absorbs Paystack's own fee, so the platform's ₦1,000 stays exact

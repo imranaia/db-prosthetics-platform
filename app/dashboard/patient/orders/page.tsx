@@ -27,7 +27,31 @@ interface CustomOrder {
   created_at: string;
   reorder_of_order_id: number | null;
   reorder_of_custom_order_id: number | null;
+  fulfillment_status: string | null;
 }
+
+// Mirrors the stages Super Admin/Doctor move an order through
+// (app/dashboard/super-admin/orders/page.tsx, app/dashboard/doctor/orders/page.tsx),
+// translated into what the patient actually needs to know: where the device
+// physically is right now.
+const FULFILLMENT_LABEL: Record<string, string> = {
+  pending:             'Order Received',
+  confirmed:           'Confirmed',
+  manufacturing:       'Being Made',
+  dispatched:          'On Its Way to Your Hospital',
+  delivered:           'Delivered to Hospital',
+  received_by_doctor:  'With Your Doctor — Come Collect',
+  received_by_patient: 'Collected',
+};
+const FULFILLMENT_STYLE: Record<string, { bg: string; color: string }> = {
+  pending:             { bg: '#fef3c7', color: '#b45309' },
+  confirmed:           { bg: '#dbeafe', color: '#1d4ed8' },
+  manufacturing:       { bg: '#f3e8ff', color: '#6d28d9' },
+  dispatched:          { bg: '#fed7aa', color: '#c2410c' },
+  delivered:           { bg: '#ccfbf1', color: '#0f766e' },
+  received_by_doctor:  { bg: '#ccfbf1', color: '#0f766e' },
+  received_by_patient: { bg: '#d1fae5', color: '#065f46' },
+};
 
 const CUSTOM_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   pending:   { bg: '#fef3c7', color: '#b45309' },
@@ -64,6 +88,7 @@ export default function PatientOrdersPage() {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payErr, setPayErr] = useState('');
   const [confirmingReceipt, setConfirmingReceipt] = useState<number | null>(null);
+  const [confirmingCustomReceipt, setConfirmingCustomReceipt] = useState<number | null>(null);
 
   // Reorder request state
   const [reorderKey, setReorderKey] = useState<string | null>(null);
@@ -108,6 +133,20 @@ export default function PatientOrdersPage() {
       load();
     } finally {
       setConfirmingReceipt(null);
+    }
+  }
+
+  async function confirmCustomReceipt(orderId: number) {
+    setConfirmingCustomReceipt(orderId);
+    try {
+      await fetch(`/api/orders/custom/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillment_status: 'received_by_patient' }),
+      });
+      load();
+    } finally {
+      setConfirmingCustomReceipt(null);
     }
   }
 
@@ -242,13 +281,25 @@ export default function PatientOrdersPage() {
                         <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>Order #{o.id}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(o.created_at)}</div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#b45309' }}>{o.status}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {o.status === 'cancelled' && (
+                          <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#fee2e2', color: '#b91c1c' }}>Cancelled</span>
+                        )}
                         <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: o.payment_status === 'paid' ? '#d1fae5' : '#fee2e2', color: o.payment_status === 'paid' ? '#065f46' : '#b91c1c' }}>
                           {o.payment_status === 'paid' ? 'Paid' : 'Payment Due'}
                         </span>
                       </div>
                     </div>
+
+                    {o.status !== 'cancelled' && (() => {
+                      const fs = o.fulfillment_status || 'pending';
+                      const fStyle = FULFILLMENT_STYLE[fs] || { bg: '#f3f4f6', color: '#374151' };
+                      return (
+                        <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: fStyle.bg, color: fStyle.color, fontSize: '0.82rem', fontWeight: 600 }}>
+                          {FULFILLMENT_LABEL[fs] || fs.replace(/_/g, ' ')}
+                        </div>
+                      );
+                    })()}
 
                     {o.items?.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
@@ -363,6 +414,27 @@ export default function PatientOrdersPage() {
                           )}
                         </div>
                       )}
+
+                      {o.payment_status === 'paid' && (() => {
+                        const fs = o.fulfillment_status || 'pending';
+                        const fStyle = FULFILLMENT_STYLE[fs] || { bg: '#f3f4f6', color: '#374151' };
+                        return (
+                          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                            <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: fStyle.bg, color: fStyle.color }}>
+                              {FULFILLMENT_LABEL[fs] || fs.replace(/_/g, ' ')}
+                            </span>
+                            {(fs === 'dispatched' || fs === 'received_by_doctor') && (
+                              <button
+                                onClick={() => confirmCustomReceipt(o.id)}
+                                disabled={confirmingCustomReceipt === o.id}
+                                style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #065f46', background: '#d1fae5', color: '#065f46', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                              >
+                                {confirmingCustomReceipt === o.id ? 'Confirming...' : "Confirm I've Received This"}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {o.status === 'fulfilled' && <ReorderBlock kind="custom_order" id={o.id} />}
                     </div>

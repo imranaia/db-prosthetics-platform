@@ -56,6 +56,7 @@ interface CustomOrder {
   quoted_price: number | null;
   payment_target: string;
   payment_status: string;
+  fulfillment_status: string | null;
   patient_name?: string;
   created_at: string;
   patient_guardian_name: string | null;
@@ -125,6 +126,7 @@ export default function DoctorOrdersPage() {
   const [stdMsg, setStdMsg] = useState('');
   const [stdErr, setStdErr] = useState('');
   const [confirmingReceipt, setConfirmingReceipt] = useState<number | null>(null);
+  const [confirmingCustomReceipt, setConfirmingCustomReceipt] = useState<number | null>(null);
 
   // Custom order state
   const [custCategory, setCustCategory] = useState('');
@@ -294,6 +296,20 @@ export default function DoctorOrdersPage() {
       load();
     } finally {
       setConfirmingReceipt(null);
+    }
+  }
+
+  async function confirmCustomReceipt(orderId: number) {
+    setConfirmingCustomReceipt(orderId);
+    try {
+      await fetch(`/api/orders/custom/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillment_status: 'received_by_doctor' }),
+      });
+      load();
+    } finally {
+      setConfirmingCustomReceipt(null);
     }
   }
 
@@ -713,6 +729,15 @@ export default function DoctorOrdersPage() {
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{o.description}</div>
                           {o.quoted_price && (
                             <div style={{ marginTop: 10, fontSize: '0.88rem', fontWeight: 600, color: 'var(--primary)' }}>Quoted Price: {fmt(o.quoted_price)}</div>
+                          )}
+                          {o.fulfillment_status === 'dispatched' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); confirmCustomReceipt(o.id); }}
+                              disabled={confirmingCustomReceipt === o.id}
+                              style={{ marginTop: 10, padding: '7px 14px', borderRadius: 8, border: '1px solid #059669', background: '#05966912', color: '#059669', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                            >
+                              {confirmingCustomReceipt === o.id ? 'Confirming...' : 'Confirm Receipt (Device With Me)'}
+                            </button>
                           )}
                           {o.patient_guardian_signature && (
                             <div style={{ marginTop: 14 }}>

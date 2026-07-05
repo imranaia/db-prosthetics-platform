@@ -237,6 +237,7 @@ export async function PATCH(req: NextRequest) {
     quoted_price?: number;
     admin_notes?: string;
     payment_target?: string;
+    fulfillment_status?: string;
   };
 
   if (!body.id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
@@ -249,6 +250,7 @@ export async function PATCH(req: NextRequest) {
   if (body.quoted_price !== undefined)  { setClauses.push('quoted_price = ?');  values.push(Math.round(body.quoted_price)); }
   if (body.admin_notes !== undefined)   { setClauses.push('admin_notes = ?');   values.push(body.admin_notes); }
   if (body.payment_target !== undefined){ setClauses.push('payment_target = ?'); values.push(body.payment_target); }
+  if (body.fulfillment_status !== undefined) { setClauses.push('fulfillment_status = ?'); values.push(body.fulfillment_status); }
 
   if (setClauses.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
 

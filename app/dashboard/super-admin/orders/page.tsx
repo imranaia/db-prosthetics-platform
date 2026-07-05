@@ -28,6 +28,7 @@ interface CustomOrder {
   payment_target: string;
   payment_status: string;
   admin_notes: string | null;
+  fulfillment_status: string | null;
   created_at: string;
   reorder_of_order_id: number | null;
   reorder_of_custom_order_id: number | null;
@@ -124,6 +125,14 @@ export default function OrdersPage() {
     const ok = await confirm('Cancel this order? This cannot be undone.', { title: 'Cancel Order', confirmLabel: 'Cancel Order', danger: true });
     if (!ok) return;
     await updateStatus(id, 'cancelled');
+  }
+
+  async function updateCustomFulfillment(id: number, fulfillment_status: string) {
+    await fetch('/api/orders/custom', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, fulfillment_status }),
+    });
+    loadCustomOrders();
   }
 
   async function submitQuote(id: number) {
@@ -265,6 +274,11 @@ export default function OrdersPage() {
 
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                     <span className="status-badge" style={{ background: ss.bg, color: ss.color }}>{o.status}</span>
+                    {(() => {
+                      const fs = o.fulfillment_status || 'pending';
+                      const fStyle = FULFILLMENT_STYLE[fs] || { bg: '#f3f4f6', color: '#6b7280' };
+                      return <span className="status-badge" style={{ background: fStyle.bg, color: fStyle.color }}>{fs.replace(/_/g, ' ')}</span>;
+                    })()}
                     {(o.reorder_of_order_id || o.reorder_of_custom_order_id) && (
                       <span className="status-badge" style={{ background: 'rgba(124,58,237,0.12)', color: '#7c3aed' }}>
                         Reorder of {o.reorder_of_order_id ? `Order #${o.reorder_of_order_id}` : `Custom Order #${o.reorder_of_custom_order_id}`}
@@ -332,6 +346,20 @@ export default function OrdersPage() {
                       </button>
                     )
                   )}
+
+                  {(() => {
+                    const fs = o.fulfillment_status || 'pending';
+                    if (fs === 'pending') return (
+                      <button onClick={() => updateCustomFulfillment(o.id, 'confirmed')} style={{ marginTop: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid #1d4ed8', background: '#dbeafe', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Confirm Order</button>
+                    );
+                    if (fs === 'confirmed') return (
+                      <button onClick={() => updateCustomFulfillment(o.id, 'manufacturing')} style={{ marginTop: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid #6d28d9', background: '#f3e8ff', color: '#6d28d9', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Mark Manufacturing</button>
+                    );
+                    if (fs === 'manufacturing') return (
+                      <button onClick={() => updateCustomFulfillment(o.id, 'dispatched')} style={{ marginTop: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid #c2410c', background: '#fed7aa', color: '#c2410c', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Mark Dispatched</button>
+                    );
+                    return null;
+                  })()}
                 </div>
               );
             })}
