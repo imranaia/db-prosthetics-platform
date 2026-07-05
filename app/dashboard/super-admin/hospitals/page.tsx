@@ -44,14 +44,14 @@ export default function HospitalsPage() {
 
   useAutoRefresh(fetchHospitals, 30000, !!user);
 
-  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
-  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-
   const countByState = useMemo(() => {
     const m: Record<string, number> = {};
     for (const h of hospitals) m[h.state] = (m[h.state] || 0) + 1;
     return m;
   }, [hospitals]);
+
+  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   const filteredStates = NIGERIA_STATES.filter(s => s.toLowerCase().includes(stateSearch.toLowerCase()));
 
