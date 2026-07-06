@@ -35,7 +35,7 @@ export default function Navbar() {
           <div>
             <div
               className="font-display font-semibold text-[0.85rem] sm:text-base"
-              style={{ color: '#f0ece4', lineHeight: 1.2, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}
+              style={{ color: '#eef4f9', lineHeight: 1.2, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}
             >
               DB Prosthetics
             </div>
@@ -62,9 +62,9 @@ export default function Navbar() {
             <a
               key={label}
               href={href}
-              style={{ color: 'rgba(240,236,228,0.72)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#f0ece4')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,236,228,0.72)')}
+              style={{ color: 'rgba(238,244,249,0.72)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#eef4f9')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(238,244,249,0.72)')}
             >
               {label}
             </a>
@@ -80,7 +80,7 @@ export default function Navbar() {
               borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.18)',
               background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(240,236,228,0.85)',
+              color: 'rgba(238,244,249,0.85)',
               fontSize: '0.85rem',
               fontWeight: 500,
               textDecoration: 'none',
@@ -106,7 +106,7 @@ export default function Navbar() {
           className="md:hidden"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f0ece4', padding: 8, display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#eef4f9', padding: 8, display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}
         >
           <span style={{ display: 'block', width: 22, height: 2, background: 'currentColor', borderRadius: 2, transition: 'transform 0.2s', transform: open ? 'translateY(7px) rotate(45deg)' : 'none' }} />
           <span style={{ display: 'block', width: 22, height: 2, background: 'currentColor', borderRadius: 2, transition: 'opacity 0.2s', opacity: open ? 0 : 1 }} />
@@ -136,7 +136,7 @@ export default function Navbar() {
                 href={href}
                 onClick={() => setOpen(false)}
                 style={{
-                  color: 'rgba(240,236,228,0.8)',
+                  color: 'rgba(238,244,249,0.8)',
                   fontSize: '1.05rem',
                   fontWeight: 500,
                   textDecoration: 'none',
@@ -159,7 +159,7 @@ export default function Navbar() {
                   borderRadius: 9,
                   border: '1px solid rgba(255,255,255,0.18)',
                   background: 'rgba(255,255,255,0.06)',
-                  color: 'rgba(240,236,228,0.85)',
+                  color: 'rgba(238,244,249,0.85)',
                   fontSize: '0.95rem',
                   fontWeight: 500,
                   textDecoration: 'none',

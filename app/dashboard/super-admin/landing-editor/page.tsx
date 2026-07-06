@@ -296,14 +296,14 @@ export default function LandingEditorPage() {
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '48px', justifyContent: 'space-between' }}>
             <div style={{ flex: 1, minWidth: 280 }}>
               <div className="skeu-badge" style={{ display: 'inline-flex', marginBottom: '20px' }}>{content.hero_badge}</div>
-              <h1 className="font-display" style={{ fontSize: 'clamp(2rem,4vw,3.5rem)', fontWeight: 600, color: '#f0ece4', lineHeight: 1.15, marginBottom: '20px' }}>
+              <h1 className="font-display" style={{ fontSize: 'clamp(2rem,4vw,3.5rem)', fontWeight: 600, color: '#eef4f9', lineHeight: 1.15, marginBottom: '20px' }}>
                 {(() => {
                   const dot = content.hero_heading.indexOf('. ');
                   if (dot === -1) return content.hero_heading;
                   return <>{content.hero_heading.slice(0, dot + 1)} <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>{content.hero_heading.slice(dot + 2)}</em></>;
                 })()}
               </h1>
-              <p style={{ color: 'rgba(240,236,228,0.75)', fontSize: '1rem', lineHeight: 1.75, maxWidth: 480, marginBottom: '28px' }}>
+              <p style={{ color: 'rgba(238,244,249,0.75)', fontSize: '1rem', lineHeight: 1.75, maxWidth: 480, marginBottom: '28px' }}>
                 {content.hero_subheading}
               </p>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '28px' }}>
@@ -315,7 +315,7 @@ export default function LandingEditorPage() {
                 {[['Certified','P&O Organisation'],['All 36','States Coverage'],['Hospital &','Home Visits']].map(([top,bot]) => (
                   <div key={top}>
                     <div className="font-display" style={{ color: '#d08c2a', fontSize: '1rem', fontWeight: 600 }}>{top}</div>
-                    <div style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.75rem', letterSpacing: '0.04em' }}>{bot}</div>
+                    <div style={{ color: 'rgba(238,244,249,0.5)', fontSize: '0.75rem', letterSpacing: '0.04em' }}>{bot}</div>
                   </div>
                 ))}
               </div>
@@ -326,7 +326,7 @@ export default function LandingEditorPage() {
                 : (
                   <div style={{ width: '100%', height: '100%', background: 'linear-gradient(160deg, #1e4a72 0%, #0f2438 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
                     <DBLogo size={56} />
-                    <p className="font-display" style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.6 }}>
+                    <p className="font-display" style={{ color: 'rgba(238,244,249,0.4)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.6 }}>
                       Prosthetic portfolio photography<br />will be placed here
                     </p>
                   </div>
@@ -335,7 +335,7 @@ export default function LandingEditorPage() {
               {/* Overlay badge */}
               <div style={{ position: 'absolute', bottom: 14, left: 14, right: 14, background: 'rgba(15,36,56,0.85)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div style={{ color: '#d08c2a', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>What we offer</div>
-                <div style={{ color: '#f0ece4', fontSize: '0.82rem', marginTop: 3 }}>Upper limb · Lower limb · Spinal · Facial</div>
+                <div style={{ color: '#eef4f9', fontSize: '0.82rem', marginTop: 3 }}>Upper limb · Lower limb · Spinal · Facial</div>
               </div>
             </div>
           </div>
@@ -550,7 +550,7 @@ export default function LandingEditorPage() {
                     <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', marginBottom: 16, border: '3px solid rgba(255,255,255,0.8)', boxShadow: '4px 4px 12px #c9c4bb, -4px -4px 12px #fff', flexShrink: 0, position: 'relative', background: 'linear-gradient(145deg,#254f7a,#1b3d5e)' }}>
                       {m.photo_url
                         ? <Image src={m.photo_url} alt={m.name} fill style={{ objectFit: 'cover' }} />
-                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(240,236,228,0.6)', fontSize: '2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>{m.name.charAt(0) || '?'}</div>
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(238,244,249,0.6)', fontSize: '2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>{m.name.charAt(0) || '?'}</div>
                       }
                     </div>
                     <h3 className="font-display font-semibold" style={{ fontSize: '1.1rem', color: 'var(--text-head)', marginBottom: 3 }}>{m.name || 'Name'}</h3>
@@ -587,10 +587,10 @@ export default function LandingEditorPage() {
       >
         <section className="section-dark" style={{ padding: '80px 24px', textAlign: 'center' }}>
           <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <h2 className="font-display" style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 600, color: '#f0ece4', marginBottom: '14px' }}>
+            <h2 className="font-display" style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 600, color: '#eef4f9', marginBottom: '14px' }}>
               {content.cta_heading}
             </h2>
-            <p style={{ color: 'rgba(240,236,228,0.65)', fontSize: '1rem', lineHeight: 1.7, marginBottom: '32px' }}>
+            <p style={{ color: 'rgba(238,244,249,0.65)', fontSize: '1rem', lineHeight: 1.7, marginBottom: '32px' }}>
               {content.cta_subtext}
             </p>
             <span className="skeu-btn-accent">Book a Consultation</span>

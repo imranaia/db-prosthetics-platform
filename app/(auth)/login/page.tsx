@@ -183,7 +183,7 @@ export default function LoginPage() {
       <Link href="/" style={{
         position: 'fixed', top: '20px', left: '24px',
         display: 'flex', alignItems: 'center', gap: '6px',
-        color: 'rgba(240,236,228,0.6)', fontSize: '0.85rem', textDecoration: 'none',
+        color: 'rgba(238,244,249,0.6)', fontSize: '0.85rem', textDecoration: 'none',
       }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>

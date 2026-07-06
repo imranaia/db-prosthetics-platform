@@ -14,8 +14,8 @@ function baseTemplate(content: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DB Prosthetics</title>
 </head>
-<body style="margin:0;padding:0;background:#f0ece4;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0ece4;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#eef4f9;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4f9;padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
@@ -25,7 +25,7 @@ function baseTemplate(content: string): string {
             <td style="background:#0f2438;border-radius:12px 12px 0 0;padding:32px 40px;text-align:center;">
               <img src="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbpando.com'}/assets/logo.png" width="56" height="56" alt="DB Prosthetics and Orthotics Ltd" style="display:block;margin:0 auto 16px;border-radius:50%;" />
               <div style="color:#d08c2a;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;">DB Prosthetics &amp; Orthotics Ltd</div>
-              <div style="color:rgba(240,236,228,0.5);font-size:11px;letter-spacing:1px;">Nigeria</div>
+              <div style="color:rgba(238,244,249,0.5);font-size:11px;letter-spacing:1px;">Nigeria</div>
             </td>
           </tr>
 
@@ -39,7 +39,7 @@ function baseTemplate(content: string): string {
           <!-- Footer -->
           <tr>
             <td style="background:#0f2438;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
-              <p style="margin:0;color:rgba(240,236,228,0.45);font-size:11px;line-height:1.6;">
+              <p style="margin:0;color:rgba(238,244,249,0.45);font-size:11px;line-height:1.6;">
                 DB Prosthetics &amp; Orthotics Ltd | Nigeria<br/>
                 This is an automated message — please do not reply to this email.
               </p>
@@ -417,8 +417,8 @@ export async function sendAdminNewOrderNotification(opts: {
   const itemsRows = items && items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e5e0d8;border-radius:8px;overflow:hidden;">
         ${items.map(i => `<tr>
-          <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #f0ece4;">${i.name} &times;${i.quantity}</td>
-          <td style="padding:10px 14px;font-size:13px;color:#1b3d5e;font-weight:700;text-align:right;border-bottom:1px solid #f0ece4;">${naira(i.priceKobo * i.quantity)}</td>
+          <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #eef4f9;">${i.name} &times;${i.quantity}</td>
+          <td style="padding:10px 14px;font-size:13px;color:#1b3d5e;font-weight:700;text-align:right;border-bottom:1px solid #eef4f9;">${naira(i.priceKobo * i.quantity)}</td>
         </tr>`).join('')}
       </table>`
     : '';

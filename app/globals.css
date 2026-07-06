@@ -5,33 +5,33 @@
    DESIGN TOKENS
    ───────────────────────────────────────────── */
 :root {
-  /* Base surfaces — richer, deeper warm tones */
-  --bg-base:     #c8c2b6;   /* deep warm clay — gives cards real pop */
-  --bg-surface:  #cfc9bd;   /* same family, used sparingly */
-  --bg-elevated: #f0ece4;   /* card face — light against the dark base */
+  /* Base surfaces — cool navy-tinted tones */
+  --bg-base:     #c3ccd6;   /* soft blue-gray — gives cards real pop */
+  --bg-surface:  #cad2db;   /* same family, used sparingly */
+  --bg-elevated: #f5f8fb;   /* card face — light against the dark base */
   --bg-white:    #ffffff;
 
   /* Brand */
   --primary:       #1b3d5e;   /* deep navy */
   --primary-mid:   #254f7a;
   --primary-light: #2e6499;
-  --accent:        #b5751f;   /* warm gold */
+  --accent:        #b5751f;   /* warm gold — kept as the brand accent */
   --accent-light:  #d08c2a;
 
   /* Text */
   --text-head:      #111827;
   --text-body:      #374151;
   --text-muted:     #6b7280;
-  --text-on-dark:   #f0ece4;
+  --text-on-dark:   #eef4f9;
   --text-on-accent: #fff8ee;
 
-  /* Skeuomorphic shadow pair — adjusted for darker base */
-  --shadow-dark:  #aca79f;
-  --shadow-light: #e8e2d6;
+  /* Skeuomorphic shadow pair — adjusted for the cool base */
+  --shadow-dark:  #a7b0ba;
+  --shadow-light: #e6eef6;
 
   /* Borders */
-  --border-subtle: rgba(0,0,0,0.07);
-  --border-card:   rgba(0,0,0,0.1);
+  --border-subtle: rgba(27,61,94,0.08);
+  --border-card:   rgba(27,61,94,0.12);
 }
 
 /* ─────────────────────────────────────────────
@@ -104,7 +104,7 @@ img { max-width: 100%; }
 
 /* Inset well — pressed into the surface */
 .skeu-inset {
-  background: linear-gradient(145deg, #b8b2a6, #cdc7bb);
+  background: linear-gradient(145deg, #aab6c0, #c7d3db);
   box-shadow:
     inset 4px 4px 10px var(--shadow-dark),
     inset -4px -4px 10px var(--shadow-light);
@@ -263,7 +263,7 @@ img { max-width: 100%; }
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(145deg, #ddd8d0, #eae5dc);
+  background: linear-gradient(145deg, #d3dce3, #e6edf3);
   box-shadow:
     inset 3px 3px 8px rgba(0,0,0,0.15),
     inset -3px -3px 8px rgba(255,255,255,0.6);
@@ -345,7 +345,7 @@ img { max-width: 100%; }
 .skeu-input {
   width: 100%;
   padding: 13px 16px;
-  background: linear-gradient(145deg, #b8b3aa, #cac5bc);
+  background: linear-gradient(145deg, #aeb8c1, #c5cfd7);
   box-shadow:
     inset 3px 3px 8px rgba(0,0,0,0.2),
     inset -3px -3px 8px rgba(255,255,255,0.35);
@@ -379,7 +379,7 @@ img { max-width: 100%; }
 .skeu-select {
   width: 100%;
   padding: 13px 16px;
-  background: linear-gradient(145deg, #b8b3aa, #cac5bc);
+  background: linear-gradient(145deg, #aeb8c1, #c5cfd7);
   box-shadow:
     inset 3px 3px 8px rgba(0,0,0,0.2),
     inset -3px -3px 8px rgba(255,255,255,0.35);
@@ -468,13 +468,13 @@ img { max-width: 100%; }
 
 /* Footer links */
 .footer-link {
-  color: rgba(240,236,228,0.6);
+  color: rgba(238,244,249,0.6);
   font-size: 0.85rem;
   text-decoration: none;
   transition: color 0.15s ease;
 }
 .footer-link:hover {
-  color: #f0ece4;
+  color: #eef4f9;
 }
 
 /* Smooth reveal (used with JS intersection observer) */

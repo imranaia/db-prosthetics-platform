@@ -24,7 +24,7 @@ export default function DashboardIndex() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f2438', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.9rem' }}>Redirecting...</div>
+      <div style={{ color: 'rgba(238,244,249,0.5)', fontSize: '0.9rem' }}>Redirecting...</div>
     </div>
   );
 }

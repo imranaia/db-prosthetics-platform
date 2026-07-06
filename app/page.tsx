@@ -126,7 +126,7 @@ export default function LandingPage() {
                   fontSize: 'clamp(2.6rem, 5vw, 4.2rem)',
                   fontWeight: 600,
                   lineHeight: 1.12,
-                  color: '#f0ece4',
+                  color: '#eef4f9',
                   letterSpacing: '-0.01em',
                   marginBottom: '1.5rem',
                 }}
@@ -149,7 +149,7 @@ export default function LandingPage() {
                 style={{
                   fontSize: '1.1rem',
                   lineHeight: 1.75,
-                  color: 'rgba(240,236,228,0.75)',
+                  color: 'rgba(238,244,249,0.75)',
                   maxWidth: '520px',
                   marginBottom: '2.5rem',
                 }}
@@ -181,7 +181,7 @@ export default function LandingPage() {
                     >
                       {top}
                     </div>
-                    <div style={{ color: 'rgba(240,236,228,0.55)', fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+                    <div style={{ color: 'rgba(238,244,249,0.55)', fontSize: '0.78rem', letterSpacing: '0.04em' }}>
                       {bottom}
                     </div>
                   </div>
@@ -226,7 +226,7 @@ export default function LandingPage() {
                     <DBLogo size={72} />
                     <p
                       className="font-display text-center"
-                      style={{ color: 'rgba(240,236,228,0.5)', fontSize: '0.9rem', lineHeight: 1.6 }}
+                      style={{ color: 'rgba(238,244,249,0.5)', fontSize: '0.9rem', lineHeight: 1.6 }}
                     >
                       Prosthetic portfolio photography
                       <br />
@@ -252,7 +252,7 @@ export default function LandingPage() {
                   <div style={{ color: '#d08c2a', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     What we offer
                   </div>
-                  <div style={{ color: '#f0ece4', fontSize: '0.88rem', marginTop: '4px' }}>
+                  <div style={{ color: '#eef4f9', fontSize: '0.88rem', marginTop: '4px' }}>
                     Upper limb · Lower limb · Spinal · Facial
                   </div>
                 </div>
@@ -480,7 +480,7 @@ export default function LandingPage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'rgba(240,236,228,0.6)',
+                          color: 'rgba(238,244,249,0.6)',
                           fontSize: '2rem',
                           fontFamily: 'Cormorant Garamond, serif',
                           fontWeight: 600,
@@ -567,14 +567,14 @@ export default function LandingPage() {
             style={{
               fontSize: 'clamp(1.8rem, 4vw, 3rem)',
               fontWeight: 600,
-              color: '#f0ece4',
+              color: '#eef4f9',
               marginBottom: '16px',
               letterSpacing: '-0.01em',
             }}
           >
             {ctaHeading}
           </h2>
-          <p style={{ color: 'rgba(240,236,228,0.65)', fontSize: '1rem', maxWidth: '460px', margin: '0 auto 36px', lineHeight: 1.7 }}>
+          <p style={{ color: 'rgba(238,244,249,0.65)', fontSize: '1rem', maxWidth: '460px', margin: '0 auto 36px', lineHeight: 1.7 }}>
             {ctaSubtext}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -606,7 +606,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-3 mb-4">
                 <DBLogo size={54} />
                 <div>
-                  <div className="font-display font-semibold" style={{ color: '#f0ece4', fontSize: '1rem' }}>
+                  <div className="font-display font-semibold" style={{ color: '#eef4f9', fontSize: '1rem' }}>
                     DB Prosthetics
                   </div>
                   <div style={{ color: 'rgba(181,117,31,0.8)', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -614,7 +614,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              <p style={{ color: 'rgba(240,236,228,0.45)', fontSize: '0.83rem', lineHeight: 1.75 }}>
+              <p style={{ color: 'rgba(238,244,249,0.45)', fontSize: '0.83rem', lineHeight: 1.75 }}>
                 Certified Prosthetics &amp; Orthotics organisation delivering precision care and lifetime support to patients across Nigeria.
               </p>
             </div>
@@ -622,7 +622,7 @@ export default function LandingPage() {
             {/* Links */}
             <div className="flex flex-wrap gap-12">
               <div>
-                <div style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
+                <div style={{ color: 'rgba(238,244,249,0.4)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
                   Platform
                 </div>
                 {[
@@ -639,7 +639,7 @@ export default function LandingPage() {
               </div>
 
               <div>
-                <div style={{ color: 'rgba(240,236,228,0.4)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
+                <div style={{ color: 'rgba(238,244,249,0.4)', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
                   Organisation
                 </div>
                 {[
@@ -667,10 +667,10 @@ export default function LandingPage() {
             }}
           />
           <div className="flex flex-col sm:flex-row justify-between gap-2">
-            <p style={{ color: 'rgba(240,236,228,0.3)', fontSize: '0.78rem' }}>
+            <p style={{ color: 'rgba(238,244,249,0.3)', fontSize: '0.78rem' }}>
               © {new Date().getFullYear()} DB Prosthetics and Orthotics Ltd. All rights reserved.
             </p>
-            <p style={{ color: 'rgba(240,236,228,0.3)', fontSize: '0.78rem' }}>
+            <p style={{ color: 'rgba(238,244,249,0.3)', fontSize: '0.78rem' }}>
               Nigeria · Prosthetics & Orthotics
             </p>
           </div>
