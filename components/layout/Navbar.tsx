@@ -41,7 +41,7 @@ export default function Navbar() {
             </div>
             <div
               className="text-[0.52rem] sm:text-[0.6rem]"
-              style={{ color: 'rgba(238,244,249,0.9)', letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+              style={{ color: 'rgba(181,117,31,0.9)', letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
             >
               &amp; Orthotics Ltd
             </div>

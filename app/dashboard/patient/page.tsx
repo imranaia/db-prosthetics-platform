@@ -125,8 +125,8 @@ export default function PatientPage() {
         </div>
 
         <div className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#2e649918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock size={20} color="#2e6499" />
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#d08c2a18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={20} color="#d08c2a" />
           </div>
           <div>
             <div style={{ fontSize: dataLoading ? '1.75rem' : lastVisit ? '1rem' : '1.75rem', fontWeight: 700, color: 'var(--text-head)', lineHeight: 1 }}>

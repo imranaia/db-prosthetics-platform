@@ -44,7 +44,7 @@ function EditSection({
         className="edit-section-wrap"
         style={{
           position: 'relative',
-          outline: editing ? '2px solid var(--primary)' : '2px solid transparent',
+          outline: editing ? '2px solid var(--accent)' : '2px solid transparent',
           transition: 'outline 0.15s',
           borderRadius: 4,
         }}
@@ -57,7 +57,7 @@ function EditSection({
             className="edit-section-btn"
             style={{
               position: 'absolute', top: 12, right: 12,
-              background: 'var(--primary)', color: '#fff',
+              background: 'var(--accent)', color: '#fff',
               border: 'none', borderRadius: '8px', cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: '6px 14px', fontSize: '0.78rem', fontWeight: 600,
@@ -72,7 +72,7 @@ function EditSection({
       {/* Inline edit form (slides in below section) */}
       {editing && (
         <div style={{
-          background: '#fff', border: '2px solid var(--primary)',
+          background: '#fff', border: '2px solid var(--accent)',
           borderTop: 'none', borderRadius: '0 0 12px 12px',
           padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
         }}>
@@ -128,7 +128,7 @@ function ImageUploader({ value, onChange, folder, label }: { value: string; onCh
           type="button"
           onClick={() => ref.current?.click()}
           disabled={uploading}
-          style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '8px', border: '1px dashed var(--primary)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '8px', border: '1px dashed var(--accent)', background: 'rgba(181,117,31,0.06)', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
         >
           <Camera size={15} /> {uploading ? 'Uploading…' : value ? 'Change Image' : 'Upload Image'}
         </button>
@@ -243,7 +243,7 @@ export default function LandingEditorPage() {
         boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Layout size={18} color="#eef4f9" />
+          <Layout size={18} color="var(--accent)" />
           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Landing Page Editor</span>
           {saved && <span style={{ fontSize: '0.78rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> Saved</span>}
         </div>
@@ -300,7 +300,7 @@ export default function LandingEditorPage() {
                 {(() => {
                   const dot = content.hero_heading.indexOf('. ');
                   if (dot === -1) return content.hero_heading;
-                  return <>{content.hero_heading.slice(0, dot + 1)} <em style={{ color: '#eef4f9', fontStyle: 'italic' }}>{content.hero_heading.slice(dot + 2)}</em></>;
+                  return <>{content.hero_heading.slice(0, dot + 1)} <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>{content.hero_heading.slice(dot + 2)}</em></>;
                 })()}
               </h1>
               <p style={{ color: 'rgba(238,244,249,0.75)', fontSize: '1rem', lineHeight: 1.75, maxWidth: 480, marginBottom: '28px' }}>
@@ -314,7 +314,7 @@ export default function LandingEditorPage() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px' }}>
                 {[['Certified','P&O Organisation'],['All 36','States Coverage'],['Hospital &','Home Visits']].map(([top,bot]) => (
                   <div key={top}>
-                    <div className="font-display" style={{ color: '#eef4f9', fontSize: '1rem', fontWeight: 600 }}>{top}</div>
+                    <div className="font-display" style={{ color: '#d08c2a', fontSize: '1rem', fontWeight: 600 }}>{top}</div>
                     <div style={{ color: 'rgba(238,244,249,0.5)', fontSize: '0.75rem', letterSpacing: '0.04em' }}>{bot}</div>
                   </div>
                 ))}
@@ -334,7 +334,7 @@ export default function LandingEditorPage() {
               }
               {/* Overlay badge */}
               <div style={{ position: 'absolute', bottom: 14, left: 14, right: 14, background: 'rgba(15,36,56,0.85)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ color: '#eef4f9', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>What we offer</div>
+                <div style={{ color: '#d08c2a', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>What we offer</div>
                 <div style={{ color: '#eef4f9', fontSize: '0.82rem', marginTop: 3 }}>Upper limb · Lower limb · Spinal · Facial</div>
               </div>
             </div>
@@ -372,7 +372,7 @@ export default function LandingEditorPage() {
             ))}
             <button
               onClick={() => setDraft({ ...d, services: [...d.services, { title: 'New Service', description: 'Describe this service here.' }] })}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--primary)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center', marginTop: '4px' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--accent)', background: 'rgba(181,117,31,0.06)', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center', marginTop: '4px' }}
             >
               <Plus size={15} /> Add Service Card
             </button>
@@ -446,7 +446,7 @@ export default function LandingEditorPage() {
             </div>
             <button
               onClick={() => setDraft({ ...d, portfolio: [...d.portfolio, { cat: 'Category', label: 'New Case', sub: 'Description', image_url: '' }] })}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--primary)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--accent)', background: 'rgba(181,117,31,0.06)', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center' }}
             >
               <Plus size={15} /> Add Portfolio Item
             </button>
@@ -473,7 +473,7 @@ export default function LandingEditorPage() {
                     }
                   </div>
                   <div style={{ padding: '18px 20px' }}>
-                    <span style={{ display: 'inline-block', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '5px' }}>{p.cat}</span>
+                    <span style={{ display: 'inline-block', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '5px' }}>{p.cat}</span>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: '3px' }}>{p.label}</h4>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.sub}</p>
                   </div>
@@ -526,7 +526,7 @@ export default function LandingEditorPage() {
             </div>
             <button
               onClick={() => setTeamDraft([...teamDraft, { name: '', position: '', bio: '', photo_url: '' }])}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--primary)', background: 'rgba(27,61,94,0.06)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 18px', borderRadius: '8px', border: '1px dashed var(--accent)', background: 'rgba(181,117,31,0.06)', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, width: '100%', justifyContent: 'center' }}
             >
               <Plus size={15} /> Add Team Member
             </button>
@@ -547,14 +547,14 @@ export default function LandingEditorPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
                 {team.map((m, i) => (
                   <div key={m.id ?? i} className="skeu-card" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', marginBottom: 16, border: '3px solid rgba(255,255,255,0.8)', boxShadow: '4px 4px 12px #c3ccd6, -4px -4px 12px #fff', flexShrink: 0, position: 'relative', background: 'linear-gradient(145deg,#254f7a,#1b3d5e)' }}>
+                    <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', marginBottom: 16, border: '3px solid rgba(255,255,255,0.8)', boxShadow: '4px 4px 12px #c9c4bb, -4px -4px 12px #fff', flexShrink: 0, position: 'relative', background: 'linear-gradient(145deg,#254f7a,#1b3d5e)' }}>
                       {m.photo_url
                         ? <Image src={m.photo_url} alt={m.name} fill style={{ objectFit: 'cover' }} />
                         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(238,244,249,0.6)', fontSize: '2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>{m.name.charAt(0) || '?'}</div>
                       }
                     </div>
                     <h3 className="font-display font-semibold" style={{ fontSize: '1.1rem', color: 'var(--text-head)', marginBottom: 3 }}>{m.name || 'Name'}</h3>
-                    <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: 8 }}>{m.position || 'Position'}</p>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>{m.position || 'Position'}</p>
                     {m.bio && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>{m.bio}</p>}
                   </div>
                 ))}

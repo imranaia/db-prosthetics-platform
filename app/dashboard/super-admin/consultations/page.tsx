@@ -145,8 +145,8 @@ function ConsultationDetail({ c }: { c: Consultation }) {
             {bodyParts.map((bp, i) => (
               <span key={i} style={{
                 display: 'inline-flex', padding: '4px 12px', borderRadius: 20,
-                background: 'rgba(27,61,94,0.12)', border: '1px solid rgba(27,61,94,0.35)',
-                color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 500,
+                background: 'rgba(208,140,42,0.12)', border: '1px solid rgba(208,140,42,0.35)',
+                color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 500,
               }}>
                 {bp.label}{bp.subParts?.length ? ` (${bp.subParts.join(', ')})` : ''}
               </span>
@@ -544,7 +544,7 @@ export default function ConsultationsPage() {
             </div>
 
             {/* Recommend new device — drives the handoff to Orders (via Doctor Mode) */}
-            <div style={{ marginBottom: 20, padding: '14px 16px', background: 'rgba(27,61,94,0.06)', border: '1px solid rgba(27,61,94,0.2)', borderRadius: 8 }}>
+            <div style={{ marginBottom: 20, padding: '14px 16px', background: 'rgba(208,140,42,0.06)', border: '1px solid rgba(208,140,42,0.2)', borderRadius: 8 }}>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: recommendDevice ? 12 : 0 }}>
                 <input type="checkbox" checked={recommendDevice} onChange={e => setRecommendDevice(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-body)', fontWeight: 500 }}>
@@ -740,9 +740,9 @@ export default function ConsultationsPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '8px 14px', borderRadius: '8px',
-                  border: '1.5px dashed rgba(27,61,94,0.4)',
-                  background: 'rgba(27,61,94,0.05)',
-                  color: 'var(--primary, #1b3d5e)',
+                  border: '1.5px dashed rgba(208,140,42,0.4)',
+                  background: 'rgba(208,140,42,0.05)',
+                  color: 'var(--accent, #d08c2a)',
                   fontSize: '0.82rem', fontWeight: 500,
                   cursor: uploadingPhoto === 'injury' ? 'wait' : 'pointer',
                   opacity: uploadingPhoto === 'injury' ? 0.6 : 1,

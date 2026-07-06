@@ -17,10 +17,10 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <div className="auth-bg">
           <div style={{ width: '100%', maxWidth: 480 }}>
             <div className="auth-card" style={{ textAlign: 'center' }}>
-              <p className="font-display" style={{ fontSize: '4.4rem', lineHeight: 1, fontWeight: 600, color: 'var(--primary)', letterSpacing: '0.02em', margin: '0 0 6px' }}>
+              <p className="font-display" style={{ fontSize: '4.4rem', lineHeight: 1, fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.02em', margin: '0 0 6px' }}>
                 500
               </p>
-              <div style={{ width: 56, height: 2, margin: '0 auto 22px', background: 'linear-gradient(90deg, var(--primary), var(--primary-light))', borderRadius: 2 }} />
+              <div style={{ width: 56, height: 2, margin: '0 auto 22px', background: 'linear-gradient(90deg, var(--accent), var(--accent-light))', borderRadius: 2 }} />
 
               <h1 className="font-display" style={{ fontSize: '1.55rem', fontWeight: 600, color: 'var(--text-head)', margin: '0 0 12px', letterSpacing: '-0.01em' }}>
                 Something Went Wrong on Our End

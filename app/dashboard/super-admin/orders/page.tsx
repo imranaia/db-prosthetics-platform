@@ -159,8 +159,8 @@ export default function OrdersPage() {
       {dialog}
       <div className="dash-page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#2e649918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ShoppingCart size={20} color="#2e6499" />
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#b5751f18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShoppingCart size={20} color="var(--accent)" />
           </div>
           <div>
             <h1 className="font-display" style={{ fontSize: '1.75rem', color: 'var(--text-head)', fontWeight: 600 }}>Orders</h1>

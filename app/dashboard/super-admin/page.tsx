@@ -25,7 +25,7 @@ const STAT_CARDS = [
   { key: 'hospitals',            label: 'Hospitals',            icon: Building2,       color: '#1b3d5e' },
   { key: 'patients',             label: 'Patients',             icon: Users,           color: '#2563eb' },
   { key: 'doctors',              label: 'Doctors',              icon: Stethoscope,     color: '#7c3aed' },
-  { key: 'pending_orders',       label: 'Pending Orders',       icon: ShoppingCart,    color: '#2e6499' },
+  { key: 'pending_orders',       label: 'Pending Orders',       icon: ShoppingCart,    color: '#b5751f' },
   { key: 'pending_appointments', label: 'Pending Appts',        icon: CalendarDays,    color: '#dc2626' },
   { key: 'products',             label: 'Products',             icon: Package,         color: '#059669' },
 ] as const;
@@ -218,7 +218,7 @@ export default function SuperAdminOverview() {
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={28} />
               <Tooltip formatter={(v) => [v, 'Patients']} />
-              <Line type="monotone" dataKey="count" stroke="var(--primary)" strokeWidth={2.5} dot={{ fill: 'var(--primary)', r: 4 }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="count" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill: 'var(--accent)', r: 4 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         )}

@@ -137,7 +137,7 @@ export default function LandingPage() {
                   return (
                     <>
                       {heroHeading.slice(0, dot + 1)}{' '}
-                      <em style={{ color: '#eef4f9', fontStyle: 'italic' }}>
+                      <em style={{ color: '#d08c2a', fontStyle: 'italic' }}>
                         {heroHeading.slice(dot + 2)}
                       </em>
                     </>
@@ -177,7 +177,7 @@ export default function LandingPage() {
                   <div key={top} className="text-center lg:text-left">
                     <div
                       className="font-display font-semibold"
-                      style={{ color: '#eef4f9', fontSize: '1.1rem' }}
+                      style={{ color: '#d08c2a', fontSize: '1.1rem' }}
                     >
                       {top}
                     </div>
@@ -249,7 +249,7 @@ export default function LandingPage() {
                     border: '1px solid rgba(255,255,255,0.1)',
                   }}
                 >
-                  <div style={{ color: '#eef4f9', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <div style={{ color: '#d08c2a', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     What we offer
                   </div>
                   <div style={{ color: '#eef4f9', fontSize: '0.88rem', marginTop: '4px' }}>
@@ -381,7 +381,7 @@ export default function LandingPage() {
                     fontWeight: 600,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: 'var(--primary)',
+                    color: 'var(--accent)',
                     marginBottom: '6px',
                   }}>
                     {item.cat}
@@ -423,7 +423,7 @@ export default function LandingPage() {
                     height: 100,
                     borderRadius: '50%',
                     background: 'linear-gradient(145deg, #ddd8cf, #ede8df)',
-                    boxShadow: 'inset 3px 3px 8px #c3ccd6, inset -3px -3px 8px #fff',
+                    boxShadow: 'inset 3px 3px 8px #c9c4bb, inset -3px -3px 8px #fff',
                     margin: '0 auto 20px',
                     display: 'flex',
                     alignItems: 'center',
@@ -458,7 +458,7 @@ export default function LandingPage() {
                       borderRadius: '50%',
                       overflow: 'hidden',
                       marginBottom: '18px',
-                      boxShadow: '4px 4px 12px #c3ccd6, -4px -4px 12px #fff',
+                      boxShadow: '4px 4px 12px #c9c4bb, -4px -4px 12px #fff',
                       border: '3px solid rgba(255,255,255,0.8)',
                       flexShrink: 0,
                     }}
@@ -494,7 +494,7 @@ export default function LandingPage() {
                   <h3 className="font-display font-semibold" style={{ fontSize: '1.2rem', color: 'var(--text-head)', marginBottom: '4px' }}>
                     {member.name}
                   </h3>
-                  <p style={{ fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '12px' }}>
+                  <p style={{ fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '12px' }}>
                     {member.position}
                   </p>
                   {member.bio && (
@@ -534,7 +534,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap gap-3 justify-center">
               {states.map((state) => (
                 <div key={state} className="state-pill">
-                  <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style={{ color: 'var(--primary)', flexShrink: 0 }}>
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style={{ color: 'var(--accent)', flexShrink: 0 }}>
                     <circle cx="4" cy="4" r="4" />
                   </svg>
                   {state}
@@ -609,7 +609,7 @@ export default function LandingPage() {
                   <div className="font-display font-semibold" style={{ color: '#eef4f9', fontSize: '1rem' }}>
                     DB Prosthetics
                   </div>
-                  <div style={{ color: 'rgba(238,244,249,0.8)', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  <div style={{ color: 'rgba(181,117,31,0.8)', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                     & Orthotics Ltd
                   </div>
                 </div>
