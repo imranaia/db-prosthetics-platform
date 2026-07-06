@@ -48,54 +48,54 @@ const REGIONS: RegionDef[] = [
   /* ─ Right side (low x) — upper limb ─ */
   { region: 'right_forequarter',                label: 'Forequarter',                          abbr: 'FQ',  shape: { type: 'ellipse', cx: 62,  cy: 68,  rx: 11, ry: 7 } },
   { region: 'right_shoulder_disarticulation',   label: 'Shoulder Disarticulation',              abbr: 'SD',  shape: { type: 'ellipse', cx: 53,  cy: 89,  rx: 20, ry: 13 } },
-  { region: 'right_above_elbow',                label: 'Above Elbow (Transhumeral)',            abbr: 'AE',  shape: { type: 'rect',    x: 35,  y: 88,  w: 32, h: 50, rx: 6 } },
+  { region: 'right_above_elbow',                label: 'Above Elbow (Transhumeral)',            abbr: 'AE',  shape: { type: 'rect',    x: 35,  y: 88,  w: 32, h: 50, rx: 16 } },
   { region: 'right_elbow_disarticulation',      label: 'Elbow Disarticulation',                 abbr: 'ED',  shape: { type: 'ellipse', cx: 51,  cy: 141, rx: 16, ry: 10 } },
-  { region: 'right_below_elbow',                label: 'Below Elbow (Transradial)',             abbr: 'BE',  shape: { type: 'rect',    x: 35,  y: 151, w: 32, h: 48, rx: 6 } },
+  { region: 'right_below_elbow',                label: 'Below Elbow (Transradial)',             abbr: 'BE',  shape: { type: 'rect',    x: 35,  y: 151, w: 32, h: 48, rx: 16 } },
   { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation',        abbr: 'HWD', shape: { type: 'ellipse', cx: 51,  cy: 202, rx: 14, ry: 8 } },
-  { region: 'right_partial_hand',               label: 'Partial Hand (transcarpal)',            abbr: 'PH',  shape: { type: 'rect',    x: 31,  y: 210, w: 40, h: 52, rx: 7 } },
+  { region: 'right_partial_hand',               label: 'Partial Hand (transcarpal)',            abbr: 'PH',  shape: { type: 'rect',    x: 31,  y: 210, w: 40, h: 52, rx: 20 } },
 
   /* ─ Right side (low x) — lower limb ─ */
   { region: 'right_hemipelvectomy',        label: 'Hemipelvectomy',        abbr: 'HP', shape: { type: 'ellipse', cx: 85, cy: 176, rx: 13, ry: 7 } },
-  { region: 'right_hip_disarticulation',   label: 'Hip Disarticulation',   abbr: 'HD', shape: { type: 'rect',    x: 73, y: 186, w: 35, h: 30, rx: 5 } },
-  { region: 'right_above_knee',            label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'rect', x: 73, y: 216, w: 34, h: 70, rx: 6 } },
+  { region: 'right_hip_disarticulation',   label: 'Hip Disarticulation',   abbr: 'HD', shape: { type: 'rect',    x: 73, y: 186, w: 35, h: 30, rx: 15 } },
+  { region: 'right_above_knee',            label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'rect', x: 73, y: 216, w: 34, h: 70, rx: 17 } },
   {
     region: 'right_knee_disarticulation', label: 'Knee Disarticulation', abbr: 'KD',
     subPartOptions: KNEE_DISARTICULATION_OPTIONS,
     shape: { type: 'ellipse', cx: 90, cy: 289, rx: 17, ry: 11 },
   },
-  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'rect', x: 73, y: 300, w: 34, h: 65, rx: 6 } },
+  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'rect', x: 73, y: 300, w: 34, h: 65, rx: 17 } },
   {
     region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", abbr: 'AD/Sy',
     subPartOptions: ANKLE_LEVEL_OPTIONS,
     shape: { type: 'ellipse', cx: 90, cy: 368, rx: 15, ry: 9 },
   },
-  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF', shape: { type: 'rect', x: 64, y: 377, w: 48, h: 28, rx: 6 } },
+  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF', shape: { type: 'rect', x: 64, y: 377, w: 48, h: 28, rx: 14 } },
 
   /* ─ Left side (high x) — upper limb ─ */
   { region: 'left_forequarter',                label: 'Forequarter',                   abbr: 'FQ',  shape: { type: 'ellipse', cx: 158, cy: 68,  rx: 11, ry: 7 } },
   { region: 'left_shoulder_disarticulation',   label: 'Shoulder Disarticulation',       abbr: 'SD',  shape: { type: 'ellipse', cx: 167, cy: 89,  rx: 20, ry: 13 } },
-  { region: 'left_above_elbow',                label: 'Above Elbow (Transhumeral)',     abbr: 'AE',  shape: { type: 'rect',    x: 153, y: 88,  w: 32, h: 50, rx: 6 } },
+  { region: 'left_above_elbow',                label: 'Above Elbow (Transhumeral)',     abbr: 'AE',  shape: { type: 'rect',    x: 153, y: 88,  w: 32, h: 50, rx: 16 } },
   { region: 'left_elbow_disarticulation',      label: 'Elbow Disarticulation',          abbr: 'ED',  shape: { type: 'ellipse', cx: 169, cy: 141, rx: 16, ry: 10 } },
-  { region: 'left_below_elbow',                label: 'Below Elbow (Transradial)',      abbr: 'BE',  shape: { type: 'rect',    x: 153, y: 151, w: 32, h: 48, rx: 6 } },
+  { region: 'left_below_elbow',                label: 'Below Elbow (Transradial)',      abbr: 'BE',  shape: { type: 'rect',    x: 153, y: 151, w: 32, h: 48, rx: 16 } },
   { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', abbr: 'HWD', shape: { type: 'ellipse', cx: 169, cy: 202, rx: 14, ry: 8 } },
-  { region: 'left_partial_hand',               label: 'Partial Hand (transcarpal)',     abbr: 'PH',  shape: { type: 'rect',    x: 149, y: 210, w: 40, h: 52, rx: 7 } },
+  { region: 'left_partial_hand',               label: 'Partial Hand (transcarpal)',     abbr: 'PH',  shape: { type: 'rect',    x: 149, y: 210, w: 40, h: 52, rx: 20 } },
 
   /* ─ Left side (high x) — lower limb ─ */
   { region: 'left_hemipelvectomy',      label: 'Hemipelvectomy',        abbr: 'HP', shape: { type: 'ellipse', cx: 135, cy: 176, rx: 13, ry: 7 } },
-  { region: 'left_hip_disarticulation', label: 'Hip Disarticulation',   abbr: 'HD', shape: { type: 'rect',    x: 112, y: 186, w: 35, h: 30, rx: 5 } },
-  { region: 'left_above_knee',          label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'rect', x: 113, y: 216, w: 34, h: 70, rx: 6 } },
+  { region: 'left_hip_disarticulation', label: 'Hip Disarticulation',   abbr: 'HD', shape: { type: 'rect',    x: 112, y: 186, w: 35, h: 30, rx: 15 } },
+  { region: 'left_above_knee',          label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'rect', x: 113, y: 216, w: 34, h: 70, rx: 17 } },
   {
     region: 'left_knee_disarticulation', label: 'Knee Disarticulation', abbr: 'KD',
     subPartOptions: KNEE_DISARTICULATION_OPTIONS,
     shape: { type: 'ellipse', cx: 130, cy: 289, rx: 17, ry: 11 },
   },
-  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'rect', x: 113, y: 300, w: 34, h: 65, rx: 6 } },
+  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'rect', x: 113, y: 300, w: 34, h: 65, rx: 17 } },
   {
     region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", abbr: 'AD/Sy',
     subPartOptions: ANKLE_LEVEL_OPTIONS,
     shape: { type: 'ellipse', cx: 130, cy: 368, rx: 15, ry: 9 },
   },
-  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF', shape: { type: 'rect', x: 108, y: 377, w: 48, h: 28, rx: 6 } },
+  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF', shape: { type: 'rect', x: 108, y: 377, w: 48, h: 28, rx: 14 } },
 ];
 
 /* ─── Helpers ─── */
@@ -215,11 +215,28 @@ export default function BodySelector({ value, onChange }: Props) {
           <text x={218} y={10} fontSize={7} fill="rgba(0,0,0,0.35)" textAnchor="end" style={{ userSelect: 'none' }}>Patient&apos;s Left →</text>
 
           {/* Static body outline for context — head, neck, torso are not
-              amputation sites, so they aren't clickable regions. */}
-          <g fill="rgba(37,79,122,0.05)" stroke="rgba(37,79,122,0.25)" strokeWidth={1}>
-            <circle cx={110} cy={36} r={26} />
-            <rect x={98} y={60} width={24} height={20} rx={5} />
-            <rect x={75} y={78} width={70} height={108} rx={10} />
+              amputation sites, so they aren't clickable regions. A smooth
+              silhouette (shoulders → waist taper → hip flare) reads as an
+              actual person instead of a circle stacked on a rectangle. */}
+          <g fill="rgba(37,79,122,0.06)" stroke="rgba(37,79,122,0.28)" strokeWidth={1}>
+            <ellipse cx={110} cy={34} rx={22} ry={24} />
+            <path d="
+              M 100,58
+              Q 90,60 88,68
+              Q 86,78 78,83
+              Q 72,90 72,108
+              Q 71,128 75,143
+              Q 72,158 75,171
+              Q 78,182 88,186
+              L 132,186
+              Q 142,182 145,171
+              Q 148,158 145,143
+              Q 149,128 148,108
+              Q 148,90 142,83
+              Q 134,78 132,68
+              Q 130,60 120,58
+              Z
+            " />
           </g>
 
           {REGIONS.map(def => (

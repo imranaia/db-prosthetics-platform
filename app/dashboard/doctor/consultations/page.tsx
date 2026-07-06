@@ -379,8 +379,13 @@ export default function DoctorConsultationsPage() {
       const newId = data.id;
       resetForm();
       setShowForm(false);
-      if (goingToOrder && newId) {
-        window.location.href = `/dashboard/doctor/orders?from_consultation=${newId}&tab=custom`;
+      // A "fit" decision always goes to the measurement form next — the
+      // order handoff (if a device was recommended) happens after that,
+      // not instead of it.
+      if (fitDecision === 'fit' && newId) {
+        const qs = new URLSearchParams({ consultation_id: String(newId), patient_id: form.patient_id });
+        if (goingToOrder) qs.set('then_order', '1');
+        window.location.href = `/dashboard/doctor/measurements/new?${qs.toString()}`;
         return;
       }
       setDataLoading(true);
@@ -676,7 +681,7 @@ export default function DoctorConsultationsPage() {
 
               {fitDecision === 'fit' && (
                 <div style={{ padding: '12px 16px', background: 'rgba(5,150,105,0.05)', border: '1px solid rgba(5,150,105,0.15)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-body)' }}>
-                  Proceed with the device recommendation above (and order, if selected). Measurement details will be captured in a dedicated measurement form in a future update.
+                  Saving will take you to the Prosthetic Evaluation &amp; Measurement form next{recommendDevice ? ', then on to placing the order' : ''}.
                 </div>
               )}
 
