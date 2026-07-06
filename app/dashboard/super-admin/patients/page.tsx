@@ -11,6 +11,7 @@ import { Users, Search, ChevronDown, ChevronUp, User, Plus, X, Pencil, KeyRound,
 interface Patient {
   id: number;
   user_id: number | null;
+  patient_unique_id: string | null;
   full_name: string;
   phone: string;
   dob: string;
@@ -158,7 +159,8 @@ export default function PatientsPage() {
     (!stateFilter || p.state === stateFilter) &&
     (p.full_name.toLowerCase().includes(search.toLowerCase()) ||
       (p.phone || '').includes(search) ||
-      (p.state || '').toLowerCase().includes(search.toLowerCase()))
+      (p.state || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.patient_unique_id || '').toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -241,7 +243,7 @@ export default function PatientsPage() {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', margin: '20px 0' }}>
         <div style={{ position: 'relative' }}>
           <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-          <input className="skeu-input" placeholder="Search name, phone, state…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36, width: 240, maxWidth: '100%' }} />
+          <input className="skeu-input" placeholder="Search name, phone, state, or Patient ID…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36, width: 240, maxWidth: '100%' }} />
         </div>
         <select className="skeu-select" value={stateFilter} onChange={e => setStateFilter(e.target.value)} style={{ width: 180 }}>
           <option value="">All states</option>
@@ -269,6 +271,7 @@ export default function PatientsPage() {
                     </div>
                     <div>
                       <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-head)' }}>{p.full_name}</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--primary)', fontWeight: 600 }}>{p.patient_unique_id || '—'}</div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                         {age != null ? `${age} yrs · ` : ''}{p.state || 'No state on file'}
                       </div>

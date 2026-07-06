@@ -5,7 +5,10 @@ import getDb from '@/lib/db';
 type Practitioner = { id: number; role: 'doctor' | 'po_specialist' };
 
 function getPractitioner(db: ReturnType<typeof getDb>, userId: number, role: string): Practitioner | undefined {
-  if (role === 'doctor') {
+  // A Super Admin using "Doctor Mode" has a real doctors row keyed by their
+  // own user_id — treat them exactly like a doctor here, same as before
+  // P&O parity was added (which is what broke this).
+  if (role === 'doctor' || role === 'super_admin') {
     const row = db.prepare('SELECT id FROM doctors WHERE user_id = ?').get(userId) as { id: number } | undefined;
     return row ? { id: row.id, role: 'doctor' } : undefined;
   }
@@ -55,7 +58,7 @@ export async function GET(req: NextRequest) {
   const patients = hospitalId
     ? db
         .prepare(
-          `SELECT DISTINCT p.id, p.full_name
+          `SELECT DISTINCT p.id, p.full_name, p.patient_unique_id
            FROM patients p
            LEFT JOIN consultations c ON p.id = c.patient_id
            LEFT JOIN appointments a ON p.id = a.patient_id
@@ -63,7 +66,7 @@ export async function GET(req: NextRequest) {
            ORDER BY p.full_name ASC`
         )
         .all(hospitalId, hospitalId)
-    : db.prepare(`SELECT id, full_name FROM patients ORDER BY full_name ASC`).all();
+    : db.prepare(`SELECT id, full_name, patient_unique_id FROM patients ORDER BY full_name ASC`).all();
 
   const hospitals = db.prepare('SELECT id, name FROM hospitals ORDER BY name ASC').all();
 

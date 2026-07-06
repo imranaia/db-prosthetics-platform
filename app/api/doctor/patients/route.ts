@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const patients = db
     .prepare(
-      `SELECT DISTINCT p.id, p.full_name, p.phone, p.state, p.lga, p.dob, p.address,
+      `SELECT DISTINCT p.id, p.full_name, p.patient_unique_id, p.phone, p.state, p.lga, p.dob, p.address,
               MAX(c.created_at) AS last_consultation
        FROM patients p
        JOIN consultations c ON p.id = c.patient_id

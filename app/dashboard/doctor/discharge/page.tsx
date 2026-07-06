@@ -6,7 +6,7 @@ import { ClipboardCheck, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import SignaturePad from '@/components/forms/SignaturePad';
 import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
-interface Patient { id: number; full_name: string; }
+interface Patient { id: number; full_name: string; patient_unique_id?: string | null; }
 interface Consultation { id: number; patient_name: string; chief_complaint: string | null; created_at: string; }
 
 interface DischargeForm {

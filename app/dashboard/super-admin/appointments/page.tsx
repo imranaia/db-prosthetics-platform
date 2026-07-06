@@ -14,9 +14,12 @@ interface Appointment {
   patient_state: string | null; patient_lga: string | null; patient_address: string | null;
   requested_doctor_id: number | null; requested_doctor_name: string | null;
   assigned_doctor_name: string | null; payment_status: string;
+  requested_po_specialist_id: number | null; requested_po_specialist_name: string | null;
+  assigned_po_specialist_id: number | null; assigned_po_specialist_name: string | null;
 }
 interface Hospital { id: number; name: string; }
 interface Doctor { id: number; full_name: string | null; email: string; specialization: string | null; state: string | null; }
+interface POSpecialist { id: number; full_name: string | null; email: string; specialization: string | null; state: string | null; }
 
 const FILTERS = ['all', 'requested', 'quoted', 'confirmed', 'completed', 'cancelled'];
 
@@ -30,11 +33,11 @@ const S_STYLE: Record<string, { bg: string; color: string }> = {
 
 function fmt(kobo: number) { return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0 }); }
 
-// Doctors in the patient's own state sort first, so the admin sees the
-// closest available doctors without losing the ability to pick anyone.
-function sortByProximity(doctors: Doctor[], patientState: string | null) {
-  if (!patientState) return doctors;
-  return [...doctors].sort((a, b) => {
+// People in the patient's own state sort first, so the admin sees the
+// closest available doctor/specialist without losing the ability to pick anyone.
+function sortByProximity<T extends { state: string | null }>(people: T[], patientState: string | null) {
+  if (!patientState) return people;
+  return [...people].sort((a, b) => {
     const aNear = a.state === patientState ? 0 : 1;
     const bNear = b.state === patientState ? 0 : 1;
     return aNear - bNear;
@@ -47,21 +50,25 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [poSpecialists, setPOSpecialists] = useState<POSpecialist[]>([]);
   const [filter, setFilter] = useState('all');
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [quoteAmount, setQuoteAmount] = useState('');
   const [assignId, setAssignId] = useState<number | null>(null);
   const [assignHospital, setAssignHospital] = useState('');
   const [assignDoctorApptId, setAssignDoctorApptId] = useState<number | null>(null);
+  const [assignPractitionerType, setAssignPractitionerType] = useState<'doctor' | 'po_specialist'>('doctor');
   const [assignDoctor, setAssignDoctor] = useState('');
+  const [assignPOSpecialist, setAssignPOSpecialist] = useState('');
 
   async function load() {
-    const [a, h, d] = await Promise.all([
+    const [a, h, d, s] = await Promise.all([
       fetch('/api/admin/appointments').then(r => r.json()),
       fetch('/api/admin/hospitals').then(r => r.json()),
       fetch('/api/admin/doctors').then(r => r.json()),
+      fetch('/api/admin/po-specialists').then(r => r.json()),
     ]);
-    setAppointments(Array.isArray(a) ? a : []); setHospitals(Array.isArray(h) ? h : []); setDoctors(Array.isArray(d) ? d : []);
+    setAppointments(Array.isArray(a) ? a : []); setHospitals(Array.isArray(h) ? h : []); setDoctors(Array.isArray(d) ? d : []); setPOSpecialists(Array.isArray(s) ? s : []);
   }
 
   useEffect(() => { if (user) load(); }, [user]);
@@ -97,13 +104,23 @@ export default function AppointmentsPage() {
     const value = doctorValue ?? assignDoctor;
     if (!value) return;
     const payload = value === 'self'
-      ? { assigned_doctor_id: null, assigned_to_admin: true, status: 'confirmed' }
+      ? { assigned_doctor_id: null, assigned_po_specialist_id: null, assigned_to_admin: true, status: 'confirmed' }
       : { assigned_doctor_id: parseInt(value), assigned_to_admin: false, status: 'confirmed' };
     await fetch(`/api/admin/appointments/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    setAssignDoctorApptId(null); setAssignDoctor(''); load();
+    setAssignDoctorApptId(null); setAssignDoctor(''); setAssignPOSpecialist(''); load();
+  }
+
+  async function submitAssignPOSpecialist(id: number, value?: string) {
+    const v = value ?? assignPOSpecialist;
+    if (!v) return;
+    await fetch(`/api/admin/appointments/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned_po_specialist_id: parseInt(v), assigned_to_admin: false, status: 'confirmed' }),
+    });
+    setAssignDoctorApptId(null); setAssignDoctor(''); setAssignPOSpecialist(''); load();
   }
 
   async function updateStatus(id: number, status: string) {
@@ -145,7 +162,9 @@ export default function AppointmentsPage() {
           {visible.map(a => {
             const ss = S_STYLE[a.status] || { bg: '#f3f4f6', color: '#6b7280' };
             const sortedDoctors = sortByProximity(doctors, a.patient_state);
-            const hasUnconfirmedRequest = a.type === 'home' && a.requested_doctor_id && !a.assigned_doctor_id && !a.assigned_to_admin;
+            const sortedPOSpecialists = sortByProximity(poSpecialists, a.patient_state);
+            const hasUnconfirmedDoctorRequest = a.type === 'home' && a.requested_doctor_id && !a.assigned_doctor_id && !a.assigned_po_specialist_id && !a.assigned_to_admin;
+            const hasUnconfirmedPORequest = a.type === 'home' && a.requested_po_specialist_id && !a.assigned_doctor_id && !a.assigned_po_specialist_id && !a.assigned_to_admin;
             return (
               <div key={a.id} className="skeu-card" style={{ padding: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
@@ -182,12 +201,24 @@ export default function AppointmentsPage() {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-                  {hasUnconfirmedRequest && (
+                  {hasUnconfirmedDoctorRequest && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 6, padding: '6px 8px' }}>
                       <UserCheck size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
                       <span style={{ fontSize: '0.75rem', color: '#7c3aed', flex: 1 }}>Requested Dr. {a.requested_doctor_name || `#${a.requested_doctor_id}`}</span>
                       <button
                         onClick={() => submitAssignDoctor(a.id, String(a.requested_doctor_id))}
+                        style={{ padding: '4px 8px', borderRadius: '5px', background: '#7c3aed', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  )}
+                  {hasUnconfirmedPORequest && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 6, padding: '6px 8px' }}>
+                      <UserCheck size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: '0.75rem', color: '#7c3aed', flex: 1 }}>Requested {a.requested_po_specialist_name || `Specialist #${a.requested_po_specialist_id}`}</span>
+                      <button
+                        onClick={() => submitAssignPOSpecialist(a.id, String(a.requested_po_specialist_id))}
                         style={{ padding: '4px 8px', borderRadius: '5px', background: '#7c3aed', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}
                       >
                         Confirm
@@ -210,23 +241,59 @@ export default function AppointmentsPage() {
                   )}
                   {a.type === 'home' && (a.status === 'requested' || a.status === 'quoted') && (
                     assignDoctorApptId === a.id ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <select value={assignDoctor} onChange={e => setAssignDoctor(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem', maxWidth: 200 }}>
-                          <option value="">Select assignee</option>
-                          <option value="self">Super Admin (Self)</option>
-                          {sortedDoctors.map(d => (
-                            <option key={d.id} value={d.id}>
-                              {d.full_name || d.email}{d.specialization ? ` — ${d.specialization}` : ''}
-                              {a.patient_state && d.state === a.patient_state ? ' (Nearby)' : d.state ? ` (${d.state})` : ''}
-                            </option>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {(['doctor', 'po_specialist'] as const).map(pt => (
+                            <button
+                              key={pt}
+                              onClick={() => setAssignPractitionerType(pt)}
+                              style={{
+                                padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                                border: `1px solid ${assignPractitionerType === pt ? 'var(--primary)' : 'var(--border-card)'}`,
+                                background: assignPractitionerType === pt ? 'var(--primary)' : 'transparent',
+                                color: assignPractitionerType === pt ? '#fff' : 'var(--text-body)',
+                              }}
+                            >
+                              {pt === 'doctor' ? 'Doctor' : 'P&O Specialist'}
+                            </button>
                           ))}
-                        </select>
-                        <button onClick={() => submitAssignDoctor(a.id)} disabled={!assignDoctor} style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>Assign</button>
-                        <button onClick={() => setAssignDoctorApptId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          {assignPractitionerType === 'doctor' ? (
+                            <select value={assignDoctor} onChange={e => setAssignDoctor(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem', maxWidth: 200 }}>
+                              <option value="">Select doctor</option>
+                              <option value="self">Super Admin (Self)</option>
+                              {sortedDoctors.map(d => (
+                                <option key={d.id} value={d.id}>
+                                  {d.full_name || d.email}{d.specialization ? ` — ${d.specialization}` : ''}
+                                  {a.patient_state && d.state === a.patient_state ? ' (Nearby)' : d.state ? ` (${d.state})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <select value={assignPOSpecialist} onChange={e => setAssignPOSpecialist(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', fontSize: '0.82rem', maxWidth: 200 }}>
+                              <option value="">Select specialist</option>
+                              {sortedPOSpecialists.map(sp => (
+                                <option key={sp.id} value={sp.id}>
+                                  {sp.full_name || sp.email}{sp.specialization ? ` — ${sp.specialization}` : ''}
+                                  {a.patient_state && sp.state === a.patient_state ? ' (Nearby)' : sp.state ? ` (${sp.state})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <button
+                            onClick={() => assignPractitionerType === 'doctor' ? submitAssignDoctor(a.id) : submitAssignPOSpecialist(a.id)}
+                            disabled={assignPractitionerType === 'doctor' ? !assignDoctor : !assignPOSpecialist}
+                            style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}
+                          >
+                            Assign
+                          </button>
+                          <button onClick={() => setAssignDoctorApptId(null)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}>×</button>
+                        </div>
                       </div>
                     ) : (
-                      <button onClick={() => setAssignDoctorApptId(a.id)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.3)', background: 'rgba(27,61,94,0.08)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
-                        {a.assigned_doctor_id ? 'Reassign Doctor' : 'Assign Doctor'}
+                      <button onClick={() => { setAssignDoctorApptId(a.id); setAssignPractitionerType(a.assigned_po_specialist_id ? 'po_specialist' : 'doctor'); }} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(27,61,94,0.3)', background: 'rgba(27,61,94,0.08)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}>
+                        {(a.assigned_doctor_id || a.assigned_po_specialist_id) ? 'Reassign' : 'Assign Doctor / P&O Specialist'}
                       </button>
                     )
                   )}
@@ -257,7 +324,8 @@ export default function AppointmentsPage() {
                   )}
                   {a.quoted_price && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Quote: {fmt(a.quoted_price)}</div>}
                   {a.assigned_to_admin ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Assigned to Super Admin</div>
-                    : a.assigned_doctor_id ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Assigned: Dr. {a.assigned_doctor_name || a.assigned_doctor_id}</div> : null}
+                    : a.assigned_doctor_id ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Assigned: Dr. {a.assigned_doctor_name || a.assigned_doctor_id}</div>
+                    : a.assigned_po_specialist_id ? <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Assigned: {a.assigned_po_specialist_name || `Specialist #${a.assigned_po_specialist_id}`}</div> : null}
                 </div>
               </div>
             );

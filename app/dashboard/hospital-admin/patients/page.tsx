@@ -7,6 +7,7 @@ import { Users, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
 interface Patient {
   id: number;
   full_name: string;
+  patient_unique_id: string | null;
   phone: string;
   dob: string;
   state: string;
@@ -49,7 +50,8 @@ export default function HospitalAdminPatientsPage() {
   const filtered = patients.filter(p =>
     p.full_name?.toLowerCase().includes(q) ||
     p.phone?.toLowerCase().includes(q) ||
-    p.state?.toLowerCase().includes(q)
+    p.state?.toLowerCase().includes(q) ||
+    p.patient_unique_id?.toLowerCase().includes(q)
   );
 
   return (
@@ -66,7 +68,7 @@ export default function HospitalAdminPatientsPage() {
           <input
             type="search"
             className="skeu-input"
-            placeholder="Search by name, phone, state..."
+            placeholder="Search by name, phone, state, or Patient ID..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ width: 280, paddingLeft: 36 }}
@@ -98,6 +100,7 @@ export default function HospitalAdminPatientsPage() {
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, color: 'var(--text-head)', fontSize: '0.9rem' }}>{p.full_name}</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--primary)', fontWeight: 600 }}>{p.patient_unique_id || '—'}</div>
                       <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{p.phone || '—'}{p.state ? ` · ${p.state}` : ''}</div>
                     </div>
                   </div>

@@ -14,11 +14,15 @@ export async function GET(req: NextRequest) {
     SELECT a.*, p.full_name AS patient_name, p.phone AS patient_phone,
            p.state AS patient_state, p.lga AS patient_lga, p.address AS patient_address,
            rd.full_name AS requested_doctor_name,
-           ad.full_name AS assigned_doctor_name
+           ad.full_name AS assigned_doctor_name,
+           rp.full_name AS requested_po_specialist_name,
+           ap.full_name AS assigned_po_specialist_name
     FROM appointments a
     LEFT JOIN patients p ON a.patient_id = p.id
     LEFT JOIN doctors rd ON a.requested_doctor_id = rd.id
     LEFT JOIN doctors ad ON a.assigned_doctor_id = ad.id
+    LEFT JOIN po_specialists rp ON a.requested_po_specialist_id = rp.id
+    LEFT JOIN po_specialists ap ON a.assigned_po_specialist_id = ap.id
     ORDER BY a.created_at DESC
   `).all();
 

@@ -20,25 +20,34 @@ interface Props {
 
    Side naming: for a front-facing figure, the patient's own right side
    appears on the LEFT of the image (mirror convention) — shapes at low x
-   are "right_*", shapes at high x are "left_*". The previous version of
-   this component had this inverted (labelled the low-x/patient's-right
-   shapes as "left_*"), which would have mislabelled every left/right
-   amputation recorded through it — fixed here since a wrong side on a
-   clinical record is a real safety issue, not just cosmetic.
+   are "right_*", shapes at high x are "left_*".
+
+   Limb segments use the 'taper' shape (wide at the joint end, narrower at
+   the distal end) instead of uniform-width rectangles so the diagram reads
+   as an actual limb rather than a stack of capsules.
 */
 interface RegionDef {
   region: string;
   label: string;
   abbr: string;
   subPartOptions?: string[];
+  // Hand/foot digits are a multi-select (several fingers/toes can be
+  // affected at once); knee/ankle variants are mutually exclusive.
+  multiSubParts?: boolean;
   shape:
     | { type: 'circle'; cx: number; cy: number; r: number }
     | { type: 'rect'; x: number; y: number; w: number; h: number; rx: number }
-    | { type: 'ellipse'; cx: number; cy: number; rx: number; ry: number };
+    | { type: 'ellipse'; cx: number; cy: number; rx: number; ry: number }
+    | { type: 'taper'; x1: number; y1: number; r1: number; x2: number; y2: number; r2: number };
+  // Purely decorative — draws finger/toe bumps over the shape so a hand or
+  // foot region reads visually as a hand or foot, not a plain rounded box.
+  decoration?: 'hand' | 'foot';
 }
 
 const KNEE_DISARTICULATION_OPTIONS = ['Standard', 'Rotationplasty (Van Ness Rotation)', 'PFFD (Proximal Femoral Focal Deficiency)'];
 const ANKLE_LEVEL_OPTIONS = ['Ankle Disarticulation', "Syme's"];
+const HAND_DIGIT_OPTIONS = ['Thumb', 'Index Finger', 'Middle Finger', 'Ring Finger', 'Little Finger'];
+const FOOT_DIGIT_OPTIONS = ['Great Toe (Hallux)', '2nd Toe', '3rd Toe', '4th Toe', '5th Toe (Little Toe)'];
 
 const REGIONS: RegionDef[] = [
   // Head/torso outline only — not amputation sites, not selectable — kept
@@ -48,54 +57,70 @@ const REGIONS: RegionDef[] = [
   /* ─ Right side (low x) — upper limb ─ */
   { region: 'right_forequarter',                label: 'Forequarter',                          abbr: 'FQ',  shape: { type: 'ellipse', cx: 62,  cy: 68,  rx: 11, ry: 7 } },
   { region: 'right_shoulder_disarticulation',   label: 'Shoulder Disarticulation',              abbr: 'SD',  shape: { type: 'ellipse', cx: 53,  cy: 89,  rx: 20, ry: 13 } },
-  { region: 'right_above_elbow',                label: 'Above Elbow (Transhumeral)',            abbr: 'AE',  shape: { type: 'rect',    x: 35,  y: 88,  w: 32, h: 50, rx: 16 } },
+  { region: 'right_above_elbow',                label: 'Above Elbow (Transhumeral)',            abbr: 'AE',  shape: { type: 'taper', x1: 51, y1: 90,  r1: 17, x2: 51, y2: 136, r2: 11 } },
   { region: 'right_elbow_disarticulation',      label: 'Elbow Disarticulation',                 abbr: 'ED',  shape: { type: 'ellipse', cx: 51,  cy: 141, rx: 16, ry: 10 } },
-  { region: 'right_below_elbow',                label: 'Below Elbow (Transradial)',             abbr: 'BE',  shape: { type: 'rect',    x: 35,  y: 151, w: 32, h: 48, rx: 16 } },
+  { region: 'right_below_elbow',                label: 'Below Elbow (Transradial)',             abbr: 'BE',  shape: { type: 'taper', x1: 51, y1: 152, r1: 15, x2: 51, y2: 198, r2: 10 } },
   { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation',        abbr: 'HWD', shape: { type: 'ellipse', cx: 51,  cy: 202, rx: 14, ry: 8 } },
-  { region: 'right_partial_hand',               label: 'Partial Hand (transcarpal)',            abbr: 'PH',  shape: { type: 'rect',    x: 31,  y: 210, w: 40, h: 52, rx: 20 } },
+  {
+    region: 'right_partial_hand', label: 'Partial Hand (transcarpal)', abbr: 'PH',
+    subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, decoration: 'hand',
+    shape: { type: 'rect', x: 33, y: 210, w: 36, h: 26, rx: 10 },
+  },
 
   /* ─ Right side (low x) — lower limb ─ */
   { region: 'right_hemipelvectomy',        label: 'Hemipelvectomy',        abbr: 'HP', shape: { type: 'ellipse', cx: 85, cy: 176, rx: 13, ry: 7 } },
   { region: 'right_hip_disarticulation',   label: 'Hip Disarticulation',   abbr: 'HD', shape: { type: 'rect',    x: 73, y: 186, w: 35, h: 30, rx: 15 } },
-  { region: 'right_above_knee',            label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'rect', x: 73, y: 216, w: 34, h: 70, rx: 17 } },
+  { region: 'right_above_knee',            label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'taper', x1: 90, y1: 217, r1: 18, x2: 90, y2: 285, r2: 12 } },
   {
     region: 'right_knee_disarticulation', label: 'Knee Disarticulation', abbr: 'KD',
     subPartOptions: KNEE_DISARTICULATION_OPTIONS,
     shape: { type: 'ellipse', cx: 90, cy: 289, rx: 17, ry: 11 },
   },
-  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'rect', x: 73, y: 300, w: 34, h: 65, rx: 17 } },
+  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'taper', x1: 90, y1: 301, r1: 15, x2: 90, y2: 364, r2: 9 } },
   {
     region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", abbr: 'AD/Sy',
     subPartOptions: ANKLE_LEVEL_OPTIONS,
     shape: { type: 'ellipse', cx: 90, cy: 368, rx: 15, ry: 9 },
   },
-  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF', shape: { type: 'rect', x: 64, y: 377, w: 48, h: 28, rx: 14 } },
+  {
+    region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF',
+    subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, decoration: 'foot',
+    shape: { type: 'rect', x: 64, y: 377, w: 48, h: 24, rx: 10 },
+  },
 
   /* ─ Left side (high x) — upper limb ─ */
   { region: 'left_forequarter',                label: 'Forequarter',                   abbr: 'FQ',  shape: { type: 'ellipse', cx: 158, cy: 68,  rx: 11, ry: 7 } },
   { region: 'left_shoulder_disarticulation',   label: 'Shoulder Disarticulation',       abbr: 'SD',  shape: { type: 'ellipse', cx: 167, cy: 89,  rx: 20, ry: 13 } },
-  { region: 'left_above_elbow',                label: 'Above Elbow (Transhumeral)',     abbr: 'AE',  shape: { type: 'rect',    x: 153, y: 88,  w: 32, h: 50, rx: 16 } },
+  { region: 'left_above_elbow',                label: 'Above Elbow (Transhumeral)',     abbr: 'AE',  shape: { type: 'taper', x1: 169, y1: 90,  r1: 17, x2: 169, y2: 136, r2: 11 } },
   { region: 'left_elbow_disarticulation',      label: 'Elbow Disarticulation',          abbr: 'ED',  shape: { type: 'ellipse', cx: 169, cy: 141, rx: 16, ry: 10 } },
-  { region: 'left_below_elbow',                label: 'Below Elbow (Transradial)',      abbr: 'BE',  shape: { type: 'rect',    x: 153, y: 151, w: 32, h: 48, rx: 16 } },
+  { region: 'left_below_elbow',                label: 'Below Elbow (Transradial)',      abbr: 'BE',  shape: { type: 'taper', x1: 169, y1: 152, r1: 15, x2: 169, y2: 198, r2: 10 } },
   { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', abbr: 'HWD', shape: { type: 'ellipse', cx: 169, cy: 202, rx: 14, ry: 8 } },
-  { region: 'left_partial_hand',               label: 'Partial Hand (transcarpal)',     abbr: 'PH',  shape: { type: 'rect',    x: 149, y: 210, w: 40, h: 52, rx: 20 } },
+  {
+    region: 'left_partial_hand', label: 'Partial Hand (transcarpal)', abbr: 'PH',
+    subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, decoration: 'hand',
+    shape: { type: 'rect', x: 151, y: 210, w: 36, h: 26, rx: 10 },
+  },
 
   /* ─ Left side (high x) — lower limb ─ */
   { region: 'left_hemipelvectomy',      label: 'Hemipelvectomy',        abbr: 'HP', shape: { type: 'ellipse', cx: 135, cy: 176, rx: 13, ry: 7 } },
   { region: 'left_hip_disarticulation', label: 'Hip Disarticulation',   abbr: 'HD', shape: { type: 'rect',    x: 112, y: 186, w: 35, h: 30, rx: 15 } },
-  { region: 'left_above_knee',          label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'rect', x: 113, y: 216, w: 34, h: 70, rx: 17 } },
+  { region: 'left_above_knee',          label: 'Above Knee (Transfemoral)', abbr: 'AK', shape: { type: 'taper', x1: 130, y1: 217, r1: 18, x2: 130, y2: 285, r2: 12 } },
   {
     region: 'left_knee_disarticulation', label: 'Knee Disarticulation', abbr: 'KD',
     subPartOptions: KNEE_DISARTICULATION_OPTIONS,
     shape: { type: 'ellipse', cx: 130, cy: 289, rx: 17, ry: 11 },
   },
-  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'rect', x: 113, y: 300, w: 34, h: 65, rx: 17 } },
+  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', abbr: 'BK', shape: { type: 'taper', x1: 130, y1: 301, r1: 15, x2: 130, y2: 364, r2: 9 } },
   {
     region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", abbr: 'AD/Sy',
     subPartOptions: ANKLE_LEVEL_OPTIONS,
     shape: { type: 'ellipse', cx: 130, cy: 368, rx: 15, ry: 9 },
   },
-  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF', shape: { type: 'rect', x: 108, y: 377, w: 48, h: 28, rx: 14 } },
+  {
+    region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', abbr: 'PF',
+    subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, decoration: 'foot',
+    shape: { type: 'rect', x: 108, y: 377, w: 48, h: 24, rx: 10 },
+  },
 ];
 
 /* ─── Helpers ─── */
@@ -103,7 +128,55 @@ function getCentroid(def: RegionDef): { x: number; y: number } {
   const s = def.shape;
   if (s.type === 'circle')  return { x: s.cx, y: s.cy };
   if (s.type === 'ellipse') return { x: s.cx, y: s.cy };
+  if (s.type === 'taper')   return { x: (s.x1 + s.x2) / 2, y: (s.y1 + s.y2) / 2 };
   return { x: s.x + s.w / 2, y: s.y + s.h / 2 };
+}
+
+// Tapered "stadium" path — a capsule whose two ends can have different
+// radii, so a limb segment reads as wider at the joint and narrower toward
+// the next joint instead of a uniform-width rounded rectangle.
+function taperPathD(x1: number, y1: number, r1: number, x2: number, y2: number, r2: number): string {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  const a1 = [x1 + nx * r1, y1 + ny * r1];
+  const a2 = [x1 - nx * r1, y1 - ny * r1];
+  const b1 = [x2 + nx * r2, y2 + ny * r2];
+  const b2 = [x2 - nx * r2, y2 - ny * r2];
+  return `M ${a1[0]},${a1[1]} L ${b1[0]},${b1[1]} A ${r2} ${r2} 0 0 0 ${b2[0]},${b2[1]} L ${a2[0]},${a2[1]} A ${r1} ${r1} 0 0 0 ${a1[0]},${a1[1]} Z`;
+}
+
+// Decorative finger/toe bumps drawn over a hand or foot region so it reads
+// visually as digits — the actual per-digit selection happens in the
+// multi-select panel below the diagram (small SVG targets are unreliable
+// to tap on a phone), so these bumps share the parent shape's click handler.
+function DigitBumps({ kind, cx, cy, w, fill, stroke }: { kind: 'hand' | 'foot'; cx: number; cy: number; w: number; fill: string; stroke: string }) {
+  const count = 5;
+  const spread = w * 0.92;
+  const startX = cx - spread / 2;
+  const step = spread / (count - 1);
+  // Middle digit longest, tapering toward the outer two — reads as
+  // fingers/toes of varying length rather than identical pegs.
+  const lengths = kind === 'hand' ? [7, 10, 12, 10, 7.5] : [5, 6, 6.5, 5.5, 4.5];
+  const thickness = kind === 'hand' ? 4.2 : 5;
+
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      {lengths.map((len, i) => {
+        const x = startX + step * i;
+        const y2 = cy + len;
+        return (
+          <path
+            key={i}
+            d={taperPathD(x, cy, thickness / 2, x, y2, thickness / 2.6)}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={0.75}
+          />
+        );
+      })}
+    </g>
+  );
 }
 
 /* ─── SVG shape renderer ─── */
@@ -148,6 +221,10 @@ function RegionShape({
       {s.type === 'circle'  && <circle  cx={s.cx} cy={s.cy} r={s.r}                       {...common} />}
       {s.type === 'rect'    && <rect    x={s.x}  y={s.y}  width={s.w} height={s.h} rx={s.rx} {...common} />}
       {s.type === 'ellipse' && <ellipse cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry}            {...common} />}
+      {s.type === 'taper'   && <path    d={taperPathD(s.x1, s.y1, s.r1, s.x2, s.y2, s.r2)} {...common} />}
+      {def.decoration && s.type === 'rect' && (
+        <DigitBumps kind={def.decoration} cx={s.x + s.w / 2} cy={s.y + s.h} w={s.w} fill={fill} stroke={stroke} />
+      )}
       <text
         x={center.x}
         y={center.y + 2}
@@ -178,12 +255,15 @@ export default function BodySelector({ value, onChange }: Props) {
     }
   }
 
-  // Each sub-option here is a mutually exclusive variant of the same
-  // amputation level (e.g. Ankle Disarticulation vs Syme's) — single choice,
-  // not a multi-select like the old finger/toe list this replaced.
-  function selectSubPart(region: string, sub: string) {
+  // Knee/ankle variants are mutually exclusive (one level per region);
+  // hand/foot digits are a multi-select (several can be affected at once).
+  function toggleSubPart(region: string, sub: string, multi: boolean) {
     onChange(value.map(p => {
       if (p.region !== region) return p;
+      if (multi) {
+        const has = p.subParts.includes(sub);
+        return { ...p, subParts: has ? p.subParts.filter(s => s !== sub) : [...p.subParts, sub] };
+      }
       const already = p.subParts[0] === sub;
       return { ...p, subParts: already ? [] : [sub] };
     }));
@@ -219,21 +299,24 @@ export default function BodySelector({ value, onChange }: Props) {
               silhouette (shoulders → waist taper → hip flare) reads as an
               actual person instead of a circle stacked on a rectangle. */}
           <g fill="rgba(37,79,122,0.06)" stroke="rgba(37,79,122,0.28)" strokeWidth={1}>
-            <ellipse cx={110} cy={34} rx={22} ry={24} />
+            {/* Head + neck */}
+            <ellipse cx={110} cy={30} rx={19} ry={22} />
+            <path d="M 101,49 Q 100,55 100,58 L 120,58 Q 120,55 119,49 Z" />
+            {/* Torso — shoulders, waist taper, hip flare */}
             <path d="
               M 100,58
-              Q 90,60 88,68
-              Q 86,78 78,83
-              Q 72,90 72,108
-              Q 71,128 75,143
-              Q 72,158 75,171
-              Q 78,182 88,186
+              Q 90,60 86,68
+              Q 82,78 76,84
+              Q 71,90 71,108
+              Q 70,128 74,143
+              Q 71,158 74,171
+              Q 77,182 88,186
               L 132,186
-              Q 142,182 145,171
-              Q 148,158 145,143
-              Q 149,128 148,108
-              Q 148,90 142,83
-              Q 134,78 132,68
+              Q 143,182 146,171
+              Q 149,158 146,143
+              Q 150,128 149,108
+              Q 149,90 144,84
+              Q 138,78 134,68
               Q 130,60 120,58
               Z
             " />
@@ -266,24 +349,26 @@ export default function BodySelector({ value, onChange }: Props) {
       </div>
 
       {/* Sub-level panels — one per selected region with variant options
-          (Knee Disarticulation, Ankle Disarticulation/Syme's) */}
+          (Knee Disarticulation, Ankle Disarticulation/Syme's) or affected
+          digits (Partial Hand, Partial Foot — pick as many as apply) */}
       {subPartRegions.length > 0 && (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {subPartRegions.map(def => {
             const part = selectedMap.get(def.region)!;
+            const multi = !!def.multiSubParts;
             return (
               <div key={def.region} style={{ background: 'rgba(208,140,42,0.06)', border: '1px solid rgba(208,140,42,0.2)', borderRadius: '10px', padding: '10px 14px' }}>
                 <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--accent, #d08c2a)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {def.label} — Specify
+                  {def.label} — {multi ? 'Select affected digit(s)' : 'Specify'}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {def.subPartOptions!.map(sub => {
-                    const active = part.subParts[0] === sub;
+                    const active = multi ? part.subParts.includes(sub) : part.subParts[0] === sub;
                     return (
                       <button
                         key={sub}
                         type="button"
-                        onClick={() => selectSubPart(def.region, sub)}
+                        onClick={() => toggleSubPart(def.region, sub, multi)}
                         style={{
                           padding: '4px 11px',
                           borderRadius: '20px',

@@ -17,6 +17,7 @@ export async function PATCH(
     quoted_price?: number;
     assigned_hospital_id?: number;
     assigned_doctor_id?: number | null;
+    assigned_po_specialist_id?: number | null;
     assigned_to_admin?: boolean;
     status?: string;
   };
@@ -47,7 +48,16 @@ export async function PATCH(
     setClauses.push('quoted_price = ?'); values.push(Math.round(body.quoted_price));
   }
   if (body.assigned_hospital_id !== undefined) { setClauses.push('assigned_hospital_id = ?'); values.push(body.assigned_hospital_id); }
-  if (body.assigned_doctor_id !== undefined)   { setClauses.push('assigned_doctor_id = ?');   values.push(body.assigned_doctor_id ?? null); }
+  // A home visit is assigned to exactly one of doctor/P&O specialist —
+  // setting one clears the other rather than leaving a stale assignment.
+  if (body.assigned_doctor_id !== undefined) {
+    setClauses.push('assigned_doctor_id = ?'); values.push(body.assigned_doctor_id ?? null);
+    if (body.assigned_doctor_id) { setClauses.push('assigned_po_specialist_id = ?'); values.push(null); }
+  }
+  if (body.assigned_po_specialist_id !== undefined) {
+    setClauses.push('assigned_po_specialist_id = ?'); values.push(body.assigned_po_specialist_id ?? null);
+    if (body.assigned_po_specialist_id) { setClauses.push('assigned_doctor_id = ?'); values.push(null); }
+  }
   if (body.assigned_to_admin !== undefined)    { setClauses.push('assigned_to_admin = ?');    values.push(body.assigned_to_admin ? 1 : 0); }
   if (body.status !== undefined)               { setClauses.push('status = ?');               values.push(body.status); }
 

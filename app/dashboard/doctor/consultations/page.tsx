@@ -36,7 +36,7 @@ const PA_ROWS: { key: keyof PhysicalAssessment; label: string }[] = [
   { key: 'functional_mobility', label: 'Functional Mobility (e.g., Transfers, Balance)' },
 ];
 
-interface Patient { id: number; full_name: string; }
+interface Patient { id: number; full_name: string; patient_unique_id?: string | null; }
 interface Hospital { id: number; name: string; }
 
 interface Consultation {

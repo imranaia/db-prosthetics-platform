@@ -24,12 +24,13 @@ export async function GET(req: NextRequest) {
       `SELECT a.*, p.full_name AS patient_name, p.phone AS patient_phone
        FROM appointments a
        LEFT JOIN patients p ON a.patient_id = p.id
-       WHERE a.assigned_hospital_id = ?
+       WHERE a.assigned_po_specialist_id = ?
+          OR (a.type = 'hospital' AND a.assigned_hospital_id = ?)
        ORDER BY a.created_at DESC`
     )
-    .all(specialist.hospital_id);
+    .all(specialist.id, specialist.hospital_id);
 
-  return NextResponse.json({ appointments });
+  return NextResponse.json({ appointments, specialistId: specialist.id });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -60,10 +61,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Appointment id is required' }, { status: 400 });
   }
 
-  // Verify the appointment belongs to this hospital
+  // Verify the appointment is assigned to this specialist directly (home
+  // visit) or belongs to their hospital (hospital visit).
   const appt = db
-    .prepare('SELECT id FROM appointments WHERE id = ? AND assigned_hospital_id = ?')
-    .get(body.id, specialist.hospital_id) as { id: number } | undefined;
+    .prepare('SELECT id FROM appointments WHERE id = ? AND (assigned_po_specialist_id = ? OR (type = \'hospital\' AND assigned_hospital_id = ?))')
+    .get(body.id, specialist.id, specialist.hospital_id) as { id: number } | undefined;
 
   if (!appt) {
     return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });

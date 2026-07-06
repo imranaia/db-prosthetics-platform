@@ -92,7 +92,7 @@ export default function POSpecialistAppointmentsPage() {
         </div>
         <div>
           <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>Appointments</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 2 }}>Hospital appointments assigned to your facility</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 2 }}>Appointments assigned to you or your facility</p>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function POSpecialistAppointmentsPage() {
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading appointments...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            {appointments.length === 0 ? 'No appointments assigned to your hospital yet.' : 'No appointments in this category.'}
+            {appointments.length === 0 ? 'No appointments assigned to you yet.' : 'No appointments in this category.'}
           </div>
         ) : (
           <div className="table-scroll">

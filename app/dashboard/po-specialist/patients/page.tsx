@@ -7,6 +7,7 @@ import { Users, ChevronDown, ChevronUp } from 'lucide-react';
 interface POPatient {
   id: number;
   full_name: string;
+  patient_unique_id: string | null;
   phone: string | null;
   state: string | null;
   lga: string | null;
@@ -44,7 +45,7 @@ export default function POPatientsPage() {
 
   const filtered = patients.filter(p => {
     const q = search.toLowerCase();
-    return !q || p.full_name.toLowerCase().includes(q) || (p.phone || '').includes(q);
+    return !q || p.full_name.toLowerCase().includes(q) || (p.phone || '').includes(q) || (p.patient_unique_id || '').toLowerCase().includes(q);
   });
 
   return (
@@ -59,7 +60,7 @@ export default function POPatientsPage() {
         <input
           className="skeu-input"
           style={{ width: 240 }}
-          placeholder="Search by name or phone…"
+          placeholder="Search by name, phone, or Patient ID…"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -83,7 +84,7 @@ export default function POPatientsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'rgba(27,61,94,0.04)', borderBottom: '1px solid var(--border-card)' }}>
-                {['Full Name', 'Phone', 'State', 'Last Order', 'Portal', ''].map(h => (
+                {['Full Name', 'Patient ID', 'Phone', 'State', 'Last Order', 'Portal', ''].map(h => (
                   <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -97,6 +98,7 @@ export default function POPatientsPage() {
                     onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
                   >
                     <td style={{ padding: '12px 14px', fontSize: '0.88rem', fontWeight: 500, color: 'var(--text-head)' }}>{p.full_name}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>{p.patient_unique_id || '—'}</td>
                     <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-body)' }}>{p.phone || '—'}</td>
                     <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-body)' }}>{p.state || '—'}</td>
                     <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{formatDate(p.last_order)}</td>
@@ -107,7 +109,7 @@ export default function POPatientsPage() {
                   </tr>
                   {expandedId === p.id && (
                     <tr key={`${p.id}-exp`}>
-                      <td colSpan={6} style={{ padding: '16px 20px', background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-card)' }}>
+                      <td colSpan={7} style={{ padding: '16px 20px', background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-card)' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
                           <div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 3 }}>Date of Birth</div>

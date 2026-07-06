@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const patients = db
     .prepare(
-      `SELECT DISTINCT p.id, p.full_name, p.phone, p.dob, p.state, p.lga, p.created_at,
+      `SELECT DISTINCT p.id, p.full_name, p.patient_unique_id, p.phone, p.dob, p.state, p.lga, p.created_at,
              u.email AS portal_email,
              MAX(c.created_at) AS last_consultation
        FROM patients p

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
 
   const patients = db.prepare(`
-    SELECT DISTINCT p.id, p.full_name, p.phone, p.state, p.lga, p.dob,
+    SELECT DISTINCT p.id, p.full_name, p.patient_unique_id, p.phone, p.state, p.lga, p.dob,
            u.email AS portal_email, MAX(o.created_at) AS last_order
     FROM patients p
     LEFT JOIN users u ON p.user_id = u.id

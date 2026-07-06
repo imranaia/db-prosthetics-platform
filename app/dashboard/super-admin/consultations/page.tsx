@@ -37,7 +37,7 @@ const PA_ROWS: { key: keyof PhysicalAssessment; label: string }[] = [
 ];
 
 interface Hospital { id: number; name: string; state: string; }
-interface Patient  { id: number; full_name: string; }
+interface Patient  { id: number; full_name: string; patient_unique_id?: string | null; }
 
 interface Consultation {
   id: number;

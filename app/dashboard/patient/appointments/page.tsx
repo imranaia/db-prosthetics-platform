@@ -20,8 +20,11 @@ interface Appointment {
   hospital_name: string | null;
   requested_doctor_name: string | null;
   assigned_doctor_name: string | null;
+  requested_po_specialist_name: string | null;
+  assigned_po_specialist_name: string | null;
 }
 interface Doctor { id: number; full_name: string | null; specialization: string | null; state: string | null; hospital_name: string | null; }
+interface POSpecialist { id: number; full_name: string | null; specialization: string | null; state: string | null; hospital_name: string | null; }
 interface HospitalOption { id: number; name: string; state: string | null; lga: string | null; landmark: string | null; proximity_rank: number; }
 
 function StatusBadge({ status }: { status: string }) {
@@ -44,12 +47,13 @@ function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-const INITIAL_FORM = { type: 'hospital' as 'hospital' | 'home', notes: '', preferred_date: '', requested_doctor_id: '', preferred_hospital_id: '' };
+const INITIAL_FORM = { type: 'hospital' as 'hospital' | 'home', practitionerType: 'doctor' as 'doctor' | 'po_specialist', notes: '', preferred_date: '', requested_doctor_id: '', requested_po_specialist_id: '', preferred_hospital_id: '' };
 
 export default function PatientAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [poSpecialists, setPOSpecialists] = useState<POSpecialist[]>([]);
   const [hospitalOptions, setHospitalOptions] = useState<HospitalOption[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -81,6 +85,7 @@ export default function PatientAppointmentsPage() {
     if (!user) return;
     load();
     fetch('/api/patient/doctors').then(r => r.json()).then(d => setDoctors(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch('/api/patient/po-specialists').then(r => r.json()).then(d => setPOSpecialists(Array.isArray(d) ? d : [])).catch(() => {});
     fetch('/api/patient/hospitals').then(r => r.json()).then(d => setHospitalOptions(Array.isArray(d) ? d : [])).catch(() => {});
   }, [user]);
 
@@ -102,7 +107,8 @@ export default function PatientAppointmentsPage() {
           type: form.type,
           notes: form.notes,
           preferred_date: form.preferred_date,
-          requested_doctor_id: form.type === 'home' && form.requested_doctor_id ? form.requested_doctor_id : null,
+          requested_doctor_id: form.type === 'home' && form.practitionerType === 'doctor' && form.requested_doctor_id ? form.requested_doctor_id : null,
+          requested_po_specialist_id: form.type === 'home' && form.practitionerType === 'po_specialist' && form.requested_po_specialist_id ? form.requested_po_specialist_id : null,
           preferred_hospital_id: form.type === 'hospital' && form.preferred_hospital_id ? form.preferred_hospital_id : null,
         }),
       });
@@ -230,27 +236,60 @@ export default function PatientAppointmentsPage() {
               </div>
             )}
 
-            {/* Doctor preference — home visits only */}
+            {/* Practitioner type + preference — home visits only */}
             {form.type === 'home' && (
               <div style={{ marginBottom: 16 }}>
-                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Preferred Doctor (optional)</label>
-                <select
-                  className="skeu-input"
-                  style={{ width: '100%' }}
-                  value={form.requested_doctor_id}
-                  onChange={e => setForm({ ...form, requested_doctor_id: e.target.value })}
-                >
-                  <option value="">No preference — let DB Prosthetics assign</option>
-                  {doctors.map(d => (
-                    <option key={d.id} value={d.id}>
-                      {d.full_name || `Doctor #${d.id}`}
-                      {d.specialization ? ` — ${d.specialization}` : ''}
-                      {d.state ? ` (${d.state})` : ''}
-                    </option>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Who would you like to see?</label>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                  {(['doctor', 'po_specialist'] as const).map(pt => (
+                    <button
+                      key={pt}
+                      type="button"
+                      onClick={() => setForm({ ...form, practitionerType: pt, requested_doctor_id: '', requested_po_specialist_id: '' })}
+                      style={{ flex: 1, padding: '12px', borderRadius: 10, border: `2px solid ${form.practitionerType === pt ? 'var(--primary)' : 'var(--border-card)'}`, background: form.practitionerType === pt ? 'rgba(27,61,94,0.07)' : 'transparent', cursor: 'pointer', textAlign: 'center' }}
+                    >
+                      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: form.practitionerType === pt ? 'var(--primary)' : 'var(--text-body)' }}>
+                        {pt === 'doctor' ? 'Doctor' : 'P&O Specialist'}
+                      </div>
+                    </button>
                   ))}
-                </select>
+                </div>
+
+                {form.practitionerType === 'doctor' ? (
+                  <select
+                    className="skeu-input"
+                    style={{ width: '100%' }}
+                    value={form.requested_doctor_id}
+                    onChange={e => setForm({ ...form, requested_doctor_id: e.target.value })}
+                  >
+                    <option value="">No preference — let DB Prosthetics assign</option>
+                    {doctors.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.full_name || `Doctor #${d.id}`}
+                        {d.specialization ? ` — ${d.specialization}` : ''}
+                        {d.state ? ` (${d.state})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    className="skeu-input"
+                    style={{ width: '100%' }}
+                    value={form.requested_po_specialist_id}
+                    onChange={e => setForm({ ...form, requested_po_specialist_id: e.target.value })}
+                  >
+                    <option value="">No preference — let DB Prosthetics assign</option>
+                    {poSpecialists.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.full_name || `Specialist #${p.id}`}
+                        {p.specialization ? ` — ${p.specialization}` : ''}
+                        {p.state ? ` (${p.state})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
-                  If you know a doctor you'd like to see, pick them here. Otherwise, DB Prosthetics will assign the best available doctor near you.
+                  If you know who you&apos;d like to see, pick them here. Otherwise, DB Prosthetics will assign the best available person near you.
                 </div>
               </div>
             )}
@@ -334,12 +373,19 @@ export default function PatientAppointmentsPage() {
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ fontSize: '0.88rem', color: 'var(--text-head)', fontWeight: 500 }}>
                   {appt.type === 'home'
-                    ? (appt.assigned_doctor_name ? `Dr. ${appt.assigned_doctor_name}` : 'Pending doctor assignment')
+                    ? (appt.assigned_doctor_name ? `Dr. ${appt.assigned_doctor_name}`
+                        : appt.assigned_po_specialist_name ? appt.assigned_po_specialist_name
+                        : 'Pending assignment')
                     : (appt.hospital_name || 'Pending assignment')}
                 </div>
                 {appt.type === 'home' && appt.requested_doctor_name && !appt.assigned_doctor_name && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     You requested: Dr. {appt.requested_doctor_name}
+                  </div>
+                )}
+                {appt.type === 'home' && appt.requested_po_specialist_name && !appt.assigned_po_specialist_name && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    You requested: {appt.requested_po_specialist_name}
                   </div>
                 )}
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>

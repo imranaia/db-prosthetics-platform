@@ -11,10 +11,26 @@ interface Stats {
   pending_orders: number;
 }
 
+interface UpcomingAppointment {
+  id: number;
+  type: 'home' | 'hospital';
+  status: string;
+  scheduled_date: string | null;
+  preferred_date: string | null;
+  patient_name: string;
+  patient_phone: string | null;
+}
+
+function formatUpcomingDate(dt: string) {
+  return new Date(dt).toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
 export default function POSpecialistPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<Stats>({ patients: 0, orders: 0, pending_orders: 0 });
+  const [upcoming, setUpcoming] = useState<UpcomingAppointment[]>([]);
+  const [upcomingLoading, setUpcomingLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -22,6 +38,25 @@ export default function POSpecialistPage() {
       .then(r => r.json())
       .then(data => { if (data.stats) setStats(data.stats); })
       .catch(() => {});
+    fetch('/api/po-specialist/appointments')
+      .then(r => r.json())
+      .then(data => {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const list: UpcomingAppointment[] = (data.appointments || [])
+          .filter((a: UpcomingAppointment) => {
+            const d = a.scheduled_date || a.preferred_date;
+            return a.status === 'confirmed' && d && d.slice(0, 10) !== todayStr;
+          })
+          .sort((a: UpcomingAppointment, b: UpcomingAppointment) => {
+            const da = a.scheduled_date || a.preferred_date || '';
+            const db_ = b.scheduled_date || b.preferred_date || '';
+            return da.localeCompare(db_);
+          })
+          .slice(0, 5);
+        setUpcoming(list);
+        setUpcomingLoading(false);
+      })
+      .catch(() => setUpcomingLoading(false));
   }, [user]);
 
   if (loading) return (
@@ -63,10 +98,38 @@ export default function POSpecialistPage() {
         ))}
       </div>
 
-      <div className="skeu-card" style={{ padding: '28px', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Welcome, P&amp;O Specialist &mdash; Use the navigation to access your patients and orders.
-        </p>
+      <div className="skeu-card" style={{ padding: '24px' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>Upcoming Appointments</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>Patients assigned to you on future dates, so you can prepare ahead of time.</p>
+
+        {upcomingLoading ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading…</div>
+        ) : upcoming.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            No upcoming appointments assigned to you yet.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {upcoming.map(a => (
+              <div
+                key={a.id}
+                onClick={() => router.push('/dashboard/po-specialist/appointments')}
+                style={{ padding: '12px 16px', borderRadius: 10, border: '1px solid var(--border-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-head)' }}>{a.patient_name}</span>
+                  <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: a.type === 'home' ? '#05966918' : '#1b3d5e18', color: a.type === 'home' ? '#059669' : 'var(--primary)' }}>
+                    {a.type === 'home' ? 'Home Visit' : 'Hospital'}
+                  </span>
+                  {a.patient_phone && <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>{a.patient_phone}</div>}
+                </div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)' }}>
+                  {formatUpcomingDate((a.scheduled_date || a.preferred_date)!)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
