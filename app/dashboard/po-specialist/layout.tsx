@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import { useAuth } from '@/hooks/useAuth';
-import { LayoutDashboard, ShoppingCart, UserCircle } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, UserCircle, Stethoscope, ClipboardCheck, CalendarDays, Users } from 'lucide-react';
 
 const NAV = [
-  { label: 'Overview',   href: '/dashboard/po-specialist',        icon: LayoutDashboard },
-  { label: 'Orders',     href: '/dashboard/po-specialist/orders', icon: ShoppingCart },
-  { label: 'My Profile', href: '/dashboard/po-specialist/profile', icon: UserCircle },
+  { label: 'Overview',           href: '/dashboard/po-specialist',              icon: LayoutDashboard },
+  { label: 'Appointments',       href: '/dashboard/po-specialist/appointments', icon: CalendarDays },
+  { label: 'Patients',           href: '/dashboard/po-specialist/patients',     icon: Users },
+  { label: 'Consultations',      href: '/dashboard/po-specialist/consultations', icon: Stethoscope },
+  { label: 'Discharge Records',  href: '/dashboard/po-specialist/discharge',    icon: ClipboardCheck },
+  { label: 'Orders',             href: '/dashboard/po-specialist/orders',       icon: ShoppingCart },
+  { label: 'My Profile',         href: '/dashboard/po-specialist/profile',      icon: UserCircle },
 ];
 
 const PROFILE_PATH = '/dashboard/po-specialist/profile';

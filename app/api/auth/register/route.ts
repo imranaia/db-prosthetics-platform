@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import getDb from '@/lib/db';
 import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
+import { formatPatientId } from '@/lib/patient-id';
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,10 +52,13 @@ export async function POST(req: NextRequest) {
 
       const userId = userResult.lastInsertRowid;
 
-      db.prepare(
+      const patientResult = db.prepare(
         `INSERT INTO patients (user_id, full_name, phone, dob, state, lga, address)
          VALUES (?, ?, ?, ?, ?, ?, ?)`
       ).run(userId, full_name, phone || null, dob || null, state || null, lga || null, address || null);
+
+      const patientId = patientResult.lastInsertRowid as number;
+      db.prepare('UPDATE patients SET patient_unique_id = ? WHERE id = ?').run(formatPatientId(patientId), patientId);
 
       return userId;
     });

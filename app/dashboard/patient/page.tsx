@@ -1,9 +1,10 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users, Stethoscope, CalendarDays, Clock } from 'lucide-react';
+import { Users, Stethoscope, CalendarDays, Clock, Package } from 'lucide-react';
 
 interface Patient {
   id: number;
@@ -33,11 +34,32 @@ interface Appointment {
   hospital_name: string;
 }
 
+interface OrderItem { product_name: string; quantity: number; }
+interface Order {
+  id: number;
+  status: string;
+  payment_status: string;
+  fulfillment_status: string | null;
+  created_at: string;
+  items: OrderItem[];
+}
+
+const FULFILLMENT_MESSAGE: Record<string, string> = {
+  pending: 'Your order has been placed and is awaiting confirmation.',
+  confirmed: 'Your order has been confirmed and will begin production soon.',
+  manufacturing: 'Your device is being manufactured.',
+  dispatched: 'Your device has been dispatched to the hospital.',
+  delivered: 'Your device has arrived at the hospital.',
+  received_by_doctor: 'Your order is with the doctor — visit the hospital to collect it.',
+};
+
 export default function PatientPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
@@ -46,10 +68,12 @@ export default function PatientPage() {
       fetch('/api/patient/profile').then(r => r.json()),
       fetch('/api/patient/consultations').then(r => r.json()),
       fetch('/api/patient/appointments').then(r => r.json()),
-    ]).then(([profileData, consData, apptData]) => {
+      fetch('/api/orders').then(r => r.json()),
+    ]).then(([profileData, consData, apptData, ordersData]) => {
       if (profileData.patient) setPatient(profileData.patient);
       if (consData.consultations) setConsultations(consData.consultations);
       if (apptData.appointments) setAppointments(apptData.appointments);
+      if (Array.isArray(ordersData)) setOrders(ordersData);
       setDataLoading(false);
     }).catch(() => setDataLoading(false));
   }, [user]);
@@ -66,6 +90,7 @@ export default function PatientPage() {
   const nextAppointment = upcomingAppointments[0] ?? null;
   const lastVisit = consultations[0]?.created_at ?? null;
   const recentConsultations = consultations.slice(0, 5);
+  const ongoingOrder = orders.find(o => o.fulfillment_status && FULFILLMENT_MESSAGE[o.fulfillment_status]) ?? null;
 
   function formatDate(dt: string) {
     return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -100,7 +125,7 @@ export default function PatientPage() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px', opacity: dataLoading ? 0.5 : 1, transition: 'opacity 0.3s' }}>
-        <div className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="skeu-card" onClick={() => router.push('/dashboard/patient/records')} style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Stethoscope size={20} color="var(--primary)" />
           </div>
@@ -112,7 +137,7 @@ export default function PatientPage() {
           </div>
         </div>
 
-        <div className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="skeu-card" onClick={() => router.push('/dashboard/patient/appointments')} style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: '#05966918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CalendarDays size={20} color="#059669" />
           </div>
@@ -124,7 +149,7 @@ export default function PatientPage() {
           </div>
         </div>
 
-        <div className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="skeu-card" onClick={() => router.push('/dashboard/patient/records')} style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: '#d08c2a18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Clock size={20} color="#d08c2a" />
           </div>
@@ -233,6 +258,25 @@ export default function PatientPage() {
           </Link>
         </div>
       </div>
+
+      {!dataLoading && ongoingOrder && (
+        <div className="skeu-card" style={{ padding: '20px 24px', marginTop: '20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#2e649918', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Package size={20} color="#2e6499" />
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-head)' }}>
+              {ongoingOrder.items.map(i => i.product_name).join(', ') || 'Your order'}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 3 }}>
+              {FULFILLMENT_MESSAGE[ongoingOrder.fulfillment_status!]}
+            </div>
+          </div>
+          <Link href="/dashboard/patient/orders" style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            View Order
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

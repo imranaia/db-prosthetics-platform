@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Upload, Trash2 } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
 import SignaturePad from '@/components/forms/SignaturePad';
+import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
 /* ─── Types ─── */
 interface PhysicalRow { findings: string; notes: string; }
@@ -55,6 +56,10 @@ interface Consultation {
   assessor_signature: string | null;
   patient_signature: string | null;
   created_at: string;
+  fit_for_prosthetic: 'fit' | 'not_fit' | null;
+  unfit_diagnosis: string | null;
+  unfit_next_steps: string | null;
+  unfit_treatment: string | null;
 }
 
 interface PhotoEntry { type: 'injury' | 'existing'; url: string; }
@@ -101,6 +106,25 @@ function ConsultationDetail({ c }: { c: Consultation }) {
         <Field label="Assessor" value={c.assessor_name || '—'} />
         <Field label="Follow-up Date" value={formatDate(c.followup_date)} />
       </div>
+
+      {c.fit_for_prosthetic && (
+        <div style={{
+          marginBottom: 20, padding: '12px 16px', borderRadius: 8,
+          background: c.fit_for_prosthetic === 'fit' ? 'rgba(5,150,105,0.07)' : 'rgba(220,38,38,0.06)',
+          border: `1px solid ${c.fit_for_prosthetic === 'fit' ? 'rgba(5,150,105,0.2)' : 'rgba(220,38,38,0.18)'}`,
+        }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: c.fit_for_prosthetic === 'fit' ? '#059669' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: c.fit_for_prosthetic === 'not_fit' ? 8 : 0 }}>
+            {c.fit_for_prosthetic === 'fit' ? 'Fit for Prosthetic' : 'Not Fit for Prosthetic'}
+          </div>
+          {c.fit_for_prosthetic === 'not_fit' && (
+            <div className="form-grid-2" style={{ gap: 12 }}>
+              <Field label="Diagnosis / Reason" value={c.unfit_diagnosis || '—'} />
+              <Field label="Next Steps" value={c.unfit_next_steps || '—'} />
+              <Field label="Treatment / Referral" value={c.unfit_treatment || '—'} />
+            </div>
+          )}
+        </div>
+      )}
 
       <SectionHeader number="1" title="Medical & Social History" />
       <Field label="Chief Complaint" value={c.chief_complaint || '—'} />
@@ -227,6 +251,11 @@ export default function DoctorConsultationsPage() {
   const [assessorSignature, setAssessorSignature] = useState<string | null>(null);
   const [patientSignature, setPatientSignature] = useState<string | null>(null);
 
+  const [fitDecision, setFitDecision] = useState<'' | 'fit' | 'not_fit'>('');
+  const [unfitDiagnosis, setUnfitDiagnosis] = useState('');
+  const [unfitNextSteps, setUnfitNextSteps] = useState('');
+  const [unfitTreatment, setUnfitTreatment] = useState('');
+
   const [physicalAssessment, setPhysicalAssessment] = useState<PhysicalAssessment>(EMPTY_PA);
   const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
@@ -264,7 +293,7 @@ export default function DoctorConsultationsPage() {
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor' && user.role !== 'po_specialist' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   function updatePA(key: keyof PhysicalAssessment, field: 'findings' | 'notes', value: string) {
     setPhysicalAssessment(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
@@ -297,14 +326,26 @@ export default function DoctorConsultationsPage() {
     setPhotos([]);
     setAssessorSignature(null);
     setPatientSignature(null);
+    setFitDecision('');
+    setUnfitDiagnosis('');
+    setUnfitNextSteps('');
+    setUnfitTreatment('');
     setError('');
     setUploadError('');
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
     setError('');
+    if (!form.patient_id) { setError('Please select a patient.'); return; }
+    if (!fitDecision) { setError('Please record whether the patient is fit for a prosthetic before saving.'); return; }
+    if (fitDecision === 'not_fit' && !unfitDiagnosis.trim()) { setError('Please give a diagnosis/reason for the not-fit decision.'); return; }
+
+    setSubmitting(true);
+    // A patient marked "not fit" shouldn't get a device order — the device
+    // recommendation only applies on the "fit" branch.
+    const goingToOrder = fitDecision === 'fit' && recommendDevice;
+
     const res = await fetch('/api/doctor/consultations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -323,9 +364,13 @@ export default function DoctorConsultationsPage() {
         assessor_signature:  assessorSignature,
         patient_signature:   patientSignature,
         consultation_type:   form.consultation_type,
-        category:            recommendDevice ? (form.category || null) : null,
+        category:            goingToOrder ? (form.category || null) : null,
         body_parts:          bodyParts,
         photos,
+        fit_for_prosthetic:  fitDecision,
+        unfit_diagnosis:     fitDecision === 'not_fit' ? unfitDiagnosis : null,
+        unfit_next_steps:    fitDecision === 'not_fit' ? unfitNextSteps : null,
+        unfit_treatment:     fitDecision === 'not_fit' ? unfitTreatment : null,
       }),
     });
     setSubmitting(false);
@@ -334,7 +379,7 @@ export default function DoctorConsultationsPage() {
       const newId = data.id;
       resetForm();
       setShowForm(false);
-      if (recommendDevice && newId) {
+      if (goingToOrder && newId) {
         window.location.href = `/dashboard/doctor/orders?from_consultation=${newId}&tab=custom`;
         return;
       }
@@ -428,10 +473,11 @@ export default function DoctorConsultationsPage() {
               </div>
               <div>
                 <label className="skeu-label">Patient <span style={{ color: '#dc2626' }}>*</span></label>
-                <select className="skeu-select" value={form.patient_id} onChange={e => setForm({ ...form, patient_id: e.target.value })} required>
-                  <option value="">Select a patient…</option>
-                  {patients.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
-                </select>
+                <SearchablePatientSelect
+                  value={form.patient_id}
+                  onChange={v => setForm({ ...form, patient_id: v })}
+                  patients={patients}
+                />
               </div>
             </div>
 
@@ -595,6 +641,61 @@ export default function DoctorConsultationsPage() {
             <div style={{ marginBottom: 20 }}>
               <label className="skeu-label">Additional Notes</label>
               <textarea className="skeu-input" rows={3} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Any additional observations…" style={{ resize: 'vertical' }} />
+            </div>
+
+            {/* Section 6 — Prosthetic Fitness Decision */}
+            <SectionHeader number="6" title="Prosthetic Fitness Decision" />
+            <div style={{ marginBottom: 20 }}>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Is this patient fit for a prosthetic? <span style={{ color: '#dc2626' }}>*</span></label>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                <button
+                  type="button"
+                  onClick={() => setFitDecision('fit')}
+                  style={{
+                    padding: '9px 18px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                    border: `2px solid ${fitDecision === 'fit' ? '#059669' : 'var(--border-card)'}`,
+                    background: fitDecision === 'fit' ? 'rgba(5,150,105,0.08)' : 'transparent',
+                    color: fitDecision === 'fit' ? '#059669' : 'var(--text-body)',
+                  }}
+                >
+                  Fit for Prosthetic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFitDecision('not_fit')}
+                  style={{
+                    padding: '9px 18px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                    border: `2px solid ${fitDecision === 'not_fit' ? '#dc2626' : 'var(--border-card)'}`,
+                    background: fitDecision === 'not_fit' ? 'rgba(220,38,38,0.08)' : 'transparent',
+                    color: fitDecision === 'not_fit' ? '#dc2626' : 'var(--text-body)',
+                  }}
+                >
+                  Not Fit for Prosthetic
+                </button>
+              </div>
+
+              {fitDecision === 'fit' && (
+                <div style={{ padding: '12px 16px', background: 'rgba(5,150,105,0.05)', border: '1px solid rgba(5,150,105,0.15)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-body)' }}>
+                  Proceed with the device recommendation above (and order, if selected). Measurement details will be captured in a dedicated measurement form in a future update.
+                </div>
+              )}
+
+              {fitDecision === 'not_fit' && (
+                <div style={{ padding: '14px 16px', background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 8 }}>
+                  <div style={{ marginBottom: 14 }}>
+                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Diagnosis / Reason <span style={{ color: '#dc2626' }}>*</span></label>
+                    <textarea className="skeu-input" rows={2} value={unfitDiagnosis} onChange={e => setUnfitDiagnosis(e.target.value)} placeholder="Why is the patient not fit for a prosthetic?" style={{ resize: 'vertical', width: '100%' }} required />
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Next Steps</label>
+                    <textarea className="skeu-input" rows={2} value={unfitNextSteps} onChange={e => setUnfitNextSteps(e.target.value)} placeholder="What should happen next for this patient?" style={{ resize: 'vertical', width: '100%' }} />
+                  </div>
+                  <div>
+                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Treatment / Referral</label>
+                    <input className="skeu-input" style={{ width: '100%' }} value={unfitTreatment} onChange={e => setUnfitTreatment(e.target.value)} placeholder="e.g. Surgery, medication, specialist referral…" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Signatures & Consent */}

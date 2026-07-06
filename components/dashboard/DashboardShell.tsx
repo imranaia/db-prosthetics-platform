@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Building2, Package, Users, ShoppingCart,
-  Boxes, Menu, X, LogOut, Layout, UserCircle, Repeat, CalendarDays,
+  Boxes, Menu, X, LogOut, Layout, UserCircle, Repeat, CalendarDays, Stethoscope,
 } from 'lucide-react';
 import { useIdleLogout } from '@/hooks/useIdleLogout';
 
@@ -34,6 +34,7 @@ const DEFAULT_NAV: NavItem[] = [
   { label: 'Hospitals',       href: '/dashboard/super-admin/hospitals',       icon: Building2 },
   { label: 'Products',        href: '/dashboard/super-admin/products',        icon: Package },
   { label: 'Patients',        href: '/dashboard/super-admin/patients',        icon: Users },
+  { label: 'P&O Specialists', href: '/dashboard/super-admin/specialists',     icon: Stethoscope },
   { label: 'Appointments',    href: '/dashboard/super-admin/appointments',    icon: CalendarDays },
   { label: 'Orders',          href: '/dashboard/super-admin/orders',          icon: ShoppingCart },
   { label: 'Inventory',       href: '/dashboard/super-admin/inventory',       icon: Boxes },

@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify } from 'jose';
 
 export interface SessionPayload {
   id: number;
-  email: string;
+  email?: string;
   role: string;
   hasDoctorProfile?: boolean;
 }
@@ -37,7 +37,7 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
     const { payload } = await jwtVerify(token, getSecret());
     return {
       id:    payload.id    as number,
-      email: payload.email as string,
+      email: payload.email as string | undefined,
       role:  payload.role  as string,
     };
   } catch {

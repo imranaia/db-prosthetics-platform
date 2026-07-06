@@ -22,6 +22,7 @@ interface Appointment {
   assigned_doctor_name: string | null;
 }
 interface Doctor { id: number; full_name: string | null; specialization: string | null; state: string | null; hospital_name: string | null; }
+interface HospitalOption { id: number; name: string; state: string | null; lga: string | null; landmark: string | null; proximity_rank: number; }
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
@@ -43,12 +44,13 @@ function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-const INITIAL_FORM = { type: 'hospital' as 'hospital' | 'home', notes: '', preferred_date: '', requested_doctor_id: '' };
+const INITIAL_FORM = { type: 'hospital' as 'hospital' | 'home', notes: '', preferred_date: '', requested_doctor_id: '', preferred_hospital_id: '' };
 
 export default function PatientAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [hospitalOptions, setHospitalOptions] = useState<HospitalOption[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -79,6 +81,7 @@ export default function PatientAppointmentsPage() {
     if (!user) return;
     load();
     fetch('/api/patient/doctors').then(r => r.json()).then(d => setDoctors(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch('/api/patient/hospitals').then(r => r.json()).then(d => setHospitalOptions(Array.isArray(d) ? d : [])).catch(() => {});
   }, [user]);
 
   useAutoRefresh(load, 30000, !!user);
@@ -100,6 +103,7 @@ export default function PatientAppointmentsPage() {
           notes: form.notes,
           preferred_date: form.preferred_date,
           requested_doctor_id: form.type === 'home' && form.requested_doctor_id ? form.requested_doctor_id : null,
+          preferred_hospital_id: form.type === 'hospital' && form.preferred_hospital_id ? form.preferred_hospital_id : null,
         }),
       });
       const data = await res.json();
@@ -189,6 +193,42 @@ export default function PatientAppointmentsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Hospital preference — hospital visits only, nearest first */}
+            {form.type === 'hospital' && (
+              <div style={{ marginBottom: 16 }}>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Preferred Hospital (optional)</label>
+                <select
+                  className="skeu-input"
+                  style={{ width: '100%' }}
+                  value={form.preferred_hospital_id}
+                  onChange={e => setForm({ ...form, preferred_hospital_id: e.target.value })}
+                >
+                  <option value="">No preference — let DB Prosthetics assign</option>
+                  {hospitalOptions.filter(h => h.proximity_rank < 2).length > 0 && (
+                    <optgroup label="Near You">
+                      {hospitalOptions.filter(h => h.proximity_rank < 2).map(h => (
+                        <option key={h.id} value={h.id}>
+                          {h.name}{h.lga ? ` — ${h.lga}` : ''}{h.state ? `, ${h.state}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {hospitalOptions.filter(h => h.proximity_rank === 2).length > 0 && (
+                    <optgroup label="Other States">
+                      {hospitalOptions.filter(h => h.proximity_rank === 2).map(h => (
+                        <option key={h.id} value={h.id}>
+                          {h.name}{h.state ? ` — ${h.state}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                  Hospitals near your registered location are listed first — you can still pick any hospital in the country.
+                </div>
+              </div>
+            )}
 
             {/* Doctor preference — home visits only */}
             {form.type === 'home' && (

@@ -20,12 +20,12 @@ export async function POST(req: NextRequest) {
 
   const { staff_id, role } = await req.json();
   if (!staff_id || !role) return NextResponse.json({ error: 'staff_id and role are required.' }, { status: 400 });
-  if (role !== 'doctor' && role !== 'po_specialist') {
-    return NextResponse.json({ error: 'Invalid role. Must be doctor or po_specialist.' }, { status: 400 });
+  if (role !== 'doctor' && role !== 'po_specialist' && role !== 'receptionist') {
+    return NextResponse.json({ error: 'Invalid role. Must be doctor, po_specialist, or receptionist.' }, { status: 400 });
   }
 
   const db = getDb();
-  const table = role === 'doctor' ? 'doctors' : 'po_specialists';
+  const table = role === 'doctor' ? 'doctors' : role === 'po_specialist' ? 'po_specialists' : 'receptionists';
   // Join on users.role so a Super Admin's "Doctor Mode" profile can never
   // match — hospital admins must not be able to reset that account's password.
   const staffRow = db.prepare(

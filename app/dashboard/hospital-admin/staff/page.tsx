@@ -8,7 +8,7 @@ import { UserPlus, Trash2, Pencil, KeyRound, Check, X } from 'lucide-react';
 import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface StaffMember {
-  role: 'doctor' | 'po_specialist';
+  role: 'doctor' | 'po_specialist' | 'receptionist';
   user_id: number;
   email: string;
   staff_id: number;
@@ -24,8 +24,14 @@ interface StaffMember {
 
 const NIGERIAN_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
 
+const ROLE_LABEL: Record<StaffMember['role'], string> = {
+  doctor: 'Doctor',
+  po_specialist: 'P&O Specialist',
+  receptionist: 'Receptionist',
+};
+
 const INITIAL_FORM = {
-  role: 'doctor' as 'doctor' | 'po_specialist',
+  role: 'doctor' as 'doctor' | 'po_specialist' | 'receptionist',
   email: '',
   password: '',
   full_name: '',
@@ -78,6 +84,7 @@ export default function HospitalAdminStaffPage() {
 
   const doctors = staff.filter(s => s.role === 'doctor');
   const poSpecialists = staff.filter(s => s.role === 'po_specialist');
+  const receptionists = staff.filter(s => s.role === 'receptionist');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -141,7 +148,7 @@ export default function HospitalAdminStaffPage() {
     setEditForm({ ...s });
   }
 
-  async function saveEdit(role: 'doctor' | 'po_specialist') {
+  async function saveEdit(role: 'doctor' | 'po_specialist' | 'receptionist') {
     if (editingStaffId == null) return;
     setSavingEdit(true);
     const res = await fetch('/api/hospital-admin/staff', {
@@ -172,7 +179,7 @@ export default function HospitalAdminStaffPage() {
         <div style={{ padding: '14px 18px', borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
           <div className="form-grid-2" style={{ gap: 10, marginBottom: 12 }}>
             <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Email</label><input className="skeu-input" type="email" value={editForm.email ?? ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
-            {s.role === 'doctor' && (
+            {(s.role === 'doctor' || s.role === 'receptionist') && (
               <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Full Name</label><input className="skeu-input" value={editForm.full_name ?? ''} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
             )}
             <div><label className="skeu-label" style={{ display: 'block', marginBottom: 4 }}>Phone</label><input className="skeu-input" value={editForm.phone ?? ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
@@ -187,7 +194,7 @@ export default function HospitalAdminStaffPage() {
         </div>
       );
     }
-    const displayName = (s.role === 'doctor' && s.full_name) ? s.full_name : s.email;
+    const displayName = ((s.role === 'doctor' || s.role === 'receptionist') && s.full_name) ? s.full_name : s.email;
     const initial = displayName.charAt(0).toUpperCase();
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '14px 18px', borderRadius: 10, border: '1px solid var(--border-card)', background: 'var(--bg-base)', gap: 12 }}>
@@ -197,12 +204,16 @@ export default function HospitalAdminStaffPage() {
           </div>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-head)' }}>{displayName}</div>
-            {s.role === 'doctor' && s.full_name && (
+            {(s.role === 'doctor' || s.role === 'receptionist') && s.full_name && (
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{s.email}</div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
-              <span style={{ padding: '1px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: s.role === 'doctor' ? '#dbeafe' : '#f3e8ff', color: s.role === 'doctor' ? '#1d4ed8' : '#6d28d9' }}>
-                {s.role === 'doctor' ? 'Doctor' : 'P&O Specialist'}
+              <span style={{
+                padding: '1px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600,
+                background: s.role === 'doctor' ? '#dbeafe' : s.role === 'po_specialist' ? '#f3e8ff' : '#d1fae5',
+                color: s.role === 'doctor' ? '#1d4ed8' : s.role === 'po_specialist' ? '#6d28d9' : '#065f46',
+              }}>
+                {ROLE_LABEL[s.role]}
               </span>
               {s.role === 'doctor' && s.specialization && (
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.specialization}</span>
@@ -273,7 +284,7 @@ export default function HospitalAdminStaffPage() {
             <div style={{ marginBottom: 18 }}>
               <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Role</label>
               <div style={{ display: 'flex', gap: 12 }}>
-                {(['doctor', 'po_specialist'] as const).map(r => (
+                {(['doctor', 'po_specialist', 'receptionist'] as const).map(r => (
                   <button
                     key={r}
                     type="button"
@@ -281,7 +292,7 @@ export default function HospitalAdminStaffPage() {
                     style={{ flex: 1, padding: '14px', borderRadius: 10, border: `2px solid ${form.role === r ? 'var(--primary)' : 'var(--border-card)'}`, background: form.role === r ? 'rgba(27,61,94,0.07)' : 'transparent', cursor: 'pointer', textAlign: 'center' }}
                   >
                     <div style={{ fontSize: '0.9rem', fontWeight: 600, color: form.role === r ? 'var(--primary)' : 'var(--text-body)' }}>
-                      {r === 'doctor' ? 'Doctor' : 'P&O Specialist'}
+                      {ROLE_LABEL[r]}
                     </div>
                   </button>
                 ))}
@@ -416,6 +427,37 @@ export default function HospitalAdminStaffPage() {
               </>
             )}
 
+            {form.role === 'receptionist' && (
+              <div style={{ marginBottom: 10, paddingTop: 4, borderTop: '1px solid var(--border-card)' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14, marginTop: 14 }}>Receptionist Profile</div>
+                <div className="form-grid-2" style={{ gap: 14 }}>
+                  <div>
+                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Full Name <span style={{ color: '#dc2626' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="skeu-input"
+                      style={{ width: '100%' }}
+                      value={form.full_name}
+                      onChange={e => setForm({ ...form, full_name: e.target.value })}
+                      required
+                      placeholder="Grace Adeyemi"
+                    />
+                  </div>
+                  <div>
+                    <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Phone</label>
+                    <input
+                      type="text"
+                      className="skeu-input"
+                      style={{ width: '100%' }}
+                      value={form.phone}
+                      onChange={e => setForm({ ...form, phone: e.target.value })}
+                      placeholder="+234 801 234 5678"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {formError && (
               <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', margin: '14px 0' }}>
                 {formError}
@@ -465,6 +507,21 @@ export default function HospitalAdminStaffPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {poSpecialists.map(s => <StaffCard key={s.staff_id} s={s} />)}
+              </div>
+            )}
+          </div>
+
+          {/* Receptionists section */}
+          <div className="skeu-card" style={{ padding: 24 }}>
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>Receptionists</h2>
+              <span style={{ background: '#d1fae5', color: '#065f46', padding: '2px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600 }}>{receptionists.length}</span>
+            </div>
+            {receptionists.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>No receptionists added yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {receptionists.map(s => <StaffCard key={s.staff_id} s={s} />)}
               </div>
             )}
           </div>

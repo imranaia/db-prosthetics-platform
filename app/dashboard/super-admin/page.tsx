@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   Building2, Users, Stethoscope, ShoppingCart,
@@ -15,19 +16,30 @@ import {
 interface Stats {
   hospitals: number; patients: number; doctors: number;
   pending_orders: number; pending_appointments: number; products: number;
-  total_revenue: number;
+  income: number;
+  potential_income: number;
   monthly_revenue: { month: string; revenue: number }[];
   orders_by_status: { status: string; count: number }[];
   patient_growth: { month: string; count: number }[];
 }
 
+const INCOME_RANGES = [
+  { key: 'today', label: 'Today' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'quarter', label: 'Quarter' },
+  { key: 'half_year', label: 'Half Year' },
+  { key: 'year', label: 'Year' },
+  { key: 'all', label: 'All Time' },
+] as const;
+
 const STAT_CARDS = [
-  { key: 'hospitals',            label: 'Hospitals',            icon: Building2,       color: '#1b3d5e' },
-  { key: 'patients',             label: 'Patients',             icon: Users,           color: '#2563eb' },
-  { key: 'doctors',              label: 'Doctors',              icon: Stethoscope,     color: '#7c3aed' },
-  { key: 'pending_orders',       label: 'Pending Orders',       icon: ShoppingCart,    color: '#b5751f' },
-  { key: 'pending_appointments', label: 'Pending Appts',        icon: CalendarDays,    color: '#dc2626' },
-  { key: 'products',             label: 'Products',             icon: Package,         color: '#059669' },
+  { key: 'hospitals',            label: 'Hospitals',            icon: Building2,       color: '#1b3d5e', href: '/dashboard/super-admin/hospitals' },
+  { key: 'patients',             label: 'Patients',             icon: Users,           color: '#2563eb', href: '/dashboard/super-admin/patients' },
+  { key: 'doctors',              label: 'Doctors',              icon: Stethoscope,     color: '#7c3aed', href: null },
+  { key: 'pending_orders',       label: 'Pending Orders',       icon: ShoppingCart,    color: '#b5751f', href: '/dashboard/super-admin/orders' },
+  { key: 'pending_appointments', label: 'Pending Appts',        icon: CalendarDays,    color: '#dc2626', href: '/dashboard/super-admin/appointments' },
+  { key: 'products',             label: 'Products',             icon: Package,         color: '#059669', href: '/dashboard/super-admin/inventory' },
 ] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -58,16 +70,18 @@ const CustomTooltipRevenue = ({ active, payload, label }: any) => {
 
 export default function SuperAdminOverview() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [incomeRange, setIncomeRange] = useState<string>('month');
 
   useEffect(() => {
     if (!user) return;
-    fetch('/api/admin/stats')
+    fetch(`/api/admin/stats?range=${incomeRange}`)
       .then(r => r.json())
       .then(data => { setStats(data); setStatsLoading(false); })
       .catch(() => setStatsLoading(false));
-  }, [user]);
+  }, [user, incomeRange]);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
@@ -103,32 +117,69 @@ export default function SuperAdminOverview() {
         </p>
       </div>
 
-      {/* Total Revenue banner */}
-      {!statsLoading && stats && (
+      {/* Income banners */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <div style={{
+          flex: '1 1 320px',
           background: 'linear-gradient(135deg, var(--primary) 0%, #254f7a 100%)',
-          borderRadius: '14px', padding: '20px 24px', marginBottom: '24px',
+          borderRadius: '14px', padding: '20px 24px',
           display: 'flex', alignItems: 'center', gap: '14px',
           boxShadow: '4px 4px 16px rgba(0,0,0,0.25)',
         }}>
           <CircleDollarSign size={28} color="rgba(255,255,255,0.7)" />
           <div>
             <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              Total Revenue Collected
+              Income — {INCOME_RANGES.find(r => r.key === incomeRange)?.label}
             </div>
             <div style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
-              {formatNGN(stats.total_revenue)}
+              {statsLoading || !stats ? '—' : formatNGN(stats.income)}
             </div>
           </div>
         </div>
-      )}
+
+        <div style={{
+          flex: '1 1 320px',
+          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+          borderRadius: '14px', padding: '20px 24px',
+          display: 'flex', alignItems: 'center', gap: '14px',
+          boxShadow: '4px 4px 16px rgba(0,0,0,0.2)',
+        }}>
+          <Package size={28} color="rgba(255,255,255,0.7)" />
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Potential Income (Current Inventory)
+            </div>
+            <div style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
+              {statsLoading || !stats ? '—' : formatNGN(stats.potential_income)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Income range filter */}
+      <div className="filter-tabs" style={{ marginBottom: '24px' }}>
+        {INCOME_RANGES.map(r => (
+          <div
+            key={r.key}
+            className={`filter-tab${incomeRange === r.key ? ' active' : ''}`}
+            onClick={() => setIncomeRange(r.key)}
+          >
+            {r.label}
+          </div>
+        ))}
+      </div>
 
       {/* Stat cards */}
       <div className="stat-grid">
-        {STAT_CARDS.map(({ key, label, icon: Icon, color }) => {
+        {STAT_CARDS.map(({ key, label, icon: Icon, color, href }) => {
           const value = stats?.[key] ?? 0;
           return (
-            <div key={key} className="skeu-card" style={{ padding: '20px', opacity: statsLoading ? 0.5 : 1, transition: 'opacity 0.3s', cursor: 'default' }}>
+            <div
+              key={key}
+              className="skeu-card"
+              onClick={href ? () => router.push(href) : undefined}
+              style={{ padding: '20px', opacity: statsLoading ? 0.5 : 1, transition: 'opacity 0.3s', cursor: href ? 'pointer' : 'default' }}
+            >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div style={{
                   width: 38, height: 38, borderRadius: 10,

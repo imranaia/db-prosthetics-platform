@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { formatPatientId } from '@/lib/patient-id';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -62,9 +63,12 @@ export async function POST(req: NextRequest) {
 
     const userId = userResult.lastInsertRowid;
 
-    db.prepare(
+    const patientResult = db.prepare(
       `INSERT INTO patients (user_id, full_name, phone, dob, state, lga, address) VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(userId, full_name.trim(), phone?.trim() || null, dob || null, state || null, lga || null, address?.trim() || null);
+
+    const patientId = patientResult.lastInsertRowid as number;
+    db.prepare('UPDATE patients SET patient_unique_id = ? WHERE id = ?').run(formatPatientId(patientId), patientId);
 
     return { tempPassword };
   })();

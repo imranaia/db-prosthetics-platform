@@ -47,7 +47,16 @@ export async function GET(req: NextRequest) {
     )
     .all(hospital.id);
 
-  return NextResponse.json({ staff: [...doctors, ...poSpecialists] });
+  const receptionists = db
+    .prepare(
+      `SELECT 'receptionist' as role, u.id as user_id, u.email, r.id as staff_id,
+              r.full_name, r.phone
+       FROM receptionists r JOIN users u ON r.user_id = u.id
+       WHERE r.hospital_id = ? AND u.role = 'receptionist'`
+    )
+    .all(hospital.id);
+
+  return NextResponse.json({ staff: [...doctors, ...poSpecialists, ...receptionists] });
 }
 
 export async function POST(req: NextRequest) {
@@ -73,8 +82,8 @@ export async function POST(req: NextRequest) {
   if (!isPasswordValid(password)) {
     return NextResponse.json({ error: PASSWORD_REQUIREMENT_MESSAGE }, { status: 400 });
   }
-  if (role !== 'doctor' && role !== 'po_specialist') {
-    return NextResponse.json({ error: 'Invalid role. Must be doctor or po_specialist.' }, { status: 400 });
+  if (role !== 'doctor' && role !== 'po_specialist' && role !== 'receptionist') {
+    return NextResponse.json({ error: 'Invalid role. Must be doctor, po_specialist, or receptionist.' }, { status: 400 });
   }
 
   const db = getDb();
@@ -111,8 +120,11 @@ export async function POST(req: NextRequest) {
         qualifications || null,
         doctorResult.lastInsertRowid,
       );
-    } else {
+    } else if (role === 'po_specialist') {
       db.prepare('INSERT INTO po_specialists (user_id, hospital_id) VALUES (?, ?)').run(newUserId, hospital.id);
+    } else {
+      const receptionistResult = db.prepare('INSERT INTO receptionists (user_id, hospital_id) VALUES (?, ?)').run(newUserId, hospital.id);
+      db.prepare('UPDATE receptionists SET full_name=?, phone=? WHERE id=?').run(full_name || null, phone || null, receptionistResult.lastInsertRowid);
     }
 
     return newUserId;
@@ -124,7 +136,7 @@ export async function POST(req: NextRequest) {
     const { sendWelcomeStaffMember } = await import('@/lib/email');
     await sendWelcomeStaffMember({
       to: email,
-      role: role as 'doctor' | 'po_specialist',
+      role: role as 'doctor' | 'po_specialist' | 'receptionist',
       hospitalName: hospital.name,
       tempPassword: password,
       loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/login`,
@@ -156,12 +168,12 @@ export async function PATCH(req: NextRequest) {
   if (!staff_id || !role) {
     return NextResponse.json({ error: 'staff_id and role are required.' }, { status: 400 });
   }
-  if (role !== 'doctor' && role !== 'po_specialist') {
-    return NextResponse.json({ error: 'Invalid role. Must be doctor or po_specialist.' }, { status: 400 });
+  if (role !== 'doctor' && role !== 'po_specialist' && role !== 'receptionist') {
+    return NextResponse.json({ error: 'Invalid role. Must be doctor, po_specialist, or receptionist.' }, { status: 400 });
   }
 
   const db = getDb();
-  const table = role === 'doctor' ? 'doctors' : 'po_specialists';
+  const table = role === 'doctor' ? 'doctors' : role === 'po_specialist' ? 'po_specialists' : 'receptionists';
   // Join on users.role so a Super Admin's "Doctor Mode" profile never
   // matches here — hospital admins must not be able to view or edit it.
   const staffRow = db.prepare(
@@ -183,7 +195,7 @@ export async function PATCH(req: NextRequest) {
       try {
         await sendWelcomeStaffMember({
           to: newEmail,
-          role: role as 'doctor' | 'po_specialist',
+          role: role as 'doctor' | 'po_specialist' | 'receptionist',
           hospitalName: hospital.name,
           tempPassword,
           loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/login`,
@@ -200,9 +212,11 @@ export async function PATCH(req: NextRequest) {
   const values: (string | number | null)[] = [];
   if (full_name !== undefined)       { setClauses.push('full_name = ?');       values.push(full_name || null); }
   if (phone !== undefined)           { setClauses.push('phone = ?');           values.push(phone || null); }
-  if (state !== undefined)           { setClauses.push('state = ?');           values.push(state || null); }
-  if (lga !== undefined)             { setClauses.push('lga = ?');             values.push(lga || null); }
-  if (address !== undefined)         { setClauses.push('address = ?');         values.push(address || null); }
+  // po_specialists and receptionists tables only have full_name/phone —
+  // these extended fields only exist on the doctors table.
+  if (role === 'doctor' && state !== undefined)           { setClauses.push('state = ?');           values.push(state || null); }
+  if (role === 'doctor' && lga !== undefined)             { setClauses.push('lga = ?');             values.push(lga || null); }
+  if (role === 'doctor' && address !== undefined)         { setClauses.push('address = ?');         values.push(address || null); }
   if (role === 'doctor' && specialization !== undefined)   { setClauses.push('specialization = ?');   values.push(specialization || null); }
   if (role === 'doctor' && years_experience !== undefined) { setClauses.push('years_experience = ?'); values.push(years_experience ? Number(years_experience) : null); }
   if (role === 'doctor' && qualifications !== undefined)   { setClauses.push('qualifications = ?');   values.push(qualifications || null); }
@@ -233,12 +247,12 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'staff_id and role are required.' }, { status: 400 });
   }
 
-  if (role !== 'doctor' && role !== 'po_specialist') {
+  if (role !== 'doctor' && role !== 'po_specialist' && role !== 'receptionist') {
     return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
   }
 
   const db = getDb();
-  const table = role === 'doctor' ? 'doctors' : 'po_specialists';
+  const table = role === 'doctor' ? 'doctors' : role === 'po_specialist' ? 'po_specialists' : 'receptionists';
   // Same guard as PATCH — never let this match a Super Admin's Doctor Mode row.
   const staffRow = db.prepare(
     `SELECT s.id FROM ${table} s JOIN users u ON s.user_id = u.id WHERE s.id = ? AND s.hospital_id = ? AND u.role = ?`

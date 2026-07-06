@@ -11,6 +11,7 @@ import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface PatientProfile {
   id: number;
+  patient_unique_id: string | null;
   full_name: string;
   email: string;
   phone: string;
@@ -170,7 +171,14 @@ export default function PatientProfilePage() {
           <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <UserCircle size={22} color="var(--primary)" />
           </div>
-          <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Profile</h1>
+          <div>
+            <h1 className="font-display" style={{ fontSize: '1.7rem', fontWeight: 600, color: 'var(--text-head)', margin: 0 }}>My Profile</h1>
+            {patient?.patient_unique_id && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                Patient ID: <span style={{ fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.04em' }}>{patient.patient_unique_id}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

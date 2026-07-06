@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Users, ShoppingCart, CalendarDays } from 'lucide-react';
 
@@ -12,6 +13,7 @@ interface Stats {
 
 export default function POSpecialistPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState<Stats>({ patients: 0, orders: 0, pending_orders: 0 });
 
   useEffect(() => {
@@ -31,9 +33,9 @@ export default function POSpecialistPage() {
   if (user.role !== 'po_specialist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   const STAT_CARDS = [
-    { label: 'My Patients',    value: stats.patients,      icon: Users,        color: '#2563eb' },
-    { label: 'Orders',         value: stats.orders,        icon: ShoppingCart, color: '#d08c2a' },
-    { label: 'Pending Orders', value: stats.pending_orders, icon: CalendarDays, color: '#059669' },
+    { label: 'My Patients',    value: stats.patients,      icon: Users,        color: '#2563eb', href: '/dashboard/po-specialist/patients' },
+    { label: 'Orders',         value: stats.orders,        icon: ShoppingCart, color: '#d08c2a', href: '/dashboard/po-specialist/orders' },
+    { label: 'Pending Orders', value: stats.pending_orders, icon: CalendarDays, color: '#059669', href: '/dashboard/po-specialist/orders' },
   ];
 
   return (
@@ -48,8 +50,8 @@ export default function POSpecialistPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        {STAT_CARDS.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        {STAT_CARDS.map(({ label, value, icon: Icon, color, href }) => (
+          <div key={label} className="skeu-card" onClick={() => router.push(href)} style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon size={20} color={color} />
             </div>

@@ -2,32 +2,49 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 
+type Practitioner = { id: number; role: 'doctor' | 'po_specialist' };
+
+function getPractitioner(db: ReturnType<typeof getDb>, userId: number, role: string): Practitioner | undefined {
+  if (role === 'doctor') {
+    const row = db.prepare('SELECT id FROM doctors WHERE user_id = ?').get(userId) as { id: number } | undefined;
+    return row ? { id: row.id, role: 'doctor' } : undefined;
+  }
+  if (role === 'po_specialist') {
+    const row = db.prepare('SELECT id FROM po_specialists WHERE user_id = ?').get(userId) as { id: number } | undefined;
+    return row ? { id: row.id, role: 'po_specialist' } : undefined;
+  }
+  return undefined;
+}
+
+function isAuthorized(role: string): boolean {
+  return role === 'doctor' || role === 'po_specialist' || role === 'super_admin';
+}
+
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
+  if (!user || !isAuthorized(user.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const db = getDb();
 
-  const doctor = db
-    .prepare('SELECT id FROM doctors WHERE user_id = ?')
-    .get(user.id) as { id: number } | undefined;
-
-  if (!doctor) {
-    return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
+  const practitioner = getPractitioner(db, user.id, user.role);
+  if (!practitioner) {
+    return NextResponse.json({ error: 'Practitioner record not found' }, { status: 404 });
   }
+
+  const idColumn = practitioner.role === 'doctor' ? 'doctor_id' : 'po_specialist_id';
 
   const consultations = db
     .prepare(
       `SELECT c.*, p.full_name AS patient_name
        FROM consultations c
        LEFT JOIN patients p ON c.patient_id = p.id
-       WHERE c.doctor_id = ?
+       WHERE c.${idColumn} = ?
        ORDER BY c.created_at DESC`
     )
-    .all(doctor.id);
+    .all(practitioner.id);
 
   // Patients for the new-consultation form dropdown. If a hospital is picked
   // in the form, scope to patients associated with that hospital; if
@@ -56,26 +73,25 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
+  if (!user || !isAuthorized(user.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const db = getDb();
-  const doctor = db
-    .prepare('SELECT id FROM doctors WHERE user_id = ?')
-    .get(user.id) as { id: number } | undefined;
+  const practitioner = getPractitioner(db, user.id, user.role);
+  if (!practitioner) return NextResponse.json({ error: 'Practitioner record not found' }, { status: 404 });
 
-  if (!doctor) return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
+  const idColumn = practitioner.role === 'doctor' ? 'doctor_id' : 'po_specialist_id';
 
   const body = await req.json() as { id: number; status?: string };
   if (!body.id) return NextResponse.json({ error: 'Consultation id required' }, { status: 400 });
 
   if (body.status === 'completed') {
     const consultation = db
-      .prepare('SELECT doctor_id, conducted_by_role FROM consultations WHERE id = ?')
-      .get(body.id) as { doctor_id: number | null; conducted_by_role: string } | undefined;
+      .prepare(`SELECT ${idColumn} as practitioner_id, conducted_by_role FROM consultations WHERE id = ?`)
+      .get(body.id) as { practitioner_id: number | null; conducted_by_role: string } | undefined;
     if (!consultation) return NextResponse.json({ error: 'Consultation not found' }, { status: 404 });
-    if (consultation.conducted_by_role !== 'doctor' || consultation.doctor_id !== doctor.id) {
+    if (consultation.conducted_by_role !== practitioner.role || consultation.practitioner_id !== practitioner.id) {
       return NextResponse.json({ error: 'Only the consulting practitioner can mark this complete.' }, { status: 403 });
     }
   }
@@ -87,7 +103,7 @@ export async function PATCH(req: NextRequest) {
   if (setClauses.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
 
   values.push(body.id);
-  db.prepare(`UPDATE consultations SET ${setClauses.join(', ')} WHERE id = ? AND doctor_id = ?`).run(...values, doctor.id);
+  db.prepare(`UPDATE consultations SET ${setClauses.join(', ')} WHERE id = ? AND ${idColumn} = ?`).run(...values, practitioner.id);
 
   return NextResponse.json({ success: true });
 }
@@ -95,18 +111,14 @@ export async function PATCH(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user || (user.role !== 'doctor' && user.role !== 'super_admin')) {
+  if (!user || !isAuthorized(user.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const db = getDb();
-
-  const doctor = db
-    .prepare('SELECT id FROM doctors WHERE user_id = ?')
-    .get(user.id) as { id: number } | undefined;
-
-  if (!doctor) {
-    return NextResponse.json({ error: 'Doctor record not found' }, { status: 404 });
+  const practitioner = getPractitioner(db, user.id, user.role);
+  if (!practitioner) {
+    return NextResponse.json({ error: 'Practitioner record not found' }, { status: 404 });
   }
 
   const body = await req.json() as {
@@ -127,6 +139,10 @@ export async function POST(req: NextRequest) {
     category?: string | null;
     body_parts?: unknown;
     photos?: unknown;
+    fit_for_prosthetic?: 'fit' | 'not_fit' | null;
+    unfit_diagnosis?: string | null;
+    unfit_next_steps?: string | null;
+    unfit_treatment?: string | null;
   };
 
   if (!body.patient_id) {
@@ -146,17 +162,22 @@ export async function POST(req: NextRequest) {
     ? JSON.stringify(body.physical_assessment)
     : null;
 
+  const doctorId = practitioner.role === 'doctor' ? practitioner.id : null;
+  const poSpecialistId = practitioner.role === 'po_specialist' ? practitioner.id : null;
+
   const result = db.prepare(`
     INSERT INTO consultations (
-      patient_id, doctor_id, conducted_by_role, hospital_id,
+      patient_id, doctor_id, po_specialist_id, conducted_by_role, hospital_id,
       assessor_name, chief_complaint, medical_history, physical_assessment,
       patient_goals, recommended_device, followup_date, notes, consent_given,
       assessor_signature, patient_signature, consultation_type, category,
-      body_parts, photos
-    ) VALUES (?, ?, 'doctor', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      body_parts, photos, fit_for_prosthetic, unfit_diagnosis, unfit_next_steps, unfit_treatment
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     body.patient_id,
-    doctor.id,
+    doctorId,
+    poSpecialistId,
+    practitioner.role,
     body.hospital_id ?? null,
     body.assessor_name?.trim() || null,
     body.chief_complaint?.trim() || null,
@@ -173,6 +194,10 @@ export async function POST(req: NextRequest) {
     body.category ?? null,
     bodyPartsStr,
     photosStr,
+    body.fit_for_prosthetic ?? null,
+    body.unfit_diagnosis?.trim() || null,
+    body.unfit_next_steps?.trim() || null,
+    body.unfit_treatment?.trim() || null,
   );
 
   return NextResponse.json({ success: true, id: result.lastInsertRowid }, { status: 201 });

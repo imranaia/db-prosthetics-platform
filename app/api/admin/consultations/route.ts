@@ -26,6 +26,10 @@ export async function GET(req: NextRequest) {
       c.consent_given,
       c.assessor_signature,
       c.patient_signature,
+      c.fit_for_prosthetic,
+      c.unfit_diagnosis,
+      c.unfit_next_steps,
+      c.unfit_treatment,
       p.full_name AS patient_name,
       u.email     AS doctor_email,
       h.name      AS hospital_name,
@@ -95,6 +99,10 @@ export async function POST(req: NextRequest) {
     category?: string | null;
     body_parts?: unknown;
     photos?: unknown;
+    fit_for_prosthetic?: 'fit' | 'not_fit' | null;
+    unfit_diagnosis?: string | null;
+    unfit_next_steps?: string | null;
+    unfit_treatment?: string | null;
   };
 
   const {
@@ -115,6 +123,10 @@ export async function POST(req: NextRequest) {
     category,
     body_parts,
     photos,
+    fit_for_prosthetic,
+    unfit_diagnosis,
+    unfit_next_steps,
+    unfit_treatment,
   } = body;
 
   // Require at least patient_id and (chief_complaint or notes)
@@ -157,8 +169,12 @@ export async function POST(req: NextRequest) {
       consultation_type,
       category,
       body_parts,
-      photos
-    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      photos,
+      fit_for_prosthetic,
+      unfit_diagnosis,
+      unfit_next_steps,
+      unfit_treatment
+    ) VALUES (?, NULL, 'super_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     patient_id,
     hospital_id ?? null,
@@ -177,6 +193,10 @@ export async function POST(req: NextRequest) {
     category ?? null,
     bodyPartsStr,
     photosStr,
+    fit_for_prosthetic ?? null,
+    unfit_diagnosis?.trim() || null,
+    unfit_next_steps?.trim() || null,
+    unfit_treatment?.trim() || null,
   );
 
   return NextResponse.json({ success: true, id: result.lastInsertRowid });

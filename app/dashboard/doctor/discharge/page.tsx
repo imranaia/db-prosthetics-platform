@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { ClipboardCheck, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import SignaturePad from '@/components/forms/SignaturePad';
+import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
 interface Patient { id: number; full_name: string; }
 interface Consultation { id: number; patient_name: string; chief_complaint: string | null; created_at: string; }
@@ -180,14 +181,14 @@ export default function DoctorDischargePage() {
   };
 
   useEffect(() => {
-    if (!user || (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile))) return;
+    if (!user || (user.role !== 'doctor' && user.role !== 'po_specialist' && !(user.role === 'super_admin' && user.hasDoctorProfile))) return;
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
-  if (user.role !== 'doctor' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
+  if (user.role !== 'doctor' && user.role !== 'po_specialist' && !(user.role === 'super_admin' && user.hasDoctorProfile)) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   // Filter consultations by selected patient
   const patientConsultations = form.patient_id
@@ -256,11 +257,11 @@ export default function DoctorDischargePage() {
             <div className="form-grid-2" style={{ gap: 16, marginBottom: 20 }}>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Patient <span style={{ color: '#dc2626' }}>*</span></label>
-                <select className="skeu-select" style={{ width: '100%' }} value={form.patient_id as unknown as string}
-                  onChange={e => setForm({ ...form, patient_id: e.target.value as unknown as number, consultation_id: '' as unknown as null })} required>
-                  <option value="">Select patient…</option>
-                  {patients.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
-                </select>
+                <SearchablePatientSelect
+                  value={form.patient_id as unknown as string}
+                  onChange={v => setForm({ ...form, patient_id: v as unknown as number, consultation_id: '' as unknown as null })}
+                  patients={patients}
+                />
               </div>
               <div>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Link to Consultation (optional)</label>

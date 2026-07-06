@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Patient record not found' }, { status: 404 });
   }
 
-  const { type, notes, preferred_date, requested_doctor_id } = await req.json();
+  const { type, notes, preferred_date, requested_doctor_id, preferred_hospital_id } = await req.json();
 
   if (!type || (type !== 'home' && type !== 'hospital')) {
     return NextResponse.json({ error: 'type must be "home" or "hospital".' }, { status: 400 });
@@ -61,10 +61,15 @@ export async function POST(req: NextRequest) {
   // Requesting a specific doctor only makes sense for home visits.
   const doctorId = type === 'home' && requested_doctor_id ? parseInt(requested_doctor_id) : null;
 
+  // A patient choosing a hospital for a hospital-visit sets it as the
+  // assigned hospital right away, so that hospital's admin sees the request
+  // immediately instead of it sitting unassigned until staff pick one.
+  const hospitalId = type === 'hospital' && preferred_hospital_id ? parseInt(preferred_hospital_id) : null;
+
   db.prepare(
-    `INSERT INTO appointments (patient_id, type, notes, preferred_date, requested_doctor_id, status)
-     VALUES (?, ?, ?, ?, ?, 'requested')`
-  ).run(patient.id, type, notes || null, preferred_date || null, doctorId);
+    `INSERT INTO appointments (patient_id, type, notes, preferred_date, requested_doctor_id, assigned_hospital_id, status)
+     VALUES (?, ?, ?, ?, ?, ?, 'requested')`
+  ).run(patient.id, type, notes || null, preferred_date || null, doctorId, hospitalId);
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

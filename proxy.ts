@@ -8,6 +8,7 @@ const ROLE_PATHS: Record<string, string[]> = {
   doctor:         ['/dashboard/doctor'],
   po_specialist:  ['/dashboard/po-specialist'],
   patient:        ['/dashboard/patient'],
+  receptionist:   ['/dashboard/receptionist'],
 };
 
 export async function proxy(req: NextRequest) {

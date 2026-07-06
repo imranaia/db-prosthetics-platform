@@ -74,11 +74,12 @@ const ROLE_LABELS: Record<string, string> = {
   hospital_admin: 'Hospital Administrator',
   doctor: 'Doctor',
   po_specialist: 'P&O Specialist',
+  receptionist: 'Receptionist',
 };
 
 export async function sendWelcomeStaffMember(opts: {
   to: string;
-  role: 'hospital_admin' | 'doctor' | 'po_specialist';
+  role: 'hospital_admin' | 'doctor' | 'po_specialist' | 'receptionist';
   hospitalName?: string | null;
   tempPassword: string;
   loginUrl: string;

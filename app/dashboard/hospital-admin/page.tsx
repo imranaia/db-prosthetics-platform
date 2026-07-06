@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Users, Stethoscope, CalendarDays, Clock, Users2 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ interface Consultation {
 
 export default function HospitalAdminPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [hospital, setHospital] = useState<Hospital | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -60,11 +62,11 @@ export default function HospitalAdminPage() {
   if (user.role !== 'hospital_admin') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
   const STAT_CARDS = [
-    { label: 'Patients Seen',         value: stats?.patients ?? 0,                                          icon: Users,        color: '#2563eb' },
-    { label: 'Total Consultations',   value: stats?.consultations ?? 0,                                    icon: Stethoscope,  color: 'var(--primary)' },
-    { label: 'This Month',            value: stats?.this_month_consultations ?? 0,                         icon: CalendarDays, color: '#d08c2a' },
-    { label: 'Upcoming Appointments', value: stats?.upcoming_appointments ?? 0,                            icon: Clock,        color: '#059669' },
-    { label: 'Staff',                 value: (stats?.doctors ?? 0) + (stats?.po_specialists ?? 0),        icon: Users2,       color: '#7c3aed' },
+    { label: 'Patients Seen',         value: stats?.patients ?? 0,                                          icon: Users,        color: '#2563eb',       href: '/dashboard/hospital-admin/patients' },
+    { label: 'Total Consultations',   value: stats?.consultations ?? 0,                                    icon: Stethoscope,  color: 'var(--primary)', href: '/dashboard/hospital-admin/consultations' },
+    { label: 'This Month',            value: stats?.this_month_consultations ?? 0,                         icon: CalendarDays, color: '#d08c2a',       href: '/dashboard/hospital-admin/consultations' },
+    { label: 'Upcoming Appointments', value: stats?.upcoming_appointments ?? 0,                            icon: Clock,        color: '#059669',       href: '/dashboard/hospital-admin/appointments' },
+    { label: 'Staff',                 value: (stats?.doctors ?? 0) + (stats?.po_specialists ?? 0),        icon: Users2,       color: '#7c3aed',       href: '/dashboard/hospital-admin/staff' },
   ];
 
   function formatDate(dt: string) {
@@ -96,8 +98,8 @@ export default function HospitalAdminPage() {
         opacity: dataLoading ? 0.5 : 1,
         transition: 'opacity 0.3s',
       }}>
-        {STAT_CARDS.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="skeu-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        {STAT_CARDS.map(({ label, value, icon: Icon, color, href }) => (
+          <div key={label} className="skeu-card" onClick={() => router.push(href)} style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
               background: `${color}18`,

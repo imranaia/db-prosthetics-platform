@@ -10,6 +10,7 @@ const ROLE_REDIRECTS: Record<string, string> = {
   doctor: '/dashboard/doctor',
   po_specialist: '/dashboard/po-specialist',
   patient: '/dashboard/patient',
+  receptionist: '/dashboard/receptionist',
 };
 
 export default function ChangePasswordPage() {

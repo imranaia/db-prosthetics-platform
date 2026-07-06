@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken, cookieOptions } from '@/lib/jwt';
 import getDb from '@/lib/db';
+import { formatPatientId } from '@/lib/patient-id';
 
 const ROLE_PATHS: Record<string, string> = {
   super_admin:    '/dashboard/super-admin',
@@ -8,6 +9,7 @@ const ROLE_PATHS: Record<string, string> = {
   doctor:         '/dashboard/doctor',
   po_specialist:  '/dashboard/po-specialist',
   patient:        '/dashboard/patient',
+  receptionist:   '/dashboard/receptionist',
 };
 
 export async function GET(req: NextRequest) {
@@ -55,9 +57,12 @@ export async function GET(req: NextRequest) {
       ).run(gUser.email);
 
       const userId = result.lastInsertRowid as number;
-      db.prepare(
+      const patientResult = db.prepare(
         `INSERT INTO patients (user_id, full_name) VALUES (?, ?)`
       ).run(userId, gUser.name || gUser.email.split('@')[0]);
+
+      const patientId = patientResult.lastInsertRowid as number;
+      db.prepare('UPDATE patients SET patient_unique_id = ? WHERE id = ?').run(formatPatientId(patientId), patientId);
 
       row = { id: userId, email: gUser.email, role: 'patient' };
     }
