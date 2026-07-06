@@ -14,7 +14,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <div style={{ width: '100%', maxWidth: 480 }}>
         <div className="auth-card" style={{ textAlign: 'center' }}>
           <div style={{ display: 'inline-flex', marginBottom: 22 }}>
-            <DBLogo size={52} />
+            <DBLogo size={64} />
           </div>
 
           <p className="font-display" style={{ fontSize: '4.4rem', lineHeight: 1, fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.02em', margin: '0 0 6px' }}>

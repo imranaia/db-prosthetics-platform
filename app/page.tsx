@@ -604,7 +604,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div style={{ maxWidth: '280px' }}>
               <div className="flex items-center gap-3 mb-4">
-                <DBLogo size={38} />
+                <DBLogo size={54} />
                 <div>
                   <div className="font-display font-semibold" style={{ color: '#f0ece4', fontSize: '1rem' }}>
                     DB Prosthetics

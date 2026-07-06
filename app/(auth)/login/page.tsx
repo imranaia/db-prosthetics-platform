@@ -68,7 +68,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <DBLogo size={52} />
+          <DBLogo size={64} />
           <h1
             className="font-display font-semibold mt-4 text-center"
             style={{ fontSize: '1.6rem', color: 'var(--text-head)', letterSpacing: '-0.01em' }}
