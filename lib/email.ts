@@ -23,7 +23,7 @@ function baseTemplate(content: string): string {
           <!-- Header -->
           <tr>
             <td style="background:#0f2438;border-radius:12px 12px 0 0;padding:32px 40px;text-align:center;">
-              <div style="display:inline-block;background:#1b3d5e;border:2px solid #d08c2a;border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;font-size:18px;font-weight:700;color:#d08c2a;letter-spacing:1px;margin-bottom:16px;">DB</div>
+              <img src="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbpando.com'}/assets/logo.png" width="56" height="56" alt="DB Prosthetics and Orthotics Ltd" style="display:block;margin:0 auto 16px;border-radius:50%;" />
               <div style="color:#d08c2a;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;">DB Prosthetics &amp; Orthotics Ltd</div>
               <div style="color:rgba(240,236,228,0.5);font-size:11px;letter-spacing:1px;">Nigeria</div>
             </td>
