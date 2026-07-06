@@ -31,7 +31,7 @@ export default function Navbar() {
       >
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <DBLogo size={38} />
+          <DBLogo size={54} />
           <div>
             <div
               className="font-display font-semibold text-[0.85rem] sm:text-base"
