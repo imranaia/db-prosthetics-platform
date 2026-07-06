@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DBLogo from '@/components/ui/DBLogo';
 
@@ -18,6 +18,13 @@ export default function LoginPage() {
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('timeout') === '1') {
+      setTimedOut(true);
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +79,19 @@ export default function LoginPage() {
             Sign in to your DB Prosthetics account
           </p>
         </div>
+
+        {timedOut && !error && (
+          <div style={{
+            background: '#fffbeb', border: '1px solid #fde68a',
+            borderRadius: '8px', padding: '12px 14px', marginBottom: '20px',
+            display: 'flex', alignItems: 'center', gap: '8px',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span style={{ fontSize: '0.85rem', color: '#b45309' }}>You were signed out after 15 minutes of inactivity. Please sign in again.</span>
+          </div>
+        )}
 
         {/* Error */}
         {error && (

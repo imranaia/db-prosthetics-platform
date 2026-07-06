@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Building2, Package, Users, ShoppingCart,
   Boxes, Menu, X, LogOut, Layout, UserCircle, Repeat, CalendarDays,
 } from 'lucide-react';
+import { useIdleLogout } from '@/hooks/useIdleLogout';
 
 interface NavItem {
   label: string;
@@ -53,6 +54,7 @@ async function logout() {
 }
 
 export default function DashboardShell({ children, navItems, brandLabel, overviewHref, switchLink }: DashboardShellProps) {
+  useIdleLogout();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLElement>(null);

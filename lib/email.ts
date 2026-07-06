@@ -290,6 +290,13 @@ export async function sendLockoutResetComplete(opts: {
   }
 }
 
+// Shared across every caller (the global onRequestError hook, and any route
+// that wants to proactively report a handled-but-notable failure like a
+// rejected Paystack call) so a repeating error can't spam this inbox no
+// matter which code path keeps triggering it.
+const ALERT_THROTTLE_MS = 5 * 60 * 1000;
+let lastAlertSentAt = 0;
+
 export async function sendErrorAlert(opts: {
   message: string;
   routePath?: string;
@@ -297,6 +304,10 @@ export async function sendErrorAlert(opts: {
 }): Promise<void> {
   const adminEmail = process.env.SUPER_ADMIN_EMAIL;
   if (!adminEmail) return;
+
+  const now = Date.now();
+  if (now - lastAlertSentAt < ALERT_THROTTLE_MS) return;
+  lastAlertSentAt = now;
 
   const { message, routePath, routeType } = opts;
 

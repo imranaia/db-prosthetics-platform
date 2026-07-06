@@ -3,9 +3,6 @@
 // nothing needs to import or invoke this file.
 // https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation
 
-const ALERT_THROTTLE_MS = 5 * 60 * 1000;
-let lastAlertSentAt = 0;
-
 const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const FIRST_BACKUP_DELAY_MS = 30 * 1000;
 
@@ -28,10 +25,6 @@ export async function onRequestError(
   context: { routerKind: string; routePath: string; routeType: string }
 ) {
   console.error(`[onRequestError] ${request.method} ${request.path}:`, err);
-
-  const now = Date.now();
-  if (now - lastAlertSentAt < ALERT_THROTTLE_MS) return;
-  lastAlertSentAt = now;
 
   try {
     const { sendErrorAlert } = await import('@/lib/email');

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
+import { sendErrorAlert } from '@/lib/email';
 
 // Every payment on the platform keeps a flat ₦1,000 (100000 kobo) on the
 // main account via Paystack's subaccount split; the remainder settles to
@@ -110,8 +111,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (!paystackRes.ok) {
-    const err = await paystackRes.json();
-    console.error('[payment/initialize]', err);
+    const err = await paystackRes.json().catch(() => ({}));
+    const message = err?.message || `Paystack returned HTTP ${paystackRes.status}`;
+    console.error('[payment/initialize]', type, recordId, err);
+    sendErrorAlert({
+      message: `Paystack initialize failed for ${type} #${recordId}: ${message}`,
+      routePath: '/api/payment/initialize',
+      routeType: 'route',
+    }).catch(() => {});
     return NextResponse.json({ error: 'Payment initialization failed' }, { status: 502 });
   }
 

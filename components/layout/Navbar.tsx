@@ -32,15 +32,16 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
           <DBLogo size={38} />
-          <div className="hidden sm:block">
+          <div>
             <div
-              className="font-display font-semibold"
-              style={{ color: '#f0ece4', fontSize: '1rem', lineHeight: 1.2, letterSpacing: '0.01em' }}
+              className="font-display font-semibold text-[0.85rem] sm:text-base"
+              style={{ color: '#f0ece4', lineHeight: 1.2, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}
             >
               DB Prosthetics
             </div>
             <div
-              style={{ color: 'rgba(181,117,31,0.9)', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
+              className="text-[0.52rem] sm:text-[0.6rem]"
+              style={{ color: 'rgba(181,117,31,0.9)', letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
             >
               &amp; Orthotics Ltd
             </div>
