@@ -24,14 +24,14 @@ function baseTemplate(content: string): string {
           <tr>
             <td style="background:#0f2438;border-radius:12px 12px 0 0;padding:32px 40px;text-align:center;">
               <img src="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dbpando.com'}/assets/logo.png" width="56" height="56" alt="DB Prosthetics and Orthotics Ltd" style="display:block;margin:0 auto 16px;border-radius:50%;" />
-              <div style="color:#d08c2a;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;">DB Prosthetics &amp; Orthotics Ltd</div>
+              <div style="color:#eef4f9;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;">DB Prosthetics &amp; Orthotics Ltd</div>
               <div style="color:rgba(238,244,249,0.5);font-size:11px;letter-spacing:1px;">Nigeria</div>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td style="background:#ffffff;padding:40px;border-left:1px solid #e5e0d8;border-right:1px solid #e5e0d8;">
+            <td style="background:#ffffff;padding:40px;border-left:1px solid #dde6ed;border-right:1px solid #dde6ed;">
               ${content}
             </td>
           </tr>
@@ -61,12 +61,12 @@ function credentialsBox(lines: { label: string; value: string }[]): string {
       <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;font-family:monospace,monospace;word-break:break-all;">${l.value}</td>
     </tr>`
   ).join('');
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;border:1px solid #e5e0d8;border-radius:8px;margin:20px 0;overflow:hidden;">${rows}</table>`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4f9;border:1px solid #dde6ed;border-radius:8px;margin:20px 0;overflow:hidden;">${rows}</table>`;
 }
 
 function ctaButton(label: string, url: string): string {
   return `<div style="text-align:center;margin:28px 0 8px;">
-    <a href="${url}" style="display:inline-block;background:#d08c2a;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.5px;">${label}</a>
+    <a href="${url}" style="display:inline-block;background:#1b3d5e;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.5px;">${label}</a>
   </div>`;
 }
 
@@ -317,7 +317,7 @@ export async function sendErrorAlert(opts: {
       The DB Prosthetics platform just logged an unhandled error. This email is throttled to at most one every 5 minutes even if the error keeps happening.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;border:1px solid #e5e0d8;border-radius:8px;margin-bottom:16px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4f9;border:1px solid #dde6ed;border-radius:8px;margin-bottom:16px;">
       ${routePath ? `<tr>
         <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;width:100px;">Route</td>
         <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">${routePath}${routeType ? ` (${routeType})` : ''}</td>
@@ -415,7 +415,7 @@ export async function sendAdminNewOrderNotification(opts: {
   } = opts;
 
   const itemsRows = items && items.length > 0
-    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e5e0d8;border-radius:8px;overflow:hidden;">
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #dde6ed;border-radius:8px;overflow:hidden;">
         ${items.map(i => `<tr>
           <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #eef4f9;">${i.name} &times;${i.quantity}</td>
           <td style="padding:10px 14px;font-size:13px;color:#1b3d5e;font-weight:700;text-align:right;border-bottom:1px solid #eef4f9;">${naira(i.priceKobo * i.quantity)}</td>
@@ -434,7 +434,7 @@ export async function sendAdminNewOrderNotification(opts: {
       Placed by ${CREATOR_LABELS[createdByRole] || createdByRole} for <strong>${patientName}</strong>.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;border:1px solid #e5e0d8;border-radius:8px;margin-bottom:16px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4f9;border:1px solid #dde6ed;border-radius:8px;margin-bottom:16px;">
       <tr>
         <td style="padding:8px 16px;font-size:13px;color:#6b7280;font-weight:600;width:140px;">Order</td>
         <td style="padding:8px 16px;font-size:13px;color:#1b3d5e;font-weight:700;">#${orderId}</td>

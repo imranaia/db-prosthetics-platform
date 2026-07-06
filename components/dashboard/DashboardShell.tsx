@@ -163,8 +163,8 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 padding: '8px 10px', borderRadius: '8px', minWidth: 0,
-                background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
-                color: '#f0d9b5', fontSize: '0.8rem', fontWeight: 600,
+                background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.4)',
+                color: '#ffffff', fontSize: '0.8rem', fontWeight: 600,
                 textDecoration: 'none', boxSizing: 'border-box',
               }}
             >
@@ -178,8 +178,8 @@ export default function DashboardShell({ children, navItems, brandLabel, overvie
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', minWidth: 0,
-                background: 'rgba(208,140,42,0.16)', border: '1px solid rgba(208,140,42,0.35)',
-                color: '#f0d9b5', fontSize: '0.8rem', fontWeight: 600,
+                background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.4)',
+                color: '#ffffff', fontSize: '0.8rem', fontWeight: 600,
               }}
             >
               Switch

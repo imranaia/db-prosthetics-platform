@@ -62,7 +62,7 @@ export default function HospitalAdminPage() {
   const STAT_CARDS = [
     { label: 'Patients Seen',         value: stats?.patients ?? 0,                                          icon: Users,        color: '#2563eb' },
     { label: 'Total Consultations',   value: stats?.consultations ?? 0,                                    icon: Stethoscope,  color: 'var(--primary)' },
-    { label: 'This Month',            value: stats?.this_month_consultations ?? 0,                         icon: CalendarDays, color: '#d08c2a' },
+    { label: 'This Month',            value: stats?.this_month_consultations ?? 0,                         icon: CalendarDays, color: '#2e6499' },
     { label: 'Upcoming Appointments', value: stats?.upcoming_appointments ?? 0,                            icon: Clock,        color: '#059669' },
     { label: 'Staff',                 value: (stats?.doctors ?? 0) + (stats?.po_specialists ?? 0),        icon: Users2,       color: '#7c3aed' },
   ];

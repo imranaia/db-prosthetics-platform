@@ -32,7 +32,7 @@ export default function POSpecialistPage() {
 
   const STAT_CARDS = [
     { label: 'My Patients',    value: stats.patients,      icon: Users,        color: '#2563eb' },
-    { label: 'Orders',         value: stats.orders,        icon: ShoppingCart, color: '#d08c2a' },
+    { label: 'Orders',         value: stats.orders,        icon: ShoppingCart, color: '#2e6499' },
     { label: 'Pending Orders', value: stats.pending_orders, icon: CalendarDays, color: '#059669' },
   ];
 

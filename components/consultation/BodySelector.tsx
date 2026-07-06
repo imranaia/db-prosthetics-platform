@@ -97,11 +97,11 @@ function RegionShape({
   onMouseLeave: () => void;
 }) {
   const fill = selected
-    ? 'rgba(208,140,42,0.65)'
+    ? 'rgba(27,61,94,0.65)'
     : hovered
     ? 'rgba(37,79,122,0.32)'
     : 'rgba(37,79,122,0.12)';
-  const stroke  = selected ? '#d08c2a' : '#254f7a';
+  const stroke  = selected ? '#1b3d5e' : '#254f7a';
   const strokeW = selected ? 2 : 1;
 
   const common = {
@@ -201,7 +201,7 @@ export default function BodySelector({ value, onChange }: Props) {
       {/* Legend */}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-muted, #6b7280)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(208,140,42,0.65)', border: '1.5px solid #d08c2a', display: 'inline-block' }} />
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: 'rgba(27,61,94,0.65)', border: '1.5px solid #1b3d5e', display: 'inline-block' }} />
           Selected
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -216,8 +216,8 @@ export default function BodySelector({ value, onChange }: Props) {
           {subPartRegions.map(def => {
             const part = selectedMap.get(def.region)!;
             return (
-              <div key={def.region} style={{ background: 'rgba(208,140,42,0.06)', border: '1px solid rgba(208,140,42,0.2)', borderRadius: '10px', padding: '10px 14px' }}>
-                <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--accent, #d08c2a)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div key={def.region} style={{ background: 'rgba(27,61,94,0.06)', border: '1px solid rgba(27,61,94,0.2)', borderRadius: '10px', padding: '10px 14px' }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--primary, #1b3d5e)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {def.label} — Select fingers/toes
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -231,9 +231,9 @@ export default function BodySelector({ value, onChange }: Props) {
                         style={{
                           padding: '4px 11px',
                           borderRadius: '20px',
-                          border: active ? '1.5px solid #d08c2a' : '1.5px solid rgba(37,79,122,0.3)',
-                          background: active ? 'rgba(208,140,42,0.18)' : 'rgba(37,79,122,0.06)',
-                          color: active ? '#8a5d00' : '#254f7a',
+                          border: active ? '1.5px solid #1b3d5e' : '1.5px solid rgba(37,79,122,0.3)',
+                          background: active ? 'rgba(27,61,94,0.18)' : 'rgba(37,79,122,0.06)',
+                          color: active ? '#1b3d5e' : '#254f7a',
                           fontSize: '0.78rem',
                           fontWeight: active ? 600 : 400,
                           cursor: 'pointer',
@@ -271,9 +271,9 @@ export default function BodySelector({ value, onChange }: Props) {
                     gap: '6px',
                     padding: '4px 10px',
                     borderRadius: 20,
-                    background: 'rgba(208,140,42,0.12)',
-                    border: '1px solid rgba(208,140,42,0.3)',
-                    color: 'var(--accent, #d08c2a)',
+                    background: 'rgba(27,61,94,0.12)',
+                    border: '1px solid rgba(27,61,94,0.3)',
+                    color: 'var(--primary, #1b3d5e)',
                     fontSize: '0.78rem',
                     fontWeight: 500,
                   }}
@@ -287,7 +287,7 @@ export default function BodySelector({ value, onChange }: Props) {
                       border: 'none',
                       padding: 0,
                       cursor: 'pointer',
-                      color: 'rgba(208,140,42,0.7)',
+                      color: 'rgba(27,61,94,0.7)',
                       fontSize: '0.85rem',
                       lineHeight: 1,
                       display: 'flex',

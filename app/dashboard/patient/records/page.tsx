@@ -279,7 +279,7 @@ export default function PatientRecordsPage() {
                 {/* Recommended device chip */}
                 {c.recommended_device && (
                   <div style={{ marginBottom: 12 }}>
-                    <span style={{ background: '#d08c2a18', color: '#d08c2a', border: '1px solid #d08c2a40', padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600 }}>
+                    <span style={{ background: '#2e649918', color: '#2e6499', border: '1px solid #2e649940', padding: '3px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600 }}>
                       {c.recommended_device}
                     </span>
                   </div>
