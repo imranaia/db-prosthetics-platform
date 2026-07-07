@@ -71,41 +71,41 @@ function boneProfile(height: number, rBottom: number, rMid: number, rTop: number
 }
 
 const REGIONS: Region3D[] = [
-  { region: 'right_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(62, 68, 0.15), r: 0.28 } },
-  { region: 'right_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(53, 89, 0.15), r: 0.42 } },
-  { region: 'right_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(51, 90, 0.15), bottom: toScene(51, 136, 0.15), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
-  { region: 'right_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(51, 141, 0.15), r: 0.32 } },
-  { region: 'right_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(51, 152, 0.15), bottom: toScene(51, 198, 0.15), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(51, 202, 0.15), r: 0.24 } },
-  { region: 'right_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(51, 223, 0.15), size: [0.86, 0.62, 0.3] } },
-  { region: 'right_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(51, 240, 0.15), spread: 0.8, digitKind: 'hand' } },
+  { region: 'right_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(62, 68, 0.5), r: 0.28 } },
+  { region: 'right_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(53, 89, 0.5), r: 0.42 } },
+  { region: 'right_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(51, 90, 0.5), bottom: toScene(51, 136, 0.5), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
+  { region: 'right_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(51, 141, 0.5), r: 0.32 } },
+  { region: 'right_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(51, 152, 0.5), bottom: toScene(51, 198, 0.5), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(51, 202, 0.5), r: 0.24 } },
+  { region: 'right_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(51, 223, 0.5), size: [0.86, 0.62, 0.3] } },
+  { region: 'right_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(51, 240, 0.5), spread: 0.8, digitKind: 'hand' } },
 
-  { region: 'right_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(85, 176, 0.05), r: 0.3 } },
-  { region: 'right_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(90, 201, 0.05), r: 0.42 } },
-  { region: 'right_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(90, 217, 0.05), bottom: toScene(90, 285, 0.05), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
-  { region: 'right_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 289, 0.05), r: 0.4 } },
-  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(90, 301, 0.05), bottom: toScene(90, 364, 0.05), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 368, 0.05), r: 0.3 } },
-  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(88, 391, 0.1), size: [1.1, 0.5, 0.4] } },
-  { region: 'right_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(88, 407, 0.1), spread: 1.1, digitKind: 'foot' } },
+  { region: 'right_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(85, 176, 0.25), r: 0.3 } },
+  { region: 'right_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(90, 201, 0.25), r: 0.42 } },
+  { region: 'right_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(90, 217, 0.25), bottom: toScene(90, 285, 0.25), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
+  { region: 'right_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 289, 0.25), r: 0.4 } },
+  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(90, 301, 0.25), bottom: toScene(90, 364, 0.25), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 368, 0.25), r: 0.3 } },
+  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(88, 391, 0.35), size: [0.8, 0.5, 0.4] } },
+  { region: 'right_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(88, 407, 0.35), spread: 1.1, digitKind: 'foot' } },
 
-  { region: 'left_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(158, 68, 0.15), r: 0.28 } },
-  { region: 'left_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(167, 89, 0.15), r: 0.42 } },
-  { region: 'left_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(169, 90, 0.15), bottom: toScene(169, 136, 0.15), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
-  { region: 'left_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(169, 141, 0.15), r: 0.32 } },
-  { region: 'left_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(169, 152, 0.15), bottom: toScene(169, 198, 0.15), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(169, 202, 0.15), r: 0.24 } },
-  { region: 'left_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(169, 223, 0.15), size: [0.86, 0.62, 0.3] } },
-  { region: 'left_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(169, 240, 0.15), spread: 0.8, digitKind: 'hand' } },
+  { region: 'left_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(158, 68, 0.5), r: 0.28 } },
+  { region: 'left_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(167, 89, 0.5), r: 0.42 } },
+  { region: 'left_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(169, 90, 0.5), bottom: toScene(169, 136, 0.5), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
+  { region: 'left_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(169, 141, 0.5), r: 0.32 } },
+  { region: 'left_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(169, 152, 0.5), bottom: toScene(169, 198, 0.5), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(169, 202, 0.5), r: 0.24 } },
+  { region: 'left_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(169, 223, 0.5), size: [0.86, 0.62, 0.3] } },
+  { region: 'left_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(169, 240, 0.5), spread: 0.8, digitKind: 'hand' } },
 
-  { region: 'left_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(135, 176, 0.05), r: 0.3 } },
-  { region: 'left_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(130, 201, 0.05), r: 0.42 } },
-  { region: 'left_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(130, 217, 0.05), bottom: toScene(130, 285, 0.05), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
-  { region: 'left_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 289, 0.05), r: 0.4 } },
-  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(130, 301, 0.05), bottom: toScene(130, 364, 0.05), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 368, 0.05), r: 0.3 } },
-  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(132, 391, 0.1), size: [1.1, 0.5, 0.4] } },
-  { region: 'left_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(132, 407, 0.1), spread: 1.1, digitKind: 'foot' } },
+  { region: 'left_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(135, 176, 0.25), r: 0.3 } },
+  { region: 'left_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(130, 201, 0.25), r: 0.42 } },
+  { region: 'left_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(130, 217, 0.25), bottom: toScene(130, 285, 0.25), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
+  { region: 'left_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 289, 0.25), r: 0.4 } },
+  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(130, 301, 0.25), bottom: toScene(130, 364, 0.25), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 368, 0.25), r: 0.3 } },
+  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(132, 391, 0.35), size: [0.8, 0.5, 0.4] } },
+  { region: 'left_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(132, 407, 0.35), spread: 1.1, digitKind: 'foot' } },
 ];
 
 const GOLD = '#d08c2a';
@@ -192,7 +192,7 @@ function Figure({
         <sphereGeometry args={[0.5, 24, 18]} />
         <meshStandardMaterial color="#cbc3b4" roughness={0.9} metalness={0} />
       </mesh>
-      <mesh position={toScene(110, 120, 0)} scale={[1, 1.55, 0.6]}>
+      <mesh position={toScene(110, 120, 0)} scale={[1, 1.75, 0.6]}>
         <sphereGeometry args={[0.95, 24, 18]} />
         <meshStandardMaterial color="#cbc3b4" roughness={0.9} metalness={0} />
       </mesh>
@@ -245,12 +245,12 @@ export default function BodySelector3D({ value, onChange }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
       <div style={{ width: '100%', maxWidth: 360, height: 420, borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(180deg, #f5f2ea 0%, #e9e2d2 100%)', border: '1px solid var(--border-card, #e2e8f0)' }}>
-        <Canvas camera={{ position: [0, 0, 9], fov: 40 }}>
+        <Canvas camera={{ position: [0, 0.1, 16], fov: 38 }}>
           <ambientLight intensity={0.75} />
           <directionalLight position={[3, 5, 4]} intensity={0.85} color="#fff6e8" />
           <directionalLight position={[-3, -2, -4]} intensity={0.3} color="#e8eef5" />
           <Figure selectedMap={selectedMap} hovered={hovered} onToggle={toggleRegion} setHovered={setHovered} />
-          <OrbitControls enablePan={false} minDistance={5} maxDistance={14} />
+          <OrbitControls enablePan={false} minDistance={10} maxDistance={24} target={[0, 0.1, 0]} />
         </Canvas>
       </div>
 
