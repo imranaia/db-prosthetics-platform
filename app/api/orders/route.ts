@@ -166,6 +166,13 @@ export async function POST(req: NextRequest) {
       db.prepare('INSERT INTO order_items (order_id, product_id, quantity, price_at_order) VALUES (?, ?, ?, ?)').run(
         orderId, item.product_id, item.quantity, item.price_at_order
       );
+      // Reserve stock the moment the order is placed (not just once paid) —
+      // the out-of-stock check above already treats availability as
+      // committed at this point, so "Potential Income" on the dashboard
+      // doesn't keep counting units that have already been sold.
+      const productRow = db.prepare('SELECT quantity FROM products WHERE id = ?').get(item.product_id) as { quantity: number | null } | undefined;
+      const remaining = Math.max((productRow?.quantity ?? 0) - item.quantity, 0);
+      db.prepare('UPDATE products SET quantity = ?, in_stock = ? WHERE id = ?').run(remaining, remaining > 0 ? 1 : 0, item.product_id);
     }
 
     if (requiresConsent && patientId) {

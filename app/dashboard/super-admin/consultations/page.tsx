@@ -713,7 +713,11 @@ export default function ConsultationsPage() {
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10, marginTop: 0 }}>
               Click on the body diagram to mark the affected region(s). For hands/feet, select specific fingers or toes.
             </p>
-            <BodySelector value={bodyParts} onChange={setBodyParts} category={recommendDevice ? form.category : ''} />
+            {/* No category restriction here — this records the patient's
+                actual affected area (an independent clinical fact), not
+                "what the device order is for". Category is chosen later in
+                Section 6, and shouldn't retroactively clear this. */}
+            <BodySelector value={bodyParts} onChange={setBodyParts} />
 
             {/* Section 3 — Physical Assessment */}
             <div style={{ marginTop: 24 }}>

@@ -23,6 +23,22 @@ export async function PATCH(
   const setClauses: string[] = [];
   const values: (string | number)[] = [];
 
+  // Cancelling an order releases the stock it reserved at creation time —
+  // otherwise cancelled orders would permanently shrink "Potential Income"
+  // for units that were never actually sold.
+  if (body.status === 'cancelled') {
+    const current = db.prepare('SELECT status FROM orders WHERE id = ?').get(id) as { status: string } | undefined;
+    if (current && current.status !== 'cancelled') {
+      const items = db.prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ?').all(id) as { product_id: number; quantity: number }[];
+      for (const item of items) {
+        const productRow = db.prepare('SELECT quantity FROM products WHERE id = ?').get(item.product_id) as { quantity: number | null } | undefined;
+        if (!productRow) continue;
+        const restored = (productRow.quantity ?? 0) + item.quantity;
+        db.prepare('UPDATE products SET quantity = ?, in_stock = 1 WHERE id = ?').run(restored, item.product_id);
+      }
+    }
+  }
+
   if (body.status !== undefined)              { setClauses.push('status = ?');              values.push(body.status); }
   if (body.fulfillment_status !== undefined)  {
     setClauses.push('fulfillment_status = ?');  values.push(body.fulfillment_status);
