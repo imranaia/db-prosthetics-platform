@@ -5,7 +5,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { ShoppingCart, Package } from 'lucide-react';
-import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import { BodyPart } from '@/components/consultation/BodySelector';
+import BodyPartPicker from '@/components/consultation/BodyPartPicker';
 
 interface OrderItem { product_name: string; quantity: number; price_at_order: number; }
 interface Order {
@@ -305,7 +306,7 @@ export default function OrdersPage() {
                         try { parts = JSON.parse(o.body_parts!); } catch { parts = []; }
                         return (
                           <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: 'rgba(27,61,94,0.03)', border: '1px solid var(--border-card)' }}>
-                            <BodySelector value={parts} onChange={() => {}} category={o.category || ''} readOnly />
+                            <BodyPartPicker value={parts} onChange={() => {}} category={o.category || ''} readOnly />
                           </div>
                         );
                       })()}

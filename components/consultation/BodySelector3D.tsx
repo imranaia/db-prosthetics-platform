@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { DoubleSide, Vector2 } from 'three';
@@ -9,6 +9,11 @@ import type { BodyPart } from './BodySelector';
 interface Props {
   value: BodyPart[];
   onChange: (parts: BodyPart[]) => void;
+  // Device Category (Upper Limb / Lower Limb / Facial / Spinal / Other) —
+  // when it's a limb category, only that side's regions are shown/selectable,
+  // mirroring the 2D BodySelector's identical restriction.
+  category?: string;
+  readOnly?: boolean;
 }
 
 /* ─── Prototype notice ───
@@ -40,6 +45,7 @@ const FOOT_DIGIT_OPTIONS = ['Great Toe (Hallux)', '2nd Toe', '3rd Toe', '4th Toe
 interface Region3D {
   region: string;
   label: string;
+  limbSide: 'upper' | 'lower';
   subPartOptions?: string[];
   multiSubParts?: boolean;
   shape:
@@ -71,41 +77,41 @@ function boneProfile(height: number, rBottom: number, rMid: number, rTop: number
 }
 
 const REGIONS: Region3D[] = [
-  { region: 'right_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(62, 68, 0.5), r: 0.28 } },
-  { region: 'right_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(53, 89, 0.5), r: 0.42 } },
-  { region: 'right_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(51, 90, 0.5), bottom: toScene(51, 136, 0.5), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
-  { region: 'right_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(51, 141, 0.5), r: 0.32 } },
-  { region: 'right_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(51, 152, 0.5), bottom: toScene(51, 198, 0.5), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(51, 202, 0.5), r: 0.24 } },
-  { region: 'right_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(51, 223, 0.5), size: [0.86, 0.62, 0.3] } },
-  { region: 'right_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(51, 240, 0.5), spread: 0.8, digitKind: 'hand' } },
+  { region: 'right_forequarter', label: 'Forequarter', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(62, 68, 0.5), r: 0.28 } },
+  { region: 'right_shoulder_disarticulation', label: 'Shoulder Disarticulation', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(53, 89, 0.5), r: 0.42 } },
+  { region: 'right_above_elbow', label: 'Above Elbow (Transhumeral)', limbSide: 'upper', shape: { kind: 'shaft', top: toScene(51, 90, 0.5), bottom: toScene(51, 136, 0.5), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
+  { region: 'right_elbow_disarticulation', label: 'Elbow Disarticulation', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(51, 141, 0.5), r: 0.32 } },
+  { region: 'right_below_elbow', label: 'Below Elbow (Transradial)', limbSide: 'upper', shape: { kind: 'shaft', top: toScene(51, 152, 0.5), bottom: toScene(51, 198, 0.5), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(51, 202, 0.5), r: 0.24 } },
+  { region: 'right_partial_hand', label: 'Partial Hand (transcarpal)', limbSide: 'upper', shape: { kind: 'box', center: toScene(51, 223, 0.5), size: [0.86, 0.62, 0.3] } },
+  { region: 'right_finger_amputation', label: 'Finger Amputation', limbSide: 'upper', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(51, 240, 0.5), spread: 0.8, digitKind: 'hand' } },
 
-  { region: 'right_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(85, 176, 0.25), r: 0.3 } },
-  { region: 'right_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(90, 201, 0.25), r: 0.42 } },
-  { region: 'right_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(90, 217, 0.25), bottom: toScene(90, 285, 0.25), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
-  { region: 'right_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 289, 0.25), r: 0.4 } },
-  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(90, 301, 0.25), bottom: toScene(90, 364, 0.25), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 368, 0.25), r: 0.3 } },
-  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(88, 391, 0.35), size: [0.8, 0.5, 0.4] } },
-  { region: 'right_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(88, 407, 0.35), spread: 1.1, digitKind: 'foot' } },
+  { region: 'right_hemipelvectomy', label: 'Hemipelvectomy', limbSide: 'lower', shape: { kind: 'sphere', center: toScene(85, 176, 0.25), r: 0.3 } },
+  { region: 'right_hip_disarticulation', label: 'Hip Disarticulation', limbSide: 'lower', shape: { kind: 'sphere', center: toScene(90, 201, 0.25), r: 0.42 } },
+  { region: 'right_above_knee', label: 'Above Knee (Transfemoral)', limbSide: 'lower', shape: { kind: 'shaft', top: toScene(90, 217, 0.25), bottom: toScene(90, 285, 0.25), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
+  { region: 'right_knee_disarticulation', label: 'Knee Disarticulation', limbSide: 'lower', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 289, 0.25), r: 0.4 } },
+  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', limbSide: 'lower', shape: { kind: 'shaft', top: toScene(90, 301, 0.25), bottom: toScene(90, 364, 0.25), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", limbSide: 'lower', subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 368, 0.25), r: 0.3 } },
+  { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', limbSide: 'lower', shape: { kind: 'box', center: toScene(88, 391, 0.35), size: [0.8, 0.5, 0.4] } },
+  { region: 'right_toe_amputation', label: 'Toe Amputation', limbSide: 'lower', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(88, 407, 0.35), spread: 1.1, digitKind: 'foot' } },
 
-  { region: 'left_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(158, 68, 0.5), r: 0.28 } },
-  { region: 'left_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(167, 89, 0.5), r: 0.42 } },
-  { region: 'left_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(169, 90, 0.5), bottom: toScene(169, 136, 0.5), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
-  { region: 'left_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(169, 141, 0.5), r: 0.32 } },
-  { region: 'left_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(169, 152, 0.5), bottom: toScene(169, 198, 0.5), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(169, 202, 0.5), r: 0.24 } },
-  { region: 'left_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(169, 223, 0.5), size: [0.86, 0.62, 0.3] } },
-  { region: 'left_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(169, 240, 0.5), spread: 0.8, digitKind: 'hand' } },
+  { region: 'left_forequarter', label: 'Forequarter', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(158, 68, 0.5), r: 0.28 } },
+  { region: 'left_shoulder_disarticulation', label: 'Shoulder Disarticulation', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(167, 89, 0.5), r: 0.42 } },
+  { region: 'left_above_elbow', label: 'Above Elbow (Transhumeral)', limbSide: 'upper', shape: { kind: 'shaft', top: toScene(169, 90, 0.5), bottom: toScene(169, 136, 0.5), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
+  { region: 'left_elbow_disarticulation', label: 'Elbow Disarticulation', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(169, 141, 0.5), r: 0.32 } },
+  { region: 'left_below_elbow', label: 'Below Elbow (Transradial)', limbSide: 'upper', shape: { kind: 'shaft', top: toScene(169, 152, 0.5), bottom: toScene(169, 198, 0.5), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', limbSide: 'upper', shape: { kind: 'sphere', center: toScene(169, 202, 0.5), r: 0.24 } },
+  { region: 'left_partial_hand', label: 'Partial Hand (transcarpal)', limbSide: 'upper', shape: { kind: 'box', center: toScene(169, 223, 0.5), size: [0.86, 0.62, 0.3] } },
+  { region: 'left_finger_amputation', label: 'Finger Amputation', limbSide: 'upper', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(169, 240, 0.5), spread: 0.8, digitKind: 'hand' } },
 
-  { region: 'left_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(135, 176, 0.25), r: 0.3 } },
-  { region: 'left_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(130, 201, 0.25), r: 0.42 } },
-  { region: 'left_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(130, 217, 0.25), bottom: toScene(130, 285, 0.25), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
-  { region: 'left_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 289, 0.25), r: 0.4 } },
-  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(130, 301, 0.25), bottom: toScene(130, 364, 0.25), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
-  { region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 368, 0.25), r: 0.3 } },
-  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(132, 391, 0.35), size: [0.8, 0.5, 0.4] } },
-  { region: 'left_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(132, 407, 0.35), spread: 1.1, digitKind: 'foot' } },
+  { region: 'left_hemipelvectomy', label: 'Hemipelvectomy', limbSide: 'lower', shape: { kind: 'sphere', center: toScene(135, 176, 0.25), r: 0.3 } },
+  { region: 'left_hip_disarticulation', label: 'Hip Disarticulation', limbSide: 'lower', shape: { kind: 'sphere', center: toScene(130, 201, 0.25), r: 0.42 } },
+  { region: 'left_above_knee', label: 'Above Knee (Transfemoral)', limbSide: 'lower', shape: { kind: 'shaft', top: toScene(130, 217, 0.25), bottom: toScene(130, 285, 0.25), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
+  { region: 'left_knee_disarticulation', label: 'Knee Disarticulation', limbSide: 'lower', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 289, 0.25), r: 0.4 } },
+  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', limbSide: 'lower', shape: { kind: 'shaft', top: toScene(130, 301, 0.25), bottom: toScene(130, 364, 0.25), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
+  { region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", limbSide: 'lower', subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 368, 0.25), r: 0.3 } },
+  { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', limbSide: 'lower', shape: { kind: 'box', center: toScene(132, 391, 0.35), size: [0.8, 0.5, 0.4] } },
+  { region: 'left_toe_amputation', label: 'Toe Amputation', limbSide: 'lower', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(132, 407, 0.35), spread: 1.1, digitKind: 'foot' } },
 ];
 
 const GOLD = '#d08c2a';
@@ -176,12 +182,14 @@ function RegionMesh({
 }
 
 function Figure({
-  selectedMap, hovered, onToggle, setHovered,
+  regions, selectedMap, hovered, onToggle, setHovered, readOnly,
 }: {
+  regions: Region3D[];
   selectedMap: Map<string, BodyPart>;
   hovered: string | null;
   onToggle: (def: Region3D) => void;
   setHovered: (r: string | null) => void;
+  readOnly?: boolean;
 }) {
   return (
     <group>
@@ -197,26 +205,43 @@ function Figure({
         <meshStandardMaterial color="#cbc3b4" roughness={0.9} metalness={0} />
       </mesh>
 
-      {REGIONS.map(def => (
+      {regions.map(def => (
         <RegionMesh
           key={def.region}
           def={def}
           selected={selectedMap.has(def.region)}
           hovered={hovered === def.region}
-          onClick={(e) => { e.stopPropagation(); onToggle(def); }}
-          onOver={(e) => { e.stopPropagation(); setHovered(def.region); }}
-          onOut={(e) => { e.stopPropagation(); setHovered(null); }}
+          onClick={(e) => { e.stopPropagation(); if (!readOnly) onToggle(def); }}
+          onOver={(e) => { e.stopPropagation(); if (!readOnly) setHovered(def.region); }}
+          onOut={(e) => { e.stopPropagation(); if (!readOnly) setHovered(null); }}
         />
       ))}
     </group>
   );
 }
 
-export default function BodySelector3D({ value, onChange }: Props) {
+export default function BodySelector3D({ value, onChange, category, readOnly }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const selectedMap = useMemo(() => new Map<string, BodyPart>(value.map(p => [p.region, p])), [value]);
 
+  const restrictedSide: 'upper' | 'lower' | null =
+    category === 'upper_limb' ? 'upper' : category === 'lower_limb' ? 'lower' : null;
+
+  // If the Device Category changes to a limb side that contradicts an
+  // already-marked region, drop that region — mirrors the 2D BodySelector's
+  // identical safeguard.
+  useEffect(() => {
+    if (!restrictedSide) return;
+    const regionSide = new Map(REGIONS.map(r => [r.region, r.limbSide]));
+    const filtered = value.filter(p => regionSide.get(p.region) === restrictedSide);
+    if (filtered.length !== value.length) onChange(filtered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restrictedSide]);
+
+  const visibleRegions = restrictedSide ? REGIONS.filter(def => def.limbSide === restrictedSide) : REGIONS;
+
   function toggleRegion(def: Region3D) {
+    if (readOnly) return;
     if (selectedMap.has(def.region)) {
       onChange(value.filter(p => p.region !== def.region));
     } else {
@@ -225,6 +250,7 @@ export default function BodySelector3D({ value, onChange }: Props) {
   }
 
   function toggleSubPart(region: string, sub: string, multi: boolean) {
+    if (readOnly) return;
     onChange(value.map(p => {
       if (p.region !== region) return p;
       if (multi) {
@@ -237,10 +263,11 @@ export default function BodySelector3D({ value, onChange }: Props) {
   }
 
   function removeRegion(region: string) {
+    if (readOnly) return;
     onChange(value.filter(p => p.region !== region));
   }
 
-  const subPartRegions = REGIONS.filter(def => def.subPartOptions && selectedMap.has(def.region));
+  const subPartRegions = visibleRegions.filter(def => def.subPartOptions && selectedMap.has(def.region));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
@@ -249,16 +276,24 @@ export default function BodySelector3D({ value, onChange }: Props) {
           <ambientLight intensity={0.75} />
           <directionalLight position={[3, 5, 4]} intensity={0.85} color="#fff6e8" />
           <directionalLight position={[-3, -2, -4]} intensity={0.3} color="#e8eef5" />
-          <Figure selectedMap={selectedMap} hovered={hovered} onToggle={toggleRegion} setHovered={setHovered} />
+          <Figure regions={visibleRegions} selectedMap={selectedMap} hovered={hovered} onToggle={toggleRegion} setHovered={setHovered} readOnly={readOnly} />
           <OrbitControls enablePan={false} minDistance={10} maxDistance={24} target={[0, 0.1, 0]} />
         </Canvas>
       </div>
 
-      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
-        Drag to rotate, scroll/pinch to zoom. Tap a region to select it — this is an experimental prototype, not the production diagram.
-      </div>
+      {!readOnly && (
+        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          Drag to rotate, scroll/pinch to zoom. Tap a region to select it.
+        </div>
+      )}
 
-      {subPartRegions.length > 0 && (
+      {restrictedSide && !readOnly && (
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : 'lower limb (leg/foot)'} levels only, based on the Device Category above.
+        </div>
+      )}
+
+      {!readOnly && subPartRegions.length > 0 && (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {subPartRegions.map(def => {
             const part = selectedMap.get(def.region)!;
@@ -310,14 +345,16 @@ export default function BodySelector3D({ value, onChange }: Props) {
                   fontSize: '0.78rem', fontWeight: 500,
                 }}>
                   {label}
-                  <button
-                    type="button"
-                    onClick={() => removeRegion(part.region)}
-                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'rgba(208,140,42,0.7)', fontSize: '0.85rem', lineHeight: 1, display: 'flex', alignItems: 'center' }}
-                    aria-label={`Remove ${part.label}`}
-                  >
-                    ×
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => removeRegion(part.region)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'rgba(208,140,42,0.7)', fontSize: '0.85rem', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+                      aria-label={`Remove ${part.label}`}
+                    >
+                      ×
+                    </button>
+                  )}
                 </span>
               );
             })}

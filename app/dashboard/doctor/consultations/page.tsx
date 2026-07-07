@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Upload, Trash2 } from 'lucide-react';
-import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import { BodyPart } from '@/components/consultation/BodySelector';
+import BodyPartPicker from '@/components/consultation/BodyPartPicker';
 import MeasurementFields, { INITIAL_MEASUREMENT_FORM, type MeasurementFormValues } from '@/components/consultation/MeasurementFields';
 import SignaturePad from '@/components/forms/SignaturePad';
 import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
@@ -674,7 +675,7 @@ export default function DoctorConsultationsPage() {
                 actual affected area (an independent clinical fact), not
                 "what the device order is for", so it shouldn't be cleared
                 just because Device Category (above) changes. */}
-            <BodySelector value={bodyParts} onChange={setBodyParts} />
+            <BodyPartPicker value={bodyParts} onChange={setBodyParts} />
 
             {/* Section 3 — Physical Assessment */}
             <div style={{ marginTop: 24 }}>

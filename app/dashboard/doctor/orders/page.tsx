@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState, useRef } from 'react';
 import { ShoppingCart, Package, ChevronDown, ChevronUp, Plus, X, Upload } from 'lucide-react';
-import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import { BodyPart } from '@/components/consultation/BodySelector';
+import BodyPartPicker from '@/components/consultation/BodyPartPicker';
 import ConsentCaptureInline, { ConsentValue, EMPTY_CONSENT } from '@/components/forms/ConsentCaptureInline';
 import SignaturePad from '@/components/forms/SignaturePad';
 
@@ -548,7 +549,7 @@ export default function DoctorOrdersPage() {
               {/* Body Part Selector */}
               <div style={{ marginBottom: 20 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Affected Body Part(s)</label>
-                <BodySelector value={custBodyParts} onChange={setCustBodyParts} category={custCategory} />
+                <BodyPartPicker value={custBodyParts} onChange={setCustBodyParts} category={custCategory} />
               </div>
 
               {/* Description */}
