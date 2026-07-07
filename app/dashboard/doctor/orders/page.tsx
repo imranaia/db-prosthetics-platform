@@ -548,7 +548,7 @@ export default function DoctorOrdersPage() {
               {/* Body Part Selector */}
               <div style={{ marginBottom: 20 }}>
                 <label className="skeu-label" style={{ display: 'block', marginBottom: 10 }}>Affected Body Part(s)</label>
-                <BodySelector value={custBodyParts} onChange={setCustBodyParts} />
+                <BodySelector value={custBodyParts} onChange={setCustBodyParts} category={custCategory} />
               </div>
 
               {/* Description */}

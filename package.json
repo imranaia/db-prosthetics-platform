@@ -10,6 +10,8 @@
     "seed:admin": "npx tsx scripts/seed-admin.ts"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
     "cloudinary": "^2.10.0",
@@ -20,7 +22,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.9.1",
-    "resend": "^6.16.0"
+    "resend": "^6.16.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

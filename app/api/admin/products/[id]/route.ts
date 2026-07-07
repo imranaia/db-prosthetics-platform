@@ -18,6 +18,7 @@ export async function PATCH(
     category?: string;
     type?: string;
     price?: number;
+    cost_price?: number | null;
     description?: string;
     image_url?: string | null;
     dimensions?: string;
@@ -33,6 +34,7 @@ export async function PATCH(
   if (body.category !== undefined)    { setClauses.push('category = ?');    values.push(body.category); }
   if (body.type !== undefined)        { setClauses.push('type = ?');        values.push(body.type); }
   if (body.price !== undefined)       { setClauses.push('price = ?');       values.push(Math.round(body.price * 100)); }
+  if (body.cost_price !== undefined)  { setClauses.push('cost_price = ?');  values.push(body.cost_price != null ? Math.round(body.cost_price * 100) : null); }
   if (body.description !== undefined) { setClauses.push('description = ?'); values.push(body.description); }
   if (body.image_url !== undefined)   { setClauses.push('image_url = ?');   values.push(body.image_url); }
   if (body.dimensions !== undefined)  { setClauses.push('dimensions = ?');  values.push(body.dimensions); }

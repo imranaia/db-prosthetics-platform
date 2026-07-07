@@ -18,6 +18,9 @@ interface Stats {
   pending_orders: number; pending_appointments: number; products: number;
   income: number;
   potential_income: number;
+  profit: number;
+  profit_coverage: number | null;
+  potential_profit: number;
   monthly_revenue: { month: string; revenue: number }[];
   orders_by_status: { status: string; count: number }[];
   patient_growth: { month: string; count: number }[];
@@ -139,6 +142,29 @@ export default function SuperAdminOverview() {
 
         <div style={{
           flex: '1 1 320px',
+          background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+          borderRadius: '14px', padding: '20px 24px',
+          display: 'flex', alignItems: 'center', gap: '14px',
+          boxShadow: '4px 4px 16px rgba(0,0,0,0.2)',
+        }}>
+          <TrendingUp size={28} color="rgba(255,255,255,0.7)" />
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Profit — {INCOME_RANGES.find(r => r.key === incomeRange)?.label}
+            </div>
+            <div style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
+              {statsLoading || !stats ? '—' : formatNGN(stats.profit)}
+            </div>
+            {!statsLoading && stats && stats.profit_coverage != null && stats.profit_coverage < 1 && (
+              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.7rem', marginTop: 2 }}>
+                Based on {Math.round(stats.profit_coverage * 100)}% of sold items with a cost price on record
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{
+          flex: '1 1 320px',
           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
           borderRadius: '14px', padding: '20px 24px',
           display: 'flex', alignItems: 'center', gap: '14px',
@@ -152,6 +178,11 @@ export default function SuperAdminOverview() {
             <div style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
               {statsLoading || !stats ? '—' : formatNGN(stats.potential_income)}
             </div>
+            {!statsLoading && stats && (
+              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.7rem', marginTop: 2 }}>
+                Potential Profit: {formatNGN(stats.potential_profit)}
+              </div>
+            )}
           </div>
         </div>
       </div>

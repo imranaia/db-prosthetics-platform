@@ -20,11 +20,18 @@ interface Doctor {
   specialization: string | null;
 }
 
+interface POSpecialist {
+  id: number;
+  full_name: string | null;
+  specialization: string | null;
+}
+
 interface Appointment {
   id: number;
   patient_name: string;
   patient_unique_id: string | null;
   doctor_name: string | null;
+  po_specialist_name: string | null;
   scheduled_date: string | null;
   status: string;
   notes: string | null;
@@ -43,6 +50,7 @@ export default function ReceptionistAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [poSpecialists, setPOSpecialists] = useState<POSpecialist[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [query, setQuery] = useState('');
@@ -50,7 +58,9 @@ export default function ReceptionistAppointmentsPage() {
   const [searching, setSearching] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientResult | null>(null);
 
+  const [practitionerType, setPractitionerType] = useState<'doctor' | 'po_specialist'>('doctor');
   const [doctorId, setDoctorId] = useState('');
+  const [poSpecialistId, setPOSpecialistId] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +74,7 @@ export default function ReceptionistAppointmentsPage() {
       .then(data => {
         if (data.appointments) setAppointments(data.appointments);
         if (data.doctors) setDoctors(data.doctors);
+        if (data.poSpecialists) setPOSpecialists(data.poSpecialists);
         setDataLoading(false);
       })
       .catch(() => setDataLoading(false));
@@ -123,7 +134,8 @@ export default function ReceptionistAppointmentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patient_id: selectedPatient.id,
-          doctor_id: doctorId || undefined,
+          doctor_id: practitionerType === 'doctor' ? (doctorId || undefined) : undefined,
+          po_specialist_id: practitionerType === 'po_specialist' ? (poSpecialistId || undefined) : undefined,
           scheduled_date: scheduledDate,
           notes: notes || undefined,
         }),
@@ -132,7 +144,7 @@ export default function ReceptionistAppointmentsPage() {
       if (!res.ok) { setError(data.error || 'Failed to book appointment.'); setSubmitting(false); return; }
       setSuccess(`Appointment booked for ${selectedPatient.full_name}.`);
       setSelectedPatient(null);
-      setDoctorId(''); setScheduledDate(''); setNotes('');
+      setDoctorId(''); setPOSpecialistId(''); setScheduledDate(''); setNotes('');
       load();
     } catch {
       setError('Network error. Please try again.');
@@ -195,14 +207,42 @@ export default function ReceptionistAppointmentsPage() {
             </div>
           )}
 
+          <div style={{ marginBottom: 18 }}>
+            <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Who will see this patient?</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {(['doctor', 'po_specialist'] as const).map(pt => (
+                <button
+                  key={pt} type="button"
+                  onClick={() => { setPractitionerType(pt); setDoctorId(''); setPOSpecialistId(''); }}
+                  style={{
+                    padding: '7px 16px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                    border: `1px solid ${practitionerType === pt ? 'var(--primary)' : 'var(--border-card)'}`,
+                    background: practitionerType === pt ? 'var(--primary)' : 'transparent',
+                    color: practitionerType === pt ? '#fff' : 'var(--text-body)',
+                  }}
+                >
+                  {pt === 'doctor' ? 'Doctor' : 'P&O Specialist'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="form-grid-2" style={{ marginBottom: 18 }}>
             <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Doctor (optional)</label>
-              <SkeuSelect
-                value={doctorId} onChange={setDoctorId}
-                options={doctors.map(d => ({ value: String(d.id), label: d.full_name || `Doctor #${d.id}` }))}
-                placeholder="Any available doctor…"
-              />
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>{practitionerType === 'doctor' ? 'Doctor (optional)' : 'P&O Specialist (optional)'}</label>
+              {practitionerType === 'doctor' ? (
+                <SkeuSelect
+                  value={doctorId} onChange={setDoctorId}
+                  options={doctors.map(d => ({ value: String(d.id), label: d.full_name || `Doctor #${d.id}` }))}
+                  placeholder="Any available doctor…"
+                />
+              ) : (
+                <SkeuSelect
+                  value={poSpecialistId} onChange={setPOSpecialistId}
+                  options={poSpecialists.map(p => ({ value: String(p.id), label: p.full_name || `Specialist #${p.id}` }))}
+                  placeholder="Any available specialist…"
+                />
+              )}
             </div>
             <div>
               <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Date &amp; Time</label>
@@ -236,7 +276,7 @@ export default function ReceptionistAppointmentsPage() {
               <thead>
                 <tr>
                   <th>Patient</th>
-                  <th>Doctor</th>
+                  <th>Practitioner</th>
                   <th>Date &amp; Time</th>
                   <th>Status</th>
                   <th>Arrival</th>
@@ -249,7 +289,7 @@ export default function ReceptionistAppointmentsPage() {
                   return (
                     <tr key={a.id}>
                       <td>{a.patient_name}{a.patient_unique_id ? ` (${a.patient_unique_id})` : ''}</td>
-                      <td>{a.doctor_name || '—'}</td>
+                      <td>{a.doctor_name || a.po_specialist_name || '—'}</td>
                       <td>{a.scheduled_date ? new Date(a.scheduled_date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
                       <td><span className="status-badge" style={{ background: style.bg, color: style.color }}>{a.status}</span></td>
                       <td>

@@ -46,6 +46,32 @@ export async function GET(req: NextRequest) {
     `SELECT COALESCE(SUM(price),0) as s FROM products WHERE in_stock = 1`
   ).get() as { s: number }).s;
 
+  // Profit — sale price minus cost price per line item, only counting items
+  // whose product has a cost_price on record. profit_coverage tells the
+  // admin what fraction of paid items that actually covers, so a low number
+  // reads as "fill in more cost prices" rather than "profit is low".
+  const sinceClauseOrders = days === null ? '' : days === 0 ? "AND date(o.created_at) = date('now')" : `AND o.created_at >= date('now', '-${days} days')`;
+  const profit = (db.prepare(`
+    SELECT COALESCE(SUM((oi.price_at_order - p.cost_price) * oi.quantity), 0) as s
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    JOIN products p ON oi.product_id = p.id
+    WHERE o.payment_status = 'paid' AND p.cost_price IS NOT NULL ${sinceClauseOrders}
+  `).get() as { s: number }).s;
+  const profitCoverageRow = db.prepare(`
+    SELECT COUNT(*) as total, COALESCE(SUM(CASE WHEN p.cost_price IS NOT NULL THEN 1 ELSE 0 END), 0) as with_cost
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    JOIN products p ON oi.product_id = p.id
+    WHERE o.payment_status = 'paid' ${sinceClauseOrders}
+  `).get() as { total: number; with_cost: number };
+  const profit_coverage = profitCoverageRow.total > 0 ? profitCoverageRow.with_cost / profitCoverageRow.total : null;
+
+  // Potential profit: same idea, but on current in-stock inventory.
+  const potential_profit = (db.prepare(
+    `SELECT COALESCE(SUM(price - cost_price),0) as s FROM products WHERE in_stock = 1 AND cost_price IS NOT NULL`
+  ).get() as { s: number }).s;
+
   // Monthly revenue — last 6 months (in kobo, divide by 100 on client),
   // also excluding the platform's service fee.
   const monthly_revenue = db.prepare(`
@@ -76,6 +102,9 @@ export async function GET(req: NextRequest) {
     income,
     income_range: rangeParam,
     potential_income,
+    profit,
+    profit_coverage,
+    potential_profit,
     monthly_revenue,
     orders_by_status,
     patient_growth,

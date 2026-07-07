@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import { useState } from 'react';
 import { UserPlus, Search, Copy, Check } from 'lucide-react';
 import { NIGERIA_STATES } from '@/lib/nigeria-states';
@@ -38,6 +39,10 @@ export default function ReceptionistAddPatientPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
+  // So navigating away mid-registration (e.g. to look something up) and
+  // coming back doesn't lose everything already filled in.
+  const { clearDraft } = useFormDraft('draft:receptionist-add-patient', form, setForm, !loading && !!user);
+
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
   if (user.role !== 'receptionist') { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
@@ -73,6 +78,7 @@ export default function ReceptionistAddPatientPage() {
       setSuccess({ patient_unique_id: data.patient_unique_id, pin: data.pin });
       setForm(INITIAL);
       setSignature(null);
+      clearDraft();
     } catch {
       setError('Network error. Please try again.');
     }

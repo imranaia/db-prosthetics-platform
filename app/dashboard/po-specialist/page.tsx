@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Users, ShoppingCart, CalendarDays } from 'lucide-react';
+import { Users, ShoppingCart, CalendarDays, UserCheck, SkipForward } from 'lucide-react';
 
 interface Stats {
   patients: number;
@@ -21,6 +21,21 @@ interface UpcomingAppointment {
   patient_phone: string | null;
 }
 
+interface QueueEntry {
+  id: number;
+  patient_id: number;
+  patient_name: string;
+  patient_unique_id: string | null;
+  patient_phone: string | null;
+  scheduled_date: string | null;
+  preferred_date: string | null;
+  notes: string | null;
+  patient_checked_in: number;
+  queue_skipped: number;
+  queue_skip_reason: string | null;
+  is_current: boolean;
+}
+
 function formatUpcomingDate(dt: string) {
   return new Date(dt).toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short' });
 }
@@ -31,6 +46,18 @@ export default function POSpecialistPage() {
   const [stats, setStats] = useState<Stats>({ patients: 0, orders: 0, pending_orders: 0 });
   const [upcoming, setUpcoming] = useState<UpcomingAppointment[]>([]);
   const [upcomingLoading, setUpcomingLoading] = useState(true);
+  const [queue, setQueue] = useState<QueueEntry[]>([]);
+  const [queueLoading, setQueueLoading] = useState(true);
+  const [skippingId, setSkippingId] = useState<number | null>(null);
+  const [skipReason, setSkipReason] = useState('');
+  const [queueBusy, setQueueBusy] = useState(false);
+
+  const loadQueue = () => {
+    fetch('/api/queue')
+      .then(r => r.json())
+      .then(data => { if (data.queue) setQueue(data.queue); setQueueLoading(false); })
+      .catch(() => setQueueLoading(false));
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -57,7 +84,33 @@ export default function POSpecialistPage() {
         setUpcomingLoading(false);
       })
       .catch(() => setUpcomingLoading(false));
+    loadQueue();
   }, [user]);
+
+  async function handleSkip(id: number) {
+    if (!skipReason.trim()) return;
+    setQueueBusy(true);
+    await fetch('/api/queue', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id, action: 'skip', reason: skipReason.trim() }),
+    });
+    setSkippingId(null);
+    setSkipReason('');
+    setQueueBusy(false);
+    loadQueue();
+  }
+
+  async function handleComplete(id: number) {
+    setQueueBusy(true);
+    await fetch('/api/queue', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id, action: 'complete' }),
+    });
+    setQueueBusy(false);
+    loadQueue();
+  }
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -96,6 +149,98 @@ export default function POSpecialistPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="skeu-card" style={{ padding: '24px', marginBottom: 20 }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 4 }}>Today&apos;s Queue</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>First come, first served — patients who aren&apos;t here yet can be skipped without losing their place.</p>
+
+        {queueLoading ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Loading queue…</div>
+        ) : queue.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            No hospital appointments queued for today.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {queue.map((q, i) => (
+              <div
+                key={q.id}
+                style={{
+                  padding: '14px 16px', borderRadius: 10,
+                  border: q.is_current ? '2px solid #059669' : '1px solid var(--border-card)',
+                  background: q.is_current ? 'rgba(5,150,105,0.06)' : q.queue_skipped ? 'rgba(220,38,38,0.03)' : 'var(--bg-base)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>#{i + 1}</span>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-head)' }}>{q.patient_name}</span>
+                      {q.is_current && (
+                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: '#059669', color: '#fff', textTransform: 'uppercase' }}>Now Serving</span>
+                      )}
+                      {q.queue_skipped && !q.is_current && (
+                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 600, background: 'rgba(220,38,38,0.12)', color: '#dc2626' }}>Skipped</span>
+                      )}
+                      {!!q.patient_checked_in && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.72rem', color: '#059669' }}><UserCheck size={12} /> Checked in</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 3 }}>
+                      {q.patient_unique_id || '—'}{q.patient_phone ? ` · ${q.patient_phone}` : ''}
+                      {q.queue_skip_reason ? ` · Skipped: ${q.queue_skip_reason}` : ''}
+                    </div>
+                  </div>
+                  {q.is_current && (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => handleComplete(q.id)}
+                        disabled={queueBusy}
+                        style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                      >
+                        Seeing Patient
+                      </button>
+                      <button
+                        onClick={() => { setSkippingId(q.id); setSkipReason(''); }}
+                        disabled={queueBusy}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                      >
+                        <SkipForward size={13} /> Skip
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {skippingId === q.id && (
+                  <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <input
+                      className="skeu-input"
+                      style={{ flex: 1, minWidth: 200 }}
+                      placeholder="Reason — e.g. patient not yet here, cancelled…"
+                      value={skipReason}
+                      onChange={e => setSkipReason(e.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSkip(q.id)}
+                      disabled={queueBusy || !skipReason.trim()}
+                      style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      Confirm Skip
+                    </button>
+                    <button
+                      onClick={() => { setSkippingId(null); setSkipReason(''); }}
+                      style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border-card)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="skeu-card" style={{ padding: '24px' }}>

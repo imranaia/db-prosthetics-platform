@@ -1,9 +1,11 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Search, Upload, Trash2 } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
+import MeasurementForm from '@/components/consultation/MeasurementForm';
 import SignaturePad from '@/components/forms/SignaturePad';
 import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
@@ -311,6 +313,11 @@ export default function ConsultationsPage() {
   const [unfitNextSteps, setUnfitNextSteps] = useState('');
   const [unfitTreatment, setUnfitTreatment] = useState('');
 
+  // Once a "fit" consultation is saved, its measurement form appears inline
+  // right here (same panel) instead of navigating to a separate page.
+  const [createdConsultationId, setCreatedConsultationId] = useState<number | null>(null);
+  const [pendingThenOrder, setPendingThenOrder] = useState(false);
+
   const [physicalAssessment, setPhysicalAssessment] = useState<PhysicalAssessment>(EMPTY_PA);
   const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
   const [photos, setPhotos]       = useState<PhotoEntry[]>([]);
@@ -332,6 +339,8 @@ export default function ConsultationsPage() {
   }
 
   useEffect(() => { if (user) load(); }, [user]);
+
+  useAutoRefresh(load, 30000, !!user);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>
@@ -395,6 +404,8 @@ export default function ConsultationsPage() {
     setUnfitDiagnosis('');
     setUnfitNextSteps('');
     setUnfitTreatment('');
+    setCreatedConsultationId(null);
+    setPendingThenOrder(false);
     setError('');
     setUploadError('');
   }
@@ -459,23 +470,33 @@ export default function ConsultationsPage() {
     if (r.ok) {
       const data = await r.json() as { id?: number };
       const newId = data.id;
+      // A "fit" decision immediately shows the measurement form inline,
+      // right in this same panel — the order handoff (if a device was
+      // recommended) happens after that form is saved, not instead of it.
+      if (fitDecision === 'fit' && newId) {
+        setPendingThenOrder(goingToOrder);
+        setCreatedConsultationId(newId);
+        return;
+      }
       resetForm();
       setShowForm(false);
-      if (fitDecision === 'fit' && newId) {
-        const qs = new URLSearchParams({ consultation_id: String(newId), patient_id: form.patient_id });
-        if (goingToOrder) qs.set('then_order', '1');
-        window.location.href = `/dashboard/doctor/measurements/new?${qs.toString()}`;
-        return;
-      }
-      if (goingToOrder && newId) {
-        window.location.href = `/dashboard/doctor/orders?from_consultation=${newId}&tab=custom`;
-        return;
-      }
       load();
     } else {
       const d = await r.json() as { error?: string };
       setError(d.error || 'Failed to save consultation');
     }
+  }
+
+  function handleMeasurementSaved() {
+    if (pendingThenOrder && createdConsultationId) {
+      window.location.href = `/dashboard/doctor/orders?from_consultation=${createdConsultationId}&tab=custom`;
+      return;
+    }
+    resetForm();
+    setShowForm(false);
+    setCreatedConsultationId(null);
+    setPendingThenOrder(false);
+    load();
   }
 
   let filtered = consultations.filter(c =>
@@ -530,7 +551,24 @@ export default function ConsultationsPage() {
       </div>
 
       {/* ── Form ── */}
-      {showForm && (
+      {showForm && createdConsultationId ? (
+        <div className="inline-form-card">
+          <div style={{ borderBottom: '2px solid var(--primary)', paddingBottom: 16, marginBottom: 24 }}>
+            <h2 className="font-display" style={{ fontSize: '1.2rem', color: 'var(--text-head)', fontWeight: 600, margin: 0 }}>
+              Prosthetic Evaluation &amp; Measurement
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 4, marginBottom: 0 }}>
+              The consultation was saved as &quot;Fit for Prosthetic&quot; — fill in the measurements below to continue.
+            </p>
+          </div>
+          <MeasurementForm
+            consultationId={createdConsultationId}
+            thenOrder={pendingThenOrder}
+            onSaved={handleMeasurementSaved}
+            embedded
+          />
+        </div>
+      ) : showForm && (
         <div className="inline-form-card">
 
           {/* PDF-style form header */}
@@ -675,7 +713,7 @@ export default function ConsultationsPage() {
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10, marginTop: 0 }}>
               Click on the body diagram to mark the affected region(s). For hands/feet, select specific fingers or toes.
             </p>
-            <BodySelector value={bodyParts} onChange={setBodyParts} />
+            <BodySelector value={bodyParts} onChange={setBodyParts} category={recommendDevice ? form.category : ''} />
 
             {/* Section 3 — Physical Assessment */}
             <div style={{ marginTop: 24 }}>
@@ -895,7 +933,7 @@ export default function ConsultationsPage() {
 
               {fitDecision === 'fit' && (
                 <div style={{ padding: '12px 16px', background: 'rgba(5,150,105,0.05)', border: '1px solid rgba(5,150,105,0.15)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-body)' }}>
-                  Saving will take you to the Prosthetic Evaluation &amp; Measurement form next{recommendDevice ? ', then on to placing the order' : ''}.
+                  Saving will immediately show the Prosthetic Evaluation &amp; Measurement form below to fill in{recommendDevice ? ', then on to placing the order' : ''}.
                 </div>
               )}
 

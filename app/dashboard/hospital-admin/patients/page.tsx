@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { Users, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
 
@@ -31,8 +32,7 @@ export default function HospitalAdminPatientsPage() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
+  const load = () => {
     fetch('/api/hospital-admin/patients')
       .then(r => r.json())
       .then(data => {
@@ -40,7 +40,14 @@ export default function HospitalAdminPatientsPage() {
         setDataLoading(false);
       })
       .catch(() => setDataLoading(false));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    load();
   }, [user]);
+
+  useAutoRefresh(load, 30000, !!user);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }

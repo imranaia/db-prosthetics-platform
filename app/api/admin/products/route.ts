@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     category: string;
     type: string;
     price: number;
+    cost_price?: number;
     description: string;
     image_url?: string;
     dimensions?: string;
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     quantity?: number;
   };
 
-  const { name, category, type, price, description, image_url, dimensions, material, quantity } = body;
+  const { name, category, type, price, cost_price, description, image_url, dimensions, material, quantity } = body;
 
   if (!name || !category || !type || price == null) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -44,8 +45,8 @@ export async function POST(req: NextRequest) {
   const qty = quantity ?? 0;
   const db = getDb();
   const result = db.prepare(
-    `INSERT INTO products (name, category, type, price, description, in_stock, image_url, dimensions, material, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(name, category, type, Math.round(price * 100), description || '', qty > 0 ? 1 : 0, image_url || null, dimensions || null, material || null, qty);
+    `INSERT INTO products (name, category, type, price, cost_price, description, in_stock, image_url, dimensions, material, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(name, category, type, Math.round(price * 100), cost_price != null ? Math.round(cost_price * 100) : null, description || '', qty > 0 ? 1 : 0, image_url || null, dimensions || null, material || null, qty);
 
   return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
 }

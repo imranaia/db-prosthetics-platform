@@ -7,7 +7,7 @@ import { Package, Plus, X, Pencil, Trash2, Check, Upload, Layers } from 'lucide-
 
 interface Product {
   id: number; name: string; category: string; type: string;
-  price: number; description: string; image_url: string | null;
+  price: number; cost_price: number | null; description: string; image_url: string | null;
   dimensions: string | null; material: string | null;
   in_stock: number; quantity: number; created_at: string;
 }
@@ -19,7 +19,7 @@ interface Material {
 const CAT: Record<string, string> = { upper_limb: 'Upper Limb', lower_limb: 'Lower Limb', facial: 'Facial', spinal: 'Spinal' };
 const TYP: Record<string, string> = { complete: 'Complete Device', part: 'Part / Component' };
 
-const EMPTY_PRODUCT = { name: '', category: '', type: '', price: '', description: '', image_url: '', dimensions: '', material: '', quantity: '0' };
+const EMPTY_PRODUCT = { name: '', category: '', type: '', price: '', cost_price: '', description: '', image_url: '', dimensions: '', material: '', quantity: '0' };
 const EMPTY_MATERIAL = { name: '', description: '', in_stock: true };
 
 function fmt(kobo: number) {
@@ -37,7 +37,7 @@ export default function ProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [editId, setEditId] = useState<number | null>(null);
-  const [editRow, setEditRow] = useState<Partial<Product & { priceNaira: string; quantity: number }>>({});
+  const [editRow, setEditRow] = useState<Partial<Product & { priceNaira: string; costPriceNaira: string; quantity: number }>>({});
   const [uploadingImg, setUploadingImg] = useState(false);
   const [editUploadingImg, setEditUploadingImg] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +94,9 @@ export default function ProductsPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: form.name, category: form.category, type: form.type,
-        price: parseFloat(form.price), description: form.description,
+        price: parseFloat(form.price),
+        cost_price: form.cost_price.trim() ? parseFloat(form.cost_price) : undefined,
+        description: form.description,
         image_url: form.image_url || undefined,
         dimensions: form.dimensions || undefined,
         material: form.material || undefined,
@@ -115,7 +117,7 @@ export default function ProductsPage() {
 
   function startEdit(p: Product) {
     setEditId(p.id);
-    setEditRow({ ...p, priceNaira: (p.price / 100).toString(), quantity: p.quantity ?? 0 });
+    setEditRow({ ...p, priceNaira: (p.price / 100).toString(), costPriceNaira: p.cost_price != null ? (p.cost_price / 100).toString() : '', quantity: p.quantity ?? 0 });
   }
 
   async function saveEdit() {
@@ -124,7 +126,9 @@ export default function ProductsPage() {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: editRow.name, category: editRow.category, type: editRow.type,
-        price: parseFloat(editRow.priceNaira || '0'), description: editRow.description,
+        price: parseFloat(editRow.priceNaira || '0'),
+        cost_price: editRow.costPriceNaira?.trim() ? parseFloat(editRow.costPriceNaira) : null,
+        description: editRow.description,
         image_url: editRow.image_url ?? null,
         dimensions: editRow.dimensions, material: editRow.material,
         quantity: editRow.quantity ?? 0,
@@ -257,6 +261,11 @@ export default function ProductsPage() {
                     <input className="skeu-input" type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required placeholder="0.00" />
                   </div>
                   <div>
+                    <label className="skeu-label">Cost Price (₦)<span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 4 }}>(optional)</span></label>
+                    <input className="skeu-input" type="number" min="0" step="0.01" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} placeholder="0.00" />
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>What this actually costs you — used to calculate profit on the dashboard.</div>
+                  </div>
+                  <div>
                     <label className="skeu-label">Dimensions / Size</label>
                     <input className="skeu-input" value={form.dimensions} onChange={e => setForm({ ...form, dimensions: e.target.value })} placeholder="e.g. 28 cm, 200–300 mm" />
                   </div>
@@ -319,6 +328,7 @@ export default function ProductsPage() {
                           {Object.entries(TYP).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                         </select>
                         <input className="skeu-input" type="number" min="0" step="0.01" value={editRow.priceNaira ?? ''} onChange={e => setEditRow({ ...editRow, priceNaira: e.target.value })} style={{ fontSize: '0.82rem' }} placeholder="Price (₦)" />
+                        <input className="skeu-input" type="number" min="0" step="0.01" value={editRow.costPriceNaira ?? ''} onChange={e => setEditRow({ ...editRow, costPriceNaira: e.target.value })} style={{ fontSize: '0.82rem' }} placeholder="Cost Price (₦, optional)" />
                         <input className="skeu-input" value={editRow.dimensions ?? ''} onChange={e => setEditRow({ ...editRow, dimensions: e.target.value })} style={{ fontSize: '0.82rem' }} placeholder="Dimensions" />
                         <input className="skeu-input" value={editRow.material ?? ''} onChange={e => setEditRow({ ...editRow, material: e.target.value })} style={{ fontSize: '0.82rem' }} placeholder="Material" />
                         <input className="skeu-input" type="number" min="0" value={editRow.quantity ?? 0} onChange={e => setEditRow({ ...editRow, quantity: parseInt(e.target.value) || 0 })} style={{ fontSize: '0.82rem' }} placeholder="Units Available" />

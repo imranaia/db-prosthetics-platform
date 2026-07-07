@@ -11,6 +11,10 @@ function getHospitalId(db: ReturnType<typeof getDb>, userId: number, role: strin
     const row = db.prepare('SELECT hospital_id FROM doctors WHERE user_id = ?').get(userId) as { hospital_id: number | null } | undefined;
     return row?.hospital_id ?? undefined;
   }
+  if (role === 'po_specialist') {
+    const row = db.prepare('SELECT hospital_id FROM po_specialists WHERE user_id = ?').get(userId) as { hospital_id: number | null } | undefined;
+    return row?.hospital_id ?? undefined;
+  }
   if (role === 'receptionist') {
     const row = db.prepare('SELECT hospital_id FROM receptionists WHERE user_id = ?').get(userId) as { hospital_id: number } | undefined;
     return row?.hospital_id;
@@ -18,7 +22,7 @@ function getHospitalId(db: ReturnType<typeof getDb>, userId: number, role: strin
   return undefined;
 }
 
-const ALLOWED_ROLES = ['doctor', 'receptionist', 'hospital_admin'];
+const ALLOWED_ROLES = ['doctor', 'po_specialist', 'receptionist', 'hospital_admin'];
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -85,16 +89,16 @@ export async function PATCH(req: NextRequest) {
     }
     db.prepare('UPDATE appointments SET patient_checked_in = 1, queue_skipped = 0, queue_skip_reason = NULL WHERE id = ?').run(appointment_id);
   } else if (action === 'skip') {
-    // Doctor/hospital admin: patient isn't available right now — keep their
-    // place in line, just don't block on them.
-    if (user.role !== 'doctor' && user.role !== 'hospital_admin') {
-      return NextResponse.json({ error: 'Only the doctor can skip the current patient.' }, { status: 403 });
+    // Doctor/P&O specialist/hospital admin: patient isn't available right
+    // now — keep their place in line, just don't block on them.
+    if (user.role !== 'doctor' && user.role !== 'po_specialist' && user.role !== 'hospital_admin') {
+      return NextResponse.json({ error: 'Only the practitioner can skip the current patient.' }, { status: 403 });
     }
     if (!reason?.trim()) return NextResponse.json({ error: 'A reason is required to skip a patient.' }, { status: 400 });
     db.prepare('UPDATE appointments SET queue_skipped = 1, queue_skip_reason = ? WHERE id = ?').run(reason.trim(), appointment_id);
   } else if (action === 'complete') {
-    if (user.role !== 'doctor' && user.role !== 'hospital_admin') {
-      return NextResponse.json({ error: 'Only the doctor can complete this appointment.' }, { status: 403 });
+    if (user.role !== 'doctor' && user.role !== 'po_specialist' && user.role !== 'hospital_admin') {
+      return NextResponse.json({ error: 'Only the practitioner can complete this appointment.' }, { status: 403 });
     }
     db.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?").run(appointment_id);
   } else {

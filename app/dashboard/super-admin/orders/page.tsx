@@ -5,6 +5,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { ShoppingCart, Package } from 'lucide-react';
+import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
 
 interface OrderItem { product_name: string; quantity: number; price_at_order: number; }
 interface Order {
@@ -22,6 +23,7 @@ interface CustomOrder {
   doctor_email: string | null;
   po_specialist_email: string | null;
   category: string | null;
+  body_parts: string | null;
   description: string;
   status: string;
   quoted_price: number | null;
@@ -86,6 +88,7 @@ export default function OrdersPage() {
   const [quoteAmount, setQuoteAmount] = useState('');
   const [quoteNotes, setQuoteNotes] = useState('');
   const [quoting, setQuoting] = useState(false);
+  const [diagramOpenId, setDiagramOpenId] = useState<number | null>(null);
   const { confirm, dialog } = useConfirmDialog();
 
   async function loadOrders() {
@@ -288,6 +291,26 @@ export default function OrdersPage() {
                   </div>
 
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.5, marginBottom: 10 }}>{o.description}</div>
+
+                  {o.body_parts && (
+                    <div style={{ marginBottom: 10 }}>
+                      <button
+                        onClick={() => setDiagramOpenId(diagramOpenId === o.id ? null : o.id)}
+                        style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.05)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600 }}
+                      >
+                        {diagramOpenId === o.id ? 'Hide Diagram' : 'View Affected Area Diagram'}
+                      </button>
+                      {diagramOpenId === o.id && (() => {
+                        let parts: BodyPart[] = [];
+                        try { parts = JSON.parse(o.body_parts!); } catch { parts = []; }
+                        return (
+                          <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: 'rgba(27,61,94,0.03)', border: '1px solid var(--border-card)' }}>
+                            <BodySelector value={parts} onChange={() => {}} category={o.category || ''} readOnly />
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
 
                   {o.admin_notes && (
                     <div style={{ marginBottom: 10, padding: '8px 10px', background: 'rgba(27,61,94,0.04)', borderRadius: 8 }}>
