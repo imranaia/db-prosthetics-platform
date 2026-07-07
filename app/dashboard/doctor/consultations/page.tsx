@@ -595,8 +595,8 @@ export default function DoctorConsultationsPage() {
             </p>
             {/* No category restriction here — this records the patient's
                 actual affected area (an independent clinical fact), not
-                "what the device order is for". Category is chosen later in
-                Section 6, and shouldn't retroactively clear this. */}
+                "what the device order is for", so it shouldn't be cleared
+                just because Device Category (above) changes. */}
             <BodySelector value={bodyParts} onChange={setBodyParts} />
 
             {/* Section 3 — Physical Assessment */}
