@@ -93,8 +93,10 @@ const REGIONS: Region3D[] = [
 
 const GOLD = '#d08c2a';
 const GOLD_STROKE = '#b5751f';
-const BLUE = '#254f7a';
-const BLUE_HOVER = '#3d6a9e';
+// Bone/ivory tones — reads as an anatomical reference (per the ISPO-style
+// technical cards in consul/) rather than a flat schematic color block.
+const BONE = '#ddd0b0';
+const BONE_HOVER = '#e8dcb8';
 
 function RegionMesh({
   def, selected, hovered, onClick, onOver, onOut,
@@ -104,17 +106,19 @@ function RegionMesh({
   onOver: (e: ThreeEvent<PointerEvent>) => void;
   onOut: (e: ThreeEvent<PointerEvent>) => void;
 }) {
-  const color = selected ? GOLD : hovered ? BLUE_HOVER : BLUE;
+  const color = selected ? GOLD : hovered ? BONE_HOVER : BONE;
   const emissive = selected ? GOLD_STROKE : '#000000';
   const s = def.shape;
+  // Bone is a matte, slightly chalky material — no shine, no metalness.
+  const matProps = { color, emissive, emissiveIntensity: selected ? 0.35 : 0, roughness: 0.85, metalness: 0 };
 
   const common = { onClick, onPointerOver: onOver, onPointerOut: onOut };
 
   if (s.kind === 'sphere') {
     return (
       <mesh position={s.center} {...common}>
-        <sphereGeometry args={[s.r, 20, 16]} />
-        <meshStandardMaterial color={color} emissive={emissive} emissiveIntensity={0.3} roughness={0.5} />
+        <sphereGeometry args={[s.r, 24, 18]} />
+        <meshStandardMaterial {...matProps} />
       </mesh>
     );
   }
@@ -122,7 +126,7 @@ function RegionMesh({
     return (
       <mesh position={s.center} {...common}>
         <boxGeometry args={s.size} />
-        <meshStandardMaterial color={color} emissive={emissive} emissiveIntensity={0.3} roughness={0.5} />
+        <meshStandardMaterial {...matProps} />
       </mesh>
     );
   }
@@ -131,8 +135,8 @@ function RegionMesh({
     const height = shaftHeight(s.top, s.bottom);
     return (
       <mesh position={mid} {...common}>
-        <cylinderGeometry args={[s.rTop, s.rBottom, height, 20]} />
-        <meshStandardMaterial color={color} emissive={emissive} emissiveIntensity={0.3} roughness={0.5} />
+        <cylinderGeometry args={[s.rTop, s.rBottom, height, 24]} />
+        <meshStandardMaterial {...matProps} />
       </mesh>
     );
   }
@@ -146,8 +150,8 @@ function RegionMesh({
     <group {...common}>
       {lengths.map((len, i) => (
         <mesh key={i} position={[startX + step * i, s.center[1] - len / 2, s.center[2]]}>
-          <cylinderGeometry args={[thickness, thickness * 0.8, len, 10]} />
-          <meshStandardMaterial color={color} emissive={emissive} emissiveIntensity={0.3} roughness={0.5} />
+          <cylinderGeometry args={[thickness, thickness * 0.8, len, 12]} />
+          <meshStandardMaterial {...matProps} />
         </mesh>
       ))}
     </group>
@@ -164,14 +168,16 @@ function Figure({
 }) {
   return (
     <group>
-      {/* Static head + torso for context — not clickable */}
+      {/* Static head + torso for context — not clickable. A muted, cooler
+          tone than the bone-colored limbs so it reads as backdrop, not
+          another selectable piece. */}
       <mesh position={toScene(110, 30, 0)}>
-        <sphereGeometry args={[0.5, 20, 16]} />
-        <meshStandardMaterial color="#dbe4ee" roughness={0.7} />
+        <sphereGeometry args={[0.5, 24, 18]} />
+        <meshStandardMaterial color="#cbc3b4" roughness={0.9} metalness={0} />
       </mesh>
       <mesh position={toScene(110, 120, 0)} scale={[1, 1.55, 0.6]}>
-        <sphereGeometry args={[0.95, 20, 16]} />
-        <meshStandardMaterial color="#dbe4ee" roughness={0.7} />
+        <sphereGeometry args={[0.95, 24, 18]} />
+        <meshStandardMaterial color="#cbc3b4" roughness={0.9} metalness={0} />
       </mesh>
 
       {REGIONS.map(def => (
@@ -221,11 +227,11 @@ export default function BodySelector3D({ value, onChange }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-      <div style={{ width: '100%', maxWidth: 360, height: 420, borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(180deg, #eef2f7 0%, #dde5ee 100%)', border: '1px solid var(--border-card, #e2e8f0)' }}>
+      <div style={{ width: '100%', maxWidth: 360, height: 420, borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(180deg, #f5f2ea 0%, #e9e2d2 100%)', border: '1px solid var(--border-card, #e2e8f0)' }}>
         <Canvas camera={{ position: [0, 0, 9], fov: 40 }}>
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[3, 5, 4]} intensity={0.9} />
-          <directionalLight position={[-3, -2, -4]} intensity={0.25} />
+          <ambientLight intensity={0.75} />
+          <directionalLight position={[3, 5, 4]} intensity={0.85} color="#fff6e8" />
+          <directionalLight position={[-3, -2, -4]} intensity={0.3} color="#e8eef5" />
           <Figure selectedMap={selectedMap} hovered={hovered} onToggle={toggleRegion} setHovered={setHovered} />
           <OrbitControls enablePan={false} minDistance={5} maxDistance={14} />
         </Canvas>
