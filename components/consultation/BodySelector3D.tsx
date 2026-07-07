@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import { DoubleSide, Vector2 } from 'three';
 import type { BodyPart } from './BodySelector';
 
 interface Props {
@@ -20,9 +21,11 @@ interface Props {
    Coordinates are converted from the 2D SVG layout (viewBox 0 0 220 430)
    onto a centered 3D scene: x/y are re-centered and scaled down, y is
    flipped (SVG y grows downward, Three.js y grows upward). Limb segments
-   are simple tapered cylinders (different top/bottom radius, no capsule
-   rounding) with a sphere at each joint — deliberately primitive geometry,
-   not an imported/rigged mesh, to keep the scene light on low-end phones.
+   are lathe-revolved "long bone" profiles — wide at both joint ends,
+   narrow at the midshaft, per the actual silhouette of a femur/tibia/
+   humerus in the ISPO technical-card references (docs/) — with a sphere
+   at each joint. Still procedural geometry, not an imported/rigged mesh,
+   to keep the scene light on low-end phones.
 */
 const SCALE = 0.024;
 function toScene(xSvg: number, ySvg: number, z = 0): [number, number, number] {
@@ -41,51 +44,65 @@ interface Region3D {
   multiSubParts?: boolean;
   shape:
     | { kind: 'sphere'; center: [number, number, number]; r: number }
-    | { kind: 'shaft'; top: [number, number, number]; bottom: [number, number, number]; rTop: number; rBottom: number }
+    // A long-bone shaft: widest at both joint ends, narrowest at the
+    // midshaft — the actual silhouette of a femur/tibia/humerus (per the
+    // ISPO technical-card illustrations in docs/), not a straight taper.
+    | { kind: 'shaft'; top: [number, number, number]; bottom: [number, number, number]; rTop: number; rMid: number; rBottom: number }
     | { kind: 'box'; center: [number, number, number]; size: [number, number, number] }
     | { kind: 'digits'; center: [number, number, number]; spread: number; digitKind: 'hand' | 'foot' };
 }
 
-function shaftMid(top: [number, number, number], bottom: [number, number, number]): [number, number, number] {
-  return [(top[0] + bottom[0]) / 2, (top[1] + bottom[1]) / 2, (top[2] + bottom[2]) / 2];
-}
 function shaftHeight(top: [number, number, number], bottom: [number, number, number]): number {
   return Math.hypot(top[0] - bottom[0], top[1] - bottom[1], top[2] - bottom[2]);
+}
+
+// Lathe profile for a long-bone shaft, revolved around the vertical axis:
+// flares out toward each joint end, pinches in around the midshaft, with a
+// few extra points near each end so the flare reads as a curve, not a kink.
+function boneProfile(height: number, rBottom: number, rMid: number, rTop: number): Vector2[] {
+  const stops: Array<[number, number]> = [
+    [0, rBottom],
+    [0.16, rBottom * 0.8],
+    [0.5, rMid],
+    [0.84, rTop * 0.8],
+    [1, rTop],
+  ];
+  return stops.map(([t, r]) => new Vector2(Math.max(r, 0.01), t * height));
 }
 
 const REGIONS: Region3D[] = [
   { region: 'right_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(62, 68, 0.15), r: 0.28 } },
   { region: 'right_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(53, 89, 0.15), r: 0.42 } },
-  { region: 'right_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(51, 90, 0.15), bottom: toScene(51, 136, 0.15), rTop: 0.42, rBottom: 0.28 } },
+  { region: 'right_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(51, 90, 0.15), bottom: toScene(51, 136, 0.15), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
   { region: 'right_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(51, 141, 0.15), r: 0.32 } },
-  { region: 'right_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(51, 152, 0.15), bottom: toScene(51, 198, 0.15), rTop: 0.36, rBottom: 0.22 } },
+  { region: 'right_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(51, 152, 0.15), bottom: toScene(51, 198, 0.15), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
   { region: 'right_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(51, 202, 0.15), r: 0.24 } },
   { region: 'right_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(51, 223, 0.15), size: [0.86, 0.62, 0.3] } },
   { region: 'right_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(51, 240, 0.15), spread: 0.8, digitKind: 'hand' } },
 
   { region: 'right_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(85, 176, 0.05), r: 0.3 } },
   { region: 'right_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(90, 201, 0.05), r: 0.42 } },
-  { region: 'right_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(90, 217, 0.05), bottom: toScene(90, 285, 0.05), rTop: 0.44, rBottom: 0.3 } },
+  { region: 'right_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(90, 217, 0.05), bottom: toScene(90, 285, 0.05), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
   { region: 'right_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 289, 0.05), r: 0.4 } },
-  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(90, 301, 0.05), bottom: toScene(90, 364, 0.05), rTop: 0.36, rBottom: 0.22 } },
+  { region: 'right_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(90, 301, 0.05), bottom: toScene(90, 364, 0.05), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
   { region: 'right_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(90, 368, 0.05), r: 0.3 } },
   { region: 'right_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(88, 391, 0.1), size: [1.1, 0.5, 0.4] } },
   { region: 'right_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(88, 407, 0.1), spread: 1.1, digitKind: 'foot' } },
 
   { region: 'left_forequarter', label: 'Forequarter', shape: { kind: 'sphere', center: toScene(158, 68, 0.15), r: 0.28 } },
   { region: 'left_shoulder_disarticulation', label: 'Shoulder Disarticulation', shape: { kind: 'sphere', center: toScene(167, 89, 0.15), r: 0.42 } },
-  { region: 'left_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(169, 90, 0.15), bottom: toScene(169, 136, 0.15), rTop: 0.42, rBottom: 0.28 } },
+  { region: 'left_above_elbow', label: 'Above Elbow (Transhumeral)', shape: { kind: 'shaft', top: toScene(169, 90, 0.15), bottom: toScene(169, 136, 0.15), rTop: 0.42, rMid: 0.17, rBottom: 0.28 } },
   { region: 'left_elbow_disarticulation', label: 'Elbow Disarticulation', shape: { kind: 'sphere', center: toScene(169, 141, 0.15), r: 0.32 } },
-  { region: 'left_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(169, 152, 0.15), bottom: toScene(169, 198, 0.15), rTop: 0.36, rBottom: 0.22 } },
+  { region: 'left_below_elbow', label: 'Below Elbow (Transradial)', shape: { kind: 'shaft', top: toScene(169, 152, 0.15), bottom: toScene(169, 198, 0.15), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
   { region: 'left_hand_wrist_disarticulation', label: 'Hand and Wrist Disarticulation', shape: { kind: 'sphere', center: toScene(169, 202, 0.15), r: 0.24 } },
   { region: 'left_partial_hand', label: 'Partial Hand (transcarpal)', shape: { kind: 'box', center: toScene(169, 223, 0.15), size: [0.86, 0.62, 0.3] } },
   { region: 'left_finger_amputation', label: 'Finger Amputation', subPartOptions: HAND_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(169, 240, 0.15), spread: 0.8, digitKind: 'hand' } },
 
   { region: 'left_hemipelvectomy', label: 'Hemipelvectomy', shape: { kind: 'sphere', center: toScene(135, 176, 0.05), r: 0.3 } },
   { region: 'left_hip_disarticulation', label: 'Hip Disarticulation', shape: { kind: 'sphere', center: toScene(130, 201, 0.05), r: 0.42 } },
-  { region: 'left_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(130, 217, 0.05), bottom: toScene(130, 285, 0.05), rTop: 0.44, rBottom: 0.3 } },
+  { region: 'left_above_knee', label: 'Above Knee (Transfemoral)', shape: { kind: 'shaft', top: toScene(130, 217, 0.05), bottom: toScene(130, 285, 0.05), rTop: 0.44, rMid: 0.18, rBottom: 0.3 } },
   { region: 'left_knee_disarticulation', label: 'Knee Disarticulation', subPartOptions: KNEE_DISARTICULATION_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 289, 0.05), r: 0.4 } },
-  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(130, 301, 0.05), bottom: toScene(130, 364, 0.05), rTop: 0.36, rBottom: 0.22 } },
+  { region: 'left_below_knee', label: 'Below Knee (Transtibial)', shape: { kind: 'shaft', top: toScene(130, 301, 0.05), bottom: toScene(130, 364, 0.05), rTop: 0.36, rMid: 0.13, rBottom: 0.22 } },
   { region: 'left_ankle_level', label: "Ankle Disarticulation / Syme's", subPartOptions: ANKLE_LEVEL_OPTIONS, shape: { kind: 'sphere', center: toScene(130, 368, 0.05), r: 0.3 } },
   { region: 'left_partial_foot', label: 'Partial Foot (e.g. Chopart)', shape: { kind: 'box', center: toScene(132, 391, 0.1), size: [1.1, 0.5, 0.4] } },
   { region: 'left_toe_amputation', label: 'Toe Amputation', subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, shape: { kind: 'digits', center: toScene(132, 407, 0.1), spread: 1.1, digitKind: 'foot' } },
@@ -131,12 +148,12 @@ function RegionMesh({
     );
   }
   if (s.kind === 'shaft') {
-    const mid = shaftMid(s.top, s.bottom);
     const height = shaftHeight(s.top, s.bottom);
+    const points = boneProfile(height, s.rBottom, s.rMid, s.rTop);
     return (
-      <mesh position={mid} {...common}>
-        <cylinderGeometry args={[s.rTop, s.rBottom, height, 24]} />
-        <meshStandardMaterial {...matProps} />
+      <mesh position={s.bottom} {...common}>
+        <latheGeometry args={[points, 20]} />
+        <meshStandardMaterial {...matProps} side={DoubleSide} />
       </mesh>
     );
   }
