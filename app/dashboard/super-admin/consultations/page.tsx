@@ -5,7 +5,7 @@ import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Search, Upload, Trash2 } from 'lucide-react';
 import BodySelector, { BodyPart } from '@/components/consultation/BodySelector';
-import MeasurementForm from '@/components/consultation/MeasurementForm';
+import MeasurementFields, { INITIAL_MEASUREMENT_FORM, type MeasurementFormValues } from '@/components/consultation/MeasurementFields';
 import SignaturePad from '@/components/forms/SignaturePad';
 import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
@@ -313,10 +313,13 @@ export default function ConsultationsPage() {
   const [unfitNextSteps, setUnfitNextSteps] = useState('');
   const [unfitTreatment, setUnfitTreatment] = useState('');
 
-  // Once a "fit" consultation is saved, its measurement form appears inline
-  // right here (same panel) instead of navigating to a separate page.
-  const [createdConsultationId, setCreatedConsultationId] = useState<number | null>(null);
-  const [pendingThenOrder, setPendingThenOrder] = useState(false);
+  // Choosing "Fit for Prosthetic" immediately reveals the measurement
+  // fields right here (mirroring how "Not Fit" immediately reveals its own
+  // fields) — both the consultation and the measurement save together in
+  // one Save Assessment click, not as a separate step after the fact.
+  const [measurementForm, setMeasurementForm] = useState<MeasurementFormValues>(INITIAL_MEASUREMENT_FORM);
+  const [measurementDrawing, setMeasurementDrawing] = useState<string | null>(null);
+  const [measurementSignature, setMeasurementSignature] = useState<string | null>(null);
 
   const [physicalAssessment, setPhysicalAssessment] = useState<PhysicalAssessment>(EMPTY_PA);
   const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
@@ -404,8 +407,9 @@ export default function ConsultationsPage() {
     setUnfitDiagnosis('');
     setUnfitNextSteps('');
     setUnfitTreatment('');
-    setCreatedConsultationId(null);
-    setPendingThenOrder(false);
+    setMeasurementForm(INITIAL_MEASUREMENT_FORM);
+    setMeasurementDrawing(null);
+    setMeasurementSignature(null);
     setError('');
     setUploadError('');
   }
@@ -417,6 +421,10 @@ export default function ConsultationsPage() {
     if (!form.patient_id) { setError('Please select a patient.'); return; }
     if (!fitDecision) { setError('Please record whether the patient is fit for a prosthetic before saving.'); return; }
     if (fitDecision === 'not_fit' && !unfitDiagnosis.trim()) { setError('Please give a diagnosis/reason for the not-fit decision.'); return; }
+    if (fitDecision === 'fit' && measurementForm.cause_of_limb_loss === 'other' && !measurementForm.cause_other_detail.trim()) {
+      setError('Please describe the cause of limb loss.');
+      return;
+    }
 
     // A patient marked "not fit" shouldn't get a device order.
     const goingToOrder = fitDecision === 'fit' && recommendDevice;
@@ -465,37 +473,67 @@ export default function ConsultationsPage() {
       }),
     });
 
-    setSubmitting(false);
+    if (!r.ok) {
+      setSubmitting(false);
+      const d = await r.json() as { error?: string };
+      setError(d.error || 'Failed to save consultation');
+      return;
+    }
+    const data = await r.json() as { id?: number };
+    const newId = data.id;
 
-    if (r.ok) {
-      const data = await r.json() as { id?: number };
-      const newId = data.id;
-      // A "fit" decision immediately shows the measurement form inline,
-      // right in this same panel — the order handoff (if a device was
-      // recommended) happens after that form is saved, not instead of it.
-      if (fitDecision === 'fit' && newId) {
-        setPendingThenOrder(goingToOrder);
-        setCreatedConsultationId(newId);
+    // A "fit" decision saves the measurement fields right along with the
+    // consultation, in this same submit — the fields were already visible
+    // inline, not a separate step the user has to come back for.
+    if (fitDecision === 'fit' && newId) {
+      const num = (v: string) => (v.trim() ? parseFloat(v) : null);
+      const measurementRes = await fetch('/api/doctor/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consultation_id: newId,
+          patient_id: parseInt(form.patient_id),
+          amputation_date: measurementForm.amputation_date || null,
+          cause_of_limb_loss: measurementForm.cause_of_limb_loss || null,
+          cause_other_detail: measurementForm.cause_other_detail || null,
+          limb_shape_profile: measurementForm.limb_shape_profile || null,
+          residual_limb_length_cm: num(measurementForm.residual_limb_length_cm),
+          sound_limb_length_cm: num(measurementForm.sound_limb_length_cm),
+          circumference_joint_line_cm: num(measurementForm.circumference_joint_line_cm),
+          circumference_interval_1_cm: num(measurementForm.circumference_interval_1_cm),
+          circumference_interval_2_cm: num(measurementForm.circumference_interval_2_cm),
+          circumference_interval_3_cm: num(measurementForm.circumference_interval_3_cm),
+          circumference_interval_4_cm: num(measurementForm.circumference_interval_4_cm),
+          circumference_interval_5_cm: num(measurementForm.circumference_interval_5_cm),
+          circumference_interval_6_cm: num(measurementForm.circumference_interval_6_cm),
+          circumference_distal_end_cm: num(measurementForm.circumference_distal_end_cm),
+          limb_shape_drawing: measurementDrawing,
+          k_level: measurementForm.k_level || null,
+          lifestyle_goals: measurementForm.lifestyle_goals || null,
+          field_notes: measurementForm.field_notes || null,
+          clinician_name: measurementForm.clinician_name || form.assessor_name || null,
+          clinician_signature: measurementSignature,
+        }),
+      });
+      setSubmitting(false);
+      if (!measurementRes.ok) {
+        const d = await measurementRes.json() as { error?: string };
+        setError(d.error || 'Consultation was saved, but the measurement failed to save — please try saving again.');
+        return;
+      }
+      if (goingToOrder) {
+        window.location.href = `/dashboard/doctor/orders?from_consultation=${newId}&tab=custom`;
         return;
       }
       resetForm();
       setShowForm(false);
       load();
-    } else {
-      const d = await r.json() as { error?: string };
-      setError(d.error || 'Failed to save consultation');
-    }
-  }
-
-  function handleMeasurementSaved() {
-    if (pendingThenOrder && createdConsultationId) {
-      window.location.href = `/dashboard/doctor/orders?from_consultation=${createdConsultationId}&tab=custom`;
       return;
     }
+
+    setSubmitting(false);
     resetForm();
     setShowForm(false);
-    setCreatedConsultationId(null);
-    setPendingThenOrder(false);
     load();
   }
 
@@ -551,24 +589,7 @@ export default function ConsultationsPage() {
       </div>
 
       {/* ── Form ── */}
-      {showForm && createdConsultationId ? (
-        <div className="inline-form-card">
-          <div style={{ borderBottom: '2px solid var(--primary)', paddingBottom: 16, marginBottom: 24 }}>
-            <h2 className="font-display" style={{ fontSize: '1.2rem', color: 'var(--text-head)', fontWeight: 600, margin: 0 }}>
-              Prosthetic Evaluation &amp; Measurement
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 4, marginBottom: 0 }}>
-              The consultation was saved as &quot;Fit for Prosthetic&quot; — fill in the measurements below to continue.
-            </p>
-          </div>
-          <MeasurementForm
-            consultationId={createdConsultationId}
-            thenOrder={pendingThenOrder}
-            onSaved={handleMeasurementSaved}
-            embedded
-          />
-        </div>
-      ) : showForm && (
+      {showForm && (
         <div className="inline-form-card">
 
           {/* PDF-style form header */}
@@ -936,8 +957,21 @@ export default function ConsultationsPage() {
               </div>
 
               {fitDecision === 'fit' && (
-                <div style={{ padding: '12px 16px', background: 'rgba(5,150,105,0.05)', border: '1px solid rgba(5,150,105,0.15)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-body)' }}>
-                  Saving will immediately show the Prosthetic Evaluation &amp; Measurement form below to fill in{recommendDevice ? ', then on to placing the order' : ''}.
+                <div style={{ padding: '16px', background: 'rgba(5,150,105,0.05)', border: '1px solid rgba(5,150,105,0.15)', borderRadius: 8 }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginBottom: 16 }}>
+                    Fill in the prosthetic measurements below — Save Assessment will record the consultation and these measurements together{recommendDevice ? ', then take you to placing the order' : ''}.
+                  </div>
+                  <MeasurementFields
+                    value={measurementForm}
+                    onChange={setMeasurementForm}
+                    drawing={measurementDrawing}
+                    onDrawingChange={setMeasurementDrawing}
+                    clinicianSignature={measurementSignature}
+                    onClinicianSignatureChange={setMeasurementSignature}
+                    bodyParts={bodyParts}
+                    startSectionNumber={7}
+                    skipOverviewSections
+                  />
                 </div>
               )}
 
@@ -959,8 +993,10 @@ export default function ConsultationsPage() {
               )}
             </div>
 
-            {/* Signatures & Consent */}
-            <SectionHeader number="7" title="Signatures & Consent" />
+            {/* Signatures & Consent — numbering shifts when the measurement
+                fields above are showing (Sections 7-9), since they only
+                appear once "Fit for Prosthetic" is selected. */}
+            <SectionHeader number={fitDecision === 'fit' ? '10' : '7'} title="Signatures & Consent" />
             <div style={{ marginBottom: 14, padding: '14px 16px', background: 'rgba(37,79,122,0.05)', borderRadius: 8, border: '1px solid rgba(37,79,122,0.12)', fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
               By signing below, the Patient / Guardian consents to the fabrication and fitting of artificial limb(s) by DB Prosthetics and Orthotics Ltd, as per the Consent Form for Fabrication and Fitting of Artificial Limbs. Patient has been informed of the process, risks, and benefits.
             </div>
@@ -978,7 +1014,7 @@ export default function ConsultationsPage() {
             {/* Submit */}
             <div style={{ display: 'flex', gap: '12px' }}>
               <button className="skeu-btn-primary" type="submit" disabled={submitting} style={{ padding: '10px 24px' }}>
-                {submitting ? 'Saving…' : 'Save Assessment'}
+                {submitting ? 'Saving…' : fitDecision === 'fit' && recommendDevice ? 'Save & Continue to Order' : 'Save Assessment'}
               </button>
               <button
                 type="button"
