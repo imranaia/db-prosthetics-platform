@@ -163,20 +163,63 @@ function RegionMesh({
       </mesh>
     );
   }
-  // digits — a small fan of thin cylinders, one clickable group
+  // digits — a hand/foot with an angled, offset thumb (or big toe) and
+  // tapered, jointed fingers/toes (two phalanges + a knuckle each),
+  // reading as an actual hand/foot rather than a flat fan of pegs. The
+  // outermost slot is always the thumb/big toe — see
+  // docs/DB_Prosthetics_Body_Model_Reference.jpg, the sculpt reference
+  // this shape was built against.
+  const isHand = s.digitKind === 'hand';
   const count = 5;
-  const lengths = s.digitKind === 'hand' ? [0.22, 0.32, 0.38, 0.32, 0.24] : [0.16, 0.2, 0.22, 0.18, 0.14];
-  const thickness = s.digitKind === 'hand' ? 0.09 : 0.11;
   const startX = s.center[0] - s.spread / 2;
   const step = s.spread / (count - 1);
+  const digitLengths = isHand ? [0.22, 0.28, 0.36, 0.3, 0.22] : [0.15, 0.2, 0.19, 0.16, 0.12];
+  const thick = isHand ? 0.075 : 0.1;
+
   return (
     <group {...common}>
-      {lengths.map((len, i) => (
-        <mesh key={i} position={[startX + step * i, s.center[1] - len / 2, s.center[2]]}>
-          <cylinderGeometry args={[thickness, thickness * 0.8, len, 12]} />
-          <meshStandardMaterial {...matProps} />
-        </mesh>
-      ))}
+      {digitLengths.map((len, i) => {
+        const x = startX + step * i;
+        if (i === 0) {
+          // Thumb / big toe — thicker, shorter, one segment, angled out
+          // and down so it reads as opposable rather than a sixth finger.
+          const bigThick = thick * 1.35;
+          return (
+            <group key={i} position={[x, s.center[1] - 0.04, s.center[2]]} rotation={[0, 0, isHand ? 0.55 : 0.3]}>
+              <mesh position={[0, -len / 2, 0]}>
+                <cylinderGeometry args={[bigThick * 0.85, bigThick, len, 10]} />
+                <meshStandardMaterial {...matProps} />
+              </mesh>
+              <mesh position={[0, -len, 0]}>
+                <sphereGeometry args={[bigThick * 0.62, 10, 8]} />
+                <meshStandardMaterial {...matProps} />
+              </mesh>
+            </group>
+          );
+        }
+        const proximal = len * 0.56;
+        const distal = len * 0.44;
+        return (
+          <group key={i} position={[x, s.center[1], s.center[2]]}>
+            <mesh position={[0, -proximal / 2, 0]}>
+              <cylinderGeometry args={[thick * 0.82, thick, proximal, 10]} />
+              <meshStandardMaterial {...matProps} />
+            </mesh>
+            <mesh position={[0, -proximal, 0]}>
+              <sphereGeometry args={[thick * 0.66, 10, 8]} />
+              <meshStandardMaterial {...matProps} />
+            </mesh>
+            <mesh position={[0, -proximal - distal / 2, 0]}>
+              <cylinderGeometry args={[thick * 0.52, thick * 0.8, distal, 10]} />
+              <meshStandardMaterial {...matProps} />
+            </mesh>
+            <mesh position={[0, -proximal - distal, 0]}>
+              <sphereGeometry args={[thick * 0.46, 10, 8]} />
+              <meshStandardMaterial {...matProps} />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
