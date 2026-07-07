@@ -345,6 +345,60 @@ export default function ConsultationsPage() {
 
   useAutoRefresh(load, 30000, !!user);
 
+  // Draft persistence — so navigating away mid-consultation and coming
+  // back doesn't lose everything already filled in. Restore happens once
+  // on mount; the draft is only (re)written once that restore has settled,
+  // so the initial empty state can't race ahead and clobber a real draft.
+  const DRAFT_KEY = 'draft:super-admin-consultation';
+  const [draftHydrated, setDraftHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.showForm) setShowForm(true);
+        if (d.form) setForm(d.form);
+        if (d.recommendDevice !== undefined) setRecommendDevice(d.recommendDevice);
+        if (d.assessorSignature !== undefined) setAssessorSignature(d.assessorSignature);
+        if (d.patientSignature !== undefined) setPatientSignature(d.patientSignature);
+        if (d.fitDecision !== undefined) setFitDecision(d.fitDecision);
+        if (d.unfitDiagnosis !== undefined) setUnfitDiagnosis(d.unfitDiagnosis);
+        if (d.unfitNextSteps !== undefined) setUnfitNextSteps(d.unfitNextSteps);
+        if (d.unfitTreatment !== undefined) setUnfitTreatment(d.unfitTreatment);
+        if (d.measurementForm) setMeasurementForm(d.measurementForm);
+        if (d.measurementDrawing !== undefined) setMeasurementDrawing(d.measurementDrawing);
+        if (d.measurementSignature !== undefined) setMeasurementSignature(d.measurementSignature);
+        if (d.physicalAssessment) setPhysicalAssessment(d.physicalAssessment);
+        if (d.bodyParts) setBodyParts(d.bodyParts);
+        if (d.photos) setPhotos(d.photos);
+      }
+    } catch { /* ignore corrupt/unavailable storage */ }
+    setDraftHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draftHydrated) return;
+    // Don't bother persisting a totally empty/untouched form.
+    const isEmpty = !showForm && !form.patient_id && bodyParts.length === 0 && photos.length === 0 && !fitDecision;
+    if (isEmpty) {
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* unavailable */ }
+      return;
+    }
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        showForm, form, recommendDevice, assessorSignature, patientSignature,
+        fitDecision, unfitDiagnosis, unfitNextSteps, unfitTreatment,
+        measurementForm, measurementDrawing, measurementSignature,
+        physicalAssessment, bodyParts, photos,
+      }));
+    } catch { /* storage full/unavailable */ }
+  }, [draftHydrated, showForm, form, recommendDevice, assessorSignature, patientSignature, fitDecision, unfitDiagnosis, unfitNextSteps, unfitTreatment, measurementForm, measurementDrawing, measurementSignature, physicalAssessment, bodyParts, photos]);
+
+  function clearDraft() {
+    try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* unavailable */ }
+  }
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>
   );
@@ -412,6 +466,7 @@ export default function ConsultationsPage() {
     setMeasurementSignature(null);
     setError('');
     setUploadError('');
+    clearDraft();
   }
 
   async function handleSubmit(e: React.FormEvent) {
