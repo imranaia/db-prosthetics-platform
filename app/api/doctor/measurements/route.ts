@@ -79,6 +79,10 @@ export async function POST(req: NextRequest) {
     heel_height_cm?: number | null;
     socket_ap_width_cm?: number | null;
     socket_ml_width_cm?: number | null;
+    rom_flexion_deg?: number | null;
+    rom_extension_deg?: number | null;
+    rom_abduction_deg?: number | null;
+    rom_adduction_deg?: number | null;
     partial_foot_level?: string | null;
     foot_length_cm?: number | null;
     foot_width_cm?: number | null;
@@ -121,13 +125,14 @@ export async function POST(req: NextRequest) {
       circumference_interval_3_cm, circumference_interval_4_cm, circumference_interval_5_cm,
       circumference_interval_6_cm, circumference_distal_end_cm, limb_shape_drawing,
       footwear_type, heel_height_cm, socket_ap_width_cm, socket_ml_width_cm,
+      rom_flexion_deg, rom_extension_deg, rom_abduction_deg, rom_adduction_deg,
       partial_foot_level, foot_length_cm, foot_width_cm,
       afo_ankle_joint_type, afo_ankle_joint_other, afo_functions, shoe_modification,
       segment_length_proximal_cm, segment_length_distal_cm, segment_length_terminal_cm,
       limb_ap_width_cm, limb_ml_width_cm,
       trunk_circumference_1_cm, trunk_circumference_2_cm, trunk_circumference_3_cm, trunk_circumference_4_cm,
       k_level, lifestyle_goals, field_notes, clinician_name, clinician_signature
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     body.consultation_id,
     body.patient_id,
@@ -153,6 +158,10 @@ export async function POST(req: NextRequest) {
     body.heel_height_cm ?? null,
     body.socket_ap_width_cm ?? null,
     body.socket_ml_width_cm ?? null,
+    body.rom_flexion_deg ?? null,
+    body.rom_extension_deg ?? null,
+    body.rom_abduction_deg ?? null,
+    body.rom_adduction_deg ?? null,
     body.partial_foot_level || null,
     body.foot_length_cm ?? null,
     body.foot_width_cm ?? null,

@@ -25,6 +25,13 @@ export interface MeasurementFormValues {
   heel_height_cm: string;
   socket_ap_width_cm: string;
   socket_ml_width_cm: string;
+  // Lower limb — joint range of motion (Ankle/Knee Disarticulation,
+  // Transfemoral, Transtibial only — Hip Disarticulation, Partial Foot,
+  // and AFO don't have a proximal joint to measure here).
+  rom_flexion_deg: string;
+  rom_extension_deg: string;
+  rom_abduction_deg: string;
+  rom_adduction_deg: string;
   // Lower limb — Partial Foot
   partial_foot_level: string;
   foot_length_cm: string;
@@ -79,6 +86,10 @@ export const INITIAL_MEASUREMENT_FORM: MeasurementFormValues = {
   heel_height_cm: '',
   socket_ap_width_cm: '',
   socket_ml_width_cm: '',
+  rom_flexion_deg: '',
+  rom_extension_deg: '',
+  rom_abduction_deg: '',
+  rom_adduction_deg: '',
   partial_foot_level: '',
   foot_length_cm: '',
   foot_width_cm: '',
@@ -359,6 +370,28 @@ export default function MeasurementFields({
             <div>
               <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Socket Width — M/L (cm)</label>
               <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.socket_ml_width_cm} onChange={e => set({ socket_ml_width_cm: e.target.value })} />
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+            Joint Range of Motion (degrees) — Ankle/Knee Disarticulation, Transfemoral &amp; Transtibial
+          </div>
+          <div className="form-grid-3" style={{ marginBottom: 20, gap: 14 }}>
+            <div>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Flexion (°)</label>
+              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_flexion_deg} onChange={e => set({ rom_flexion_deg: e.target.value })} />
+            </div>
+            <div>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Extension (°)</label>
+              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_extension_deg} onChange={e => set({ rom_extension_deg: e.target.value })} />
+            </div>
+            <div>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Abduction (°)</label>
+              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_abduction_deg} onChange={e => set({ rom_abduction_deg: e.target.value })} />
+            </div>
+            <div>
+              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Adduction (°)</label>
+              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_adduction_deg} onChange={e => set({ rom_adduction_deg: e.target.value })} />
             </div>
           </div>
 
