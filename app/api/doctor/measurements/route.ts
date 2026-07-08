@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   // Pull the consultation's own body-part selections (Section 2 equivalent)
   // and patient identity, so the measurement form doesn't re-ask for either.
   const consultation = db.prepare(`
-    SELECT c.id, c.body_parts, c.assessor_name, c.patient_id,
+    SELECT c.id, c.body_parts, c.assessor_name, c.patient_id, c.category,
            p.full_name AS patient_name, p.dob AS patient_dob, p.amputation_date AS patient_amputation_date
     FROM consultations c
     LEFT JOIN patients p ON c.patient_id = p.id
@@ -75,6 +75,26 @@ export async function POST(req: NextRequest) {
     circumference_interval_6_cm?: number | null;
     circumference_distal_end_cm?: number | null;
     limb_shape_drawing?: string | null;
+    footwear_type?: string | null;
+    heel_height_cm?: number | null;
+    socket_ap_width_cm?: number | null;
+    socket_ml_width_cm?: number | null;
+    partial_foot_level?: string | null;
+    foot_length_cm?: number | null;
+    foot_width_cm?: number | null;
+    afo_ankle_joint_type?: string | null;
+    afo_ankle_joint_other?: string | null;
+    afo_functions?: string[] | null;
+    shoe_modification?: string | null;
+    segment_length_proximal_cm?: number | null;
+    segment_length_distal_cm?: number | null;
+    segment_length_terminal_cm?: number | null;
+    limb_ap_width_cm?: number | null;
+    limb_ml_width_cm?: number | null;
+    trunk_circumference_1_cm?: number | null;
+    trunk_circumference_2_cm?: number | null;
+    trunk_circumference_3_cm?: number | null;
+    trunk_circumference_4_cm?: number | null;
     k_level?: string | null;
     lifestyle_goals?: string | null;
     field_notes?: string | null;
@@ -100,8 +120,14 @@ export async function POST(req: NextRequest) {
       circumference_joint_line_cm, circumference_interval_1_cm, circumference_interval_2_cm,
       circumference_interval_3_cm, circumference_interval_4_cm, circumference_interval_5_cm,
       circumference_interval_6_cm, circumference_distal_end_cm, limb_shape_drawing,
+      footwear_type, heel_height_cm, socket_ap_width_cm, socket_ml_width_cm,
+      partial_foot_level, foot_length_cm, foot_width_cm,
+      afo_ankle_joint_type, afo_ankle_joint_other, afo_functions, shoe_modification,
+      segment_length_proximal_cm, segment_length_distal_cm, segment_length_terminal_cm,
+      limb_ap_width_cm, limb_ml_width_cm,
+      trunk_circumference_1_cm, trunk_circumference_2_cm, trunk_circumference_3_cm, trunk_circumference_4_cm,
       k_level, lifestyle_goals, field_notes, clinician_name, clinician_signature
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     body.consultation_id,
     body.patient_id,
@@ -123,6 +149,26 @@ export async function POST(req: NextRequest) {
     body.circumference_interval_6_cm ?? null,
     body.circumference_distal_end_cm ?? null,
     body.limb_shape_drawing || null,
+    body.footwear_type || null,
+    body.heel_height_cm ?? null,
+    body.socket_ap_width_cm ?? null,
+    body.socket_ml_width_cm ?? null,
+    body.partial_foot_level || null,
+    body.foot_length_cm ?? null,
+    body.foot_width_cm ?? null,
+    body.afo_ankle_joint_type || null,
+    body.afo_ankle_joint_other?.trim() || null,
+    body.afo_functions?.length ? body.afo_functions.join(', ') : null,
+    body.shoe_modification?.trim() || null,
+    body.segment_length_proximal_cm ?? null,
+    body.segment_length_distal_cm ?? null,
+    body.segment_length_terminal_cm ?? null,
+    body.limb_ap_width_cm ?? null,
+    body.limb_ml_width_cm ?? null,
+    body.trunk_circumference_1_cm ?? null,
+    body.trunk_circumference_2_cm ?? null,
+    body.trunk_circumference_3_cm ?? null,
+    body.trunk_circumference_4_cm ?? null,
     body.k_level || null,
     body.lifestyle_goals?.trim() || null,
     body.field_notes?.trim() || null,

@@ -12,6 +12,7 @@ interface ConsultationRef {
   patient_dob: string | null;
   body_parts: string | null;
   assessor_name: string | null;
+  category: string | null;
 }
 
 interface MeasurementFormProps {
@@ -81,6 +82,26 @@ export default function MeasurementForm({ consultationId, thenOrder, onSaved, em
         circumference_interval_6_cm: num(form.circumference_interval_6_cm),
         circumference_distal_end_cm: num(form.circumference_distal_end_cm),
         limb_shape_drawing: drawing,
+        footwear_type: form.footwear_type || null,
+        heel_height_cm: num(form.heel_height_cm),
+        socket_ap_width_cm: num(form.socket_ap_width_cm),
+        socket_ml_width_cm: num(form.socket_ml_width_cm),
+        partial_foot_level: form.partial_foot_level || null,
+        foot_length_cm: num(form.foot_length_cm),
+        foot_width_cm: num(form.foot_width_cm),
+        afo_ankle_joint_type: form.afo_ankle_joint_type || null,
+        afo_ankle_joint_other: form.afo_ankle_joint_other || null,
+        afo_functions: form.afo_functions,
+        shoe_modification: form.shoe_modification || null,
+        segment_length_proximal_cm: num(form.segment_length_proximal_cm),
+        segment_length_distal_cm: num(form.segment_length_distal_cm),
+        segment_length_terminal_cm: num(form.segment_length_terminal_cm),
+        limb_ap_width_cm: num(form.limb_ap_width_cm),
+        limb_ml_width_cm: num(form.limb_ml_width_cm),
+        trunk_circumference_1_cm: num(form.trunk_circumference_1_cm),
+        trunk_circumference_2_cm: num(form.trunk_circumference_2_cm),
+        trunk_circumference_3_cm: num(form.trunk_circumference_3_cm),
+        trunk_circumference_4_cm: num(form.trunk_circumference_4_cm),
         k_level: form.k_level || null,
         lifestyle_goals: form.lifestyle_goals || null,
         field_notes: form.field_notes || null,
@@ -126,6 +147,7 @@ export default function MeasurementForm({ consultationId, thenOrder, onSaved, em
               clinicianSignature={clinicianSignature}
               onClinicianSignatureChange={setClinicianSignature}
               bodyParts={bodyParts}
+              category={consultation?.category ?? undefined}
             />
 
             {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{error}</div>}

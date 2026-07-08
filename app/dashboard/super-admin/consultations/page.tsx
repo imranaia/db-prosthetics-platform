@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Search, Upload, Trash2 } from 'lucide-react';
 import { BodyPart } from '@/components/consultation/BodySelector';
 import BodyPartPicker from '@/components/consultation/BodyPartPicker';
-import MeasurementFields, { INITIAL_MEASUREMENT_FORM, type MeasurementFormValues } from '@/components/consultation/MeasurementFields';
+import MeasurementFields, { INITIAL_MEASUREMENT_FORM, hasCategoryMeasurementSection, type MeasurementFormValues } from '@/components/consultation/MeasurementFields';
 import SignaturePad from '@/components/forms/SignaturePad';
 import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
@@ -564,6 +564,26 @@ export default function ConsultationsPage() {
           circumference_interval_6_cm: num(measurementForm.circumference_interval_6_cm),
           circumference_distal_end_cm: num(measurementForm.circumference_distal_end_cm),
           limb_shape_drawing: measurementDrawing,
+          footwear_type: measurementForm.footwear_type || null,
+          heel_height_cm: num(measurementForm.heel_height_cm),
+          socket_ap_width_cm: num(measurementForm.socket_ap_width_cm),
+          socket_ml_width_cm: num(measurementForm.socket_ml_width_cm),
+          partial_foot_level: measurementForm.partial_foot_level || null,
+          foot_length_cm: num(measurementForm.foot_length_cm),
+          foot_width_cm: num(measurementForm.foot_width_cm),
+          afo_ankle_joint_type: measurementForm.afo_ankle_joint_type || null,
+          afo_ankle_joint_other: measurementForm.afo_ankle_joint_other || null,
+          afo_functions: measurementForm.afo_functions,
+          shoe_modification: measurementForm.shoe_modification || null,
+          segment_length_proximal_cm: num(measurementForm.segment_length_proximal_cm),
+          segment_length_distal_cm: num(measurementForm.segment_length_distal_cm),
+          segment_length_terminal_cm: num(measurementForm.segment_length_terminal_cm),
+          limb_ap_width_cm: num(measurementForm.limb_ap_width_cm),
+          limb_ml_width_cm: num(measurementForm.limb_ml_width_cm),
+          trunk_circumference_1_cm: num(measurementForm.trunk_circumference_1_cm),
+          trunk_circumference_2_cm: num(measurementForm.trunk_circumference_2_cm),
+          trunk_circumference_3_cm: num(measurementForm.trunk_circumference_3_cm),
+          trunk_circumference_4_cm: num(measurementForm.trunk_circumference_4_cm),
           k_level: measurementForm.k_level || null,
           lifestyle_goals: measurementForm.lifestyle_goals || null,
           field_notes: measurementForm.field_notes || null,
@@ -1025,6 +1045,7 @@ export default function ConsultationsPage() {
                     clinicianSignature={measurementSignature}
                     onClinicianSignatureChange={setMeasurementSignature}
                     bodyParts={bodyParts}
+                    category={form.category}
                     startSectionNumber={7}
                     skipOverviewSections
                   />
@@ -1050,9 +1071,10 @@ export default function ConsultationsPage() {
             </div>
 
             {/* Signatures & Consent — numbering shifts when the measurement
-                fields above are showing (Sections 7-9), since they only
-                appear once "Fit for Prosthetic" is selected. */}
-            <SectionHeader number={fitDecision === 'fit' ? '10' : '7'} title="Signatures & Consent" />
+                fields above are showing (Sections 7-9, or 7-10 when a
+                category-specific measurements section also applies), since
+                they only appear once "Fit for Prosthetic" is selected. */}
+            <SectionHeader number={fitDecision === 'fit' ? String(10 + (hasCategoryMeasurementSection(form.category) ? 1 : 0)) : '7'} title="Signatures & Consent" />
             <div style={{ marginBottom: 14, padding: '14px 16px', background: 'rgba(37,79,122,0.05)', borderRadius: 8, border: '1px solid rgba(37,79,122,0.12)', fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
               By signing below, the Patient / Guardian consents to the fabrication and fitting of artificial limb(s) by DB Prosthetics and Orthotics Ltd, as per the Consent Form for Fabrication and Fitting of Artificial Limbs. Patient has been informed of the process, risks, and benefits.
             </div>
