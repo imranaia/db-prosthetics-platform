@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   // Pull the consultation's own body-part selections (Section 2 equivalent)
   // and patient identity, so the measurement form doesn't re-ask for either.
   const consultation = db.prepare(`
-    SELECT c.id, c.body_parts, c.assessor_name, c.patient_id, c.category,
+    SELECT c.id, c.body_parts, c.assessor_name, c.patient_id, c.category, c.device_subtype,
            p.full_name AS patient_name, p.dob AS patient_dob, p.amputation_date AS patient_amputation_date
     FROM consultations c
     LEFT JOIN patients p ON c.patient_id = p.id

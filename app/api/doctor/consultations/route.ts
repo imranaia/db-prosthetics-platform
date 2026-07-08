@@ -140,6 +140,7 @@ export async function POST(req: NextRequest) {
     patient_signature?: string | null;
     consultation_type?: string;
     category?: string | null;
+    device_subtype?: string | null;
     body_parts?: unknown;
     photos?: unknown;
     fit_for_prosthetic?: 'fit' | 'not_fit' | null;
@@ -173,9 +174,9 @@ export async function POST(req: NextRequest) {
       patient_id, doctor_id, po_specialist_id, conducted_by_role, hospital_id,
       assessor_name, chief_complaint, medical_history, physical_assessment,
       patient_goals, recommended_device, followup_date, notes, consent_given,
-      assessor_signature, patient_signature, consultation_type, category,
+      assessor_signature, patient_signature, consultation_type, category, device_subtype,
       body_parts, photos, fit_for_prosthetic, unfit_diagnosis, unfit_next_steps, unfit_treatment
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     body.patient_id,
     doctorId,
@@ -195,6 +196,7 @@ export async function POST(req: NextRequest) {
     body.patient_signature ?? null,
     body.consultation_type === 'follow_up' ? 'follow_up' : 'new',
     body.category ?? null,
+    body.device_subtype ?? null,
     bodyPartsStr,
     photosStr,
     body.fit_for_prosthetic ?? null,

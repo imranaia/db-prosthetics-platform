@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stethoscope, Plus, X, ChevronDown, ChevronUp, Search, Upload, Trash2 } from 'lucide-react';
 import { BodyPart } from '@/components/consultation/BodySelector';
 import BodyPartPicker from '@/components/consultation/BodyPartPicker';
-import MeasurementFields, { INITIAL_MEASUREMENT_FORM, hasCategoryMeasurementSection, type MeasurementFormValues } from '@/components/consultation/MeasurementFields';
+import MeasurementFields, { INITIAL_MEASUREMENT_FORM, hasCategoryMeasurementSection, getDeviceSubtypeOptions, type MeasurementFormValues } from '@/components/consultation/MeasurementFields';
 import SignaturePad from '@/components/forms/SignaturePad';
 import SearchablePatientSelect from '@/components/ui/SearchablePatientSelect';
 
@@ -304,6 +304,7 @@ export default function ConsultationsPage() {
     assessment_date:   today,
     consultation_type: 'new' as 'new' | 'follow_up',
     category:          '',
+    device_subtype:    '',
   });
   const [recommendDevice, setRecommendDevice] = useState(true);
   const [assessorSignature, setAssessorSignature] = useState<string | null>(null);
@@ -454,7 +455,7 @@ export default function ConsultationsPage() {
       chief_complaint: '', medical_history: '', patient_goals: '',
       recommended_device: '', followup_date: '', notes: '',
       consent_given: false, assessment_date: today,
-      consultation_type: 'new', category: '',
+      consultation_type: 'new', category: '', device_subtype: '',
     });
     setRecommendDevice(true);
     setPhysicalAssessment(EMPTY_PA);
@@ -524,6 +525,7 @@ export default function ConsultationsPage() {
         patient_signature:   patientSignature,
         consultation_type:   form.consultation_type,
         category:            goingToOrder ? (form.category || null) : null,
+        device_subtype:      goingToOrder ? (form.device_subtype || null) : null,
         body_parts:          bodyParts,
         photos,
         fit_for_prosthetic:  fitDecision,
@@ -747,15 +749,30 @@ export default function ConsultationsPage() {
               </label>
               {recommendDevice && (
                 <div>
-                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Device Category</label>
-                  <select className="skeu-select" style={{ width: '100%', maxWidth: 320 }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                    <option value="">Select category…</option>
-                    <option value="upper_limb">Upper Limb</option>
-                    <option value="lower_limb">Lower Limb</option>
-                    <option value="facial">Facial</option>
-                    <option value="spinal">Spinal</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Device Category</label>
+                      <select className="skeu-select" style={{ width: '100%', maxWidth: 320 }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value, device_subtype: '' })}>
+                        <option value="">Select category…</option>
+                        <option value="upper_limb">Upper Limb</option>
+                        <option value="lower_limb">Lower Limb</option>
+                        <option value="facial">Facial</option>
+                        <option value="spinal">Spinal</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    {getDeviceSubtypeOptions(form.category).length > 0 && (
+                      <div>
+                        <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Device Type</label>
+                        <select className="skeu-select" style={{ width: '100%', maxWidth: 320 }} value={form.device_subtype} onChange={e => setForm({ ...form, device_subtype: e.target.value })}>
+                          <option value="">Select device type…</option>
+                          {getDeviceSubtypeOptions(form.category).map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                   {!user?.hasDoctorProfile && (
                     <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#b45309' }}>
                       You'll need Doctor Mode enabled to place the order — switch from the sidebar before saving, or you'll be asked to when you submit.
@@ -1054,6 +1071,7 @@ export default function ConsultationsPage() {
                     onClinicianSignatureChange={setMeasurementSignature}
                     bodyParts={bodyParts}
                     category={form.category}
+                    deviceSubtype={form.device_subtype}
                     startSectionNumber={7}
                     skipOverviewSections
                   />

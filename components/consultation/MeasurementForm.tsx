@@ -13,6 +13,7 @@ interface ConsultationRef {
   body_parts: string | null;
   assessor_name: string | null;
   category: string | null;
+  device_subtype: string | null;
 }
 
 interface MeasurementFormProps {
@@ -152,6 +153,7 @@ export default function MeasurementForm({ consultationId, thenOrder, onSaved, em
               onClinicianSignatureChange={setClinicianSignature}
               bodyParts={bodyParts}
               category={consultation?.category ?? undefined}
+              deviceSubtype={consultation?.device_subtype ?? undefined}
             />
 
             {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 16 }}>{error}</div>}

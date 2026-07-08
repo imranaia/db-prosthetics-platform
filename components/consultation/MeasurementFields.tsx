@@ -157,6 +157,69 @@ const AFO_ANKLE_JOINT_OPTIONS = [
 
 const AFO_FUNCTION_OPTIONS = ['Plantar Flexion Stop', 'Limited Motion', 'Dorsiflexion Assist', 'Double Assist', 'Rigid', 'Free Motion'];
 
+export interface DeviceSubtypeOption { value: string; label: string; }
+
+// The exact technical card within each Device Category — one option per
+// card in docs/ (minus Spine Orthosis, the only Trunk card, which doesn't
+// need a picker since there's nothing else to choose between).
+export const LOWER_LIMB_SUBTYPES: DeviceSubtypeOption[] = [
+  { value: 'afo', label: 'AFO / Ankle-Foot Orthosis (AFO/FO)' },
+  { value: 'ad', label: 'Ankle Disarticulation (AD)' },
+  { value: 'hd', label: 'Hip Disarticulation (HD)' },
+  { value: 'kd', label: 'Knee Disarticulation (KD)' },
+  { value: 'ortho_prosthesis', label: 'Ortho-Prosthesis' },
+  { value: 'pf', label: 'Partial Foot (PF)' },
+  { value: 'tf', label: 'Transfemoral (TF)' },
+  { value: 'tt', label: 'Transtibial (TT)' },
+];
+
+export const UPPER_LIMB_SUBTYPES: DeviceSubtypeOption[] = [
+  { value: 'th', label: 'Transhumeral (TH)' },
+  { value: 'tr', label: 'Transradial (TR)' },
+  { value: 'upper_limb_orthosis', label: 'Upper Limb Orthosis' },
+];
+
+export function getDeviceSubtypeOptions(category?: string): DeviceSubtypeOption[] {
+  if (category === 'upper_limb') return UPPER_LIMB_SUBTYPES;
+  if (category === 'lower_limb') return LOWER_LIMB_SUBTYPES;
+  return [];
+}
+
+interface SubtypeFieldConfig {
+  footwear?: boolean;
+  socketWidth?: boolean;
+  rom?: boolean;
+  partialFoot?: boolean;
+  afo?: boolean;
+  segmentLength?: boolean;
+  limbWidth?: boolean;
+}
+
+// Which field groups each exact card actually has, read off the technical
+// cards directly — e.g. Hip Disarticulation has no proximal joint left to
+// take a Range of Motion reading on, and Ortho-Prosthesis has neither
+// footwear nor any of the other extras, just the general residual-limb
+// measurements every card shares.
+const SUBTYPE_FIELD_CONFIG: Record<string, SubtypeFieldConfig> = {
+  afo: { footwear: true, afo: true },
+  ad: { footwear: true, rom: true },
+  hd: { footwear: true },
+  kd: { footwear: true, rom: true },
+  ortho_prosthesis: {},
+  pf: { footwear: true, partialFoot: true },
+  tf: { footwear: true, socketWidth: true, rom: true },
+  tt: { footwear: true, socketWidth: true, rom: true },
+  th: { segmentLength: true, limbWidth: true },
+  tr: { segmentLength: true, limbWidth: true },
+  upper_limb_orthosis: { segmentLength: true, limbWidth: true },
+};
+
+// A consultation saved before device sub-types existed has none set — fall
+// back to the old "show everything for this category" behavior rather than
+// hiding fields that may already be filled in.
+const FALLBACK_LOWER_LIMB_CONFIG: SubtypeFieldConfig = { footwear: true, socketWidth: true, rom: true };
+const FALLBACK_UPPER_LIMB_CONFIG: SubtypeFieldConfig = { segmentLength: true, limbWidth: true };
+
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 8 }}>
@@ -179,6 +242,10 @@ interface MeasurementFieldsProps {
   // which technical-card-derived measurement fields show up (see
   // hasCategoryMeasurementSection above).
   category?: string;
+  // The exact technical card within that category (see
+  // getDeviceSubtypeOptions) — narrows the category's field group down to
+  // only what that specific card has, instead of the shared bucket.
+  deviceSubtype?: string;
   // Section numbers are 1-indexed and carry on from whatever section number
   // the caller is already up to (e.g. the consultation form embeds this
   // right after Section 6, so measurement sections continue at 7).
@@ -196,12 +263,19 @@ interface MeasurementFieldsProps {
 // inline in the consultation form once "Fit for Prosthetic" is chosen,
 // so both places render identical fields from one source of truth.
 export default function MeasurementFields({
-  value, onChange, drawing, onDrawingChange, clinicianSignature, onClinicianSignatureChange, bodyParts, category, startSectionNumber = 1, skipOverviewSections = false,
+  value, onChange, drawing, onDrawingChange, clinicianSignature, onClinicianSignatureChange, bodyParts, category, deviceSubtype, startSectionNumber = 1, skipOverviewSections = false,
 }: MeasurementFieldsProps) {
   // Defensive fallback — a draft or record saved before this field existed
   // (sessionStorage draft persistence, or an older measurement row) won't
   // have afo_functions at all, and this is read unconditionally below.
   const afoFunctions = value.afo_functions || [];
+  const subtypeConfig = deviceSubtype
+    ? (SUBTYPE_FIELD_CONFIG[deviceSubtype] || {})
+    : (category === 'upper_limb' ? FALLBACK_UPPER_LIMB_CONFIG : FALLBACK_LOWER_LIMB_CONFIG);
+  // Once an exact sub-type is chosen, Partial Foot / AFO show automatically
+  // when that's the chosen card (no extra toggle click needed) — the "+ Add
+  // Details" toggle only exists for the no-sub-type fallback case, where we
+  // don't yet know if either applies.
   const [showPartialFoot, setShowPartialFoot] = useState(!!value.partial_foot_level);
   const [showAfo, setShowAfo] = useState(!!(value.afo_ankle_joint_type || afoFunctions.length));
 
@@ -339,63 +413,79 @@ export default function MeasurementFields({
       {hasCategorySection && category === 'lower_limb' && (
         <>
           <SectionHeader number={String(categorySectionNumber)} title="Lower Limb Measurements" />
-          <div style={{ marginBottom: 16 }}>
-            <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Footwear Type</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {FOOTWEAR_OPTIONS.map(o => (
-                <button
-                  key={o.value} type="button"
-                  onClick={() => set({ footwear_type: o.value })}
-                  style={{
-                    padding: '8px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
-                    border: `2px solid ${value.footwear_type === o.value ? 'var(--primary)' : 'var(--border-card)'}`,
-                    background: value.footwear_type === o.value ? 'rgba(27,61,94,0.07)' : 'transparent',
-                    color: value.footwear_type === o.value ? 'var(--primary)' : 'var(--text-body)',
-                  }}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="form-grid-3" style={{ marginBottom: 20 }}>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Heel Height (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.heel_height_cm} onChange={e => set({ heel_height_cm: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Socket Width — A/P (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.socket_ap_width_cm} onChange={e => set({ socket_ap_width_cm: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Socket Width — M/L (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.socket_ml_width_cm} onChange={e => set({ socket_ml_width_cm: e.target.value })} />
-            </div>
-          </div>
+          {subtypeConfig.footwear && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 8 }}>Footwear Type</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {FOOTWEAR_OPTIONS.map(o => (
+                    <button
+                      key={o.value} type="button"
+                      onClick={() => set({ footwear_type: o.value })}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                        border: `2px solid ${value.footwear_type === o.value ? 'var(--primary)' : 'var(--border-card)'}`,
+                        background: value.footwear_type === o.value ? 'rgba(27,61,94,0.07)' : 'transparent',
+                        color: value.footwear_type === o.value ? 'var(--primary)' : 'var(--text-body)',
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="form-grid-3" style={{ marginBottom: 20 }}>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Heel Height (cm)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.heel_height_cm} onChange={e => set({ heel_height_cm: e.target.value })} />
+                </div>
+                {subtypeConfig.socketWidth && (
+                  <>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Socket Width — A/P (cm)</label>
+                      <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.socket_ap_width_cm} onChange={e => set({ socket_ap_width_cm: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Socket Width — M/L (cm)</label>
+                      <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.socket_ml_width_cm} onChange={e => set({ socket_ml_width_cm: e.target.value })} />
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
-          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-            Joint Range of Motion (degrees) — Ankle/Knee Disarticulation, Transfemoral &amp; Transtibial
-          </div>
-          <div className="form-grid-3" style={{ marginBottom: 20, gap: 14 }}>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Flexion (°)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_flexion_deg} onChange={e => set({ rom_flexion_deg: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Extension (°)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_extension_deg} onChange={e => set({ rom_extension_deg: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Abduction (°)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_abduction_deg} onChange={e => set({ rom_abduction_deg: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Adduction (°)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_adduction_deg} onChange={e => set({ rom_adduction_deg: e.target.value })} />
-            </div>
-          </div>
+          {subtypeConfig.rom && (
+            <>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+                Joint Range of Motion (degrees)
+              </div>
+              <div className="form-grid-3" style={{ marginBottom: 20, gap: 14 }}>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Flexion (°)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_flexion_deg} onChange={e => set({ rom_flexion_deg: e.target.value })} />
+                </div>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Extension (°)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_extension_deg} onChange={e => set({ rom_extension_deg: e.target.value })} />
+                </div>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Abduction (°)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_abduction_deg} onChange={e => set({ rom_abduction_deg: e.target.value })} />
+                </div>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Adduction (°)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.rom_adduction_deg} onChange={e => set({ rom_adduction_deg: e.target.value })} />
+                </div>
+              </div>
+            </>
+          )}
 
-          {!showPartialFoot && (
+          {/* Partial Foot / AFO: shown directly (no toggle) once that exact
+              sub-type is chosen; otherwise — only when no sub-type has been
+              picked at all — offered as an optional "+ Add" toggle, since we
+              don't yet know if either applies. */}
+          {!deviceSubtype && !showPartialFoot && (
             <button
               type="button" onClick={() => setShowPartialFoot(true)}
               style={{ display: 'inline-flex', alignItems: 'center', padding: '8px 14px', borderRadius: 8, border: '1.5px dashed rgba(208,140,42,0.4)', background: 'rgba(208,140,42,0.05)', color: 'var(--accent, #d08c2a)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', marginBottom: 16, marginRight: 10 }}
@@ -403,7 +493,7 @@ export default function MeasurementFields({
               + Add Partial Foot Details
             </button>
           )}
-          {showPartialFoot && (
+          {(subtypeConfig.partialFoot || (!deviceSubtype && showPartialFoot)) && (
             <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border-card)' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
                 Partial Foot
@@ -440,7 +530,7 @@ export default function MeasurementFields({
             </div>
           )}
 
-          {!showAfo && (
+          {!deviceSubtype && !showAfo && (
             <button
               type="button" onClick={() => setShowAfo(true)}
               style={{ display: 'inline-flex', alignItems: 'center', padding: '8px 14px', borderRadius: 8, border: '1.5px dashed rgba(208,140,42,0.4)', background: 'rgba(208,140,42,0.05)', color: 'var(--accent, #d08c2a)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', marginBottom: 16 }}
@@ -448,7 +538,7 @@ export default function MeasurementFields({
               + Add AFO / Ankle-Foot Orthosis Details
             </button>
           )}
-          {showAfo && (
+          {(subtypeConfig.afo || (!deviceSubtype && showAfo)) && (
             <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border-card)' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
                 AFO / Ankle-Foot Orthosis
@@ -509,33 +599,39 @@ export default function MeasurementFields({
       {hasCategorySection && category === 'upper_limb' && (
         <>
           <SectionHeader number={String(categorySectionNumber)} title="Upper Limb Measurements" />
-          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-            Segment Lengths
-          </div>
-          <div className="form-grid-3" style={{ marginBottom: 20 }}>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Shoulder to Elbow (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.segment_length_proximal_cm} onChange={e => set({ segment_length_proximal_cm: e.target.value })} />
+          {subtypeConfig.segmentLength && (
+            <>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+                Segment Lengths
+              </div>
+              <div className="form-grid-3" style={{ marginBottom: 20 }}>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Shoulder to Elbow (cm)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.segment_length_proximal_cm} onChange={e => set({ segment_length_proximal_cm: e.target.value })} />
+                </div>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Elbow to Wrist (cm)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.segment_length_distal_cm} onChange={e => set({ segment_length_distal_cm: e.target.value })} />
+                </div>
+                <div>
+                  <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Wrist to Fingertip (cm)</label>
+                  <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.segment_length_terminal_cm} onChange={e => set({ segment_length_terminal_cm: e.target.value })} />
+                </div>
+              </div>
+            </>
+          )}
+          {subtypeConfig.limbWidth && (
+            <div className="form-grid-2" style={{ marginBottom: 20 }}>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Limb Width — A/P (cm)</label>
+                <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.limb_ap_width_cm} onChange={e => set({ limb_ap_width_cm: e.target.value })} />
+              </div>
+              <div>
+                <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Limb Width — M/L (cm)</label>
+                <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.limb_ml_width_cm} onChange={e => set({ limb_ml_width_cm: e.target.value })} />
+              </div>
             </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Elbow to Wrist (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.segment_length_distal_cm} onChange={e => set({ segment_length_distal_cm: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Wrist to Fingertip (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.segment_length_terminal_cm} onChange={e => set({ segment_length_terminal_cm: e.target.value })} />
-            </div>
-          </div>
-          <div className="form-grid-2" style={{ marginBottom: 20 }}>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Limb Width — A/P (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.limb_ap_width_cm} onChange={e => set({ limb_ap_width_cm: e.target.value })} />
-            </div>
-            <div>
-              <label className="skeu-label" style={{ display: 'block', marginBottom: 6 }}>Limb Width — M/L (cm)</label>
-              <input type="number" step="0.1" className="skeu-input" style={{ width: '100%' }} value={value.limb_ml_width_cm} onChange={e => set({ limb_ml_width_cm: e.target.value })} />
-            </div>
-          </div>
+          )}
         </>
       )}
 
