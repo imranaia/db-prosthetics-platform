@@ -367,7 +367,11 @@ export default function ConsultationsPage() {
         if (d.unfitDiagnosis !== undefined) setUnfitDiagnosis(d.unfitDiagnosis);
         if (d.unfitNextSteps !== undefined) setUnfitNextSteps(d.unfitNextSteps);
         if (d.unfitTreatment !== undefined) setUnfitTreatment(d.unfitTreatment);
-        if (d.measurementForm) setMeasurementForm(d.measurementForm);
+        // Merge onto the current defaults rather than replacing outright —
+        // a draft saved before a new measurement field shipped (e.g.
+        // afo_functions) would otherwise restore without it, and the form
+        // reads array/string fields unconditionally further down.
+        if (d.measurementForm) setMeasurementForm(f => ({ ...f, ...d.measurementForm }));
         if (d.measurementDrawing !== undefined) setMeasurementDrawing(d.measurementDrawing);
         if (d.measurementSignature !== undefined) setMeasurementSignature(d.measurementSignature);
         if (d.physicalAssessment) setPhysicalAssessment(d.physicalAssessment);

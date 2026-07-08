@@ -187,8 +187,12 @@ interface MeasurementFieldsProps {
 export default function MeasurementFields({
   value, onChange, drawing, onDrawingChange, clinicianSignature, onClinicianSignatureChange, bodyParts, category, startSectionNumber = 1, skipOverviewSections = false,
 }: MeasurementFieldsProps) {
+  // Defensive fallback — a draft or record saved before this field existed
+  // (sessionStorage draft persistence, or an older measurement row) won't
+  // have afo_functions at all, and this is read unconditionally below.
+  const afoFunctions = value.afo_functions || [];
   const [showPartialFoot, setShowPartialFoot] = useState(!!value.partial_foot_level);
-  const [showAfo, setShowAfo] = useState(!!(value.afo_ankle_joint_type || value.afo_functions.length));
+  const [showAfo, setShowAfo] = useState(!!(value.afo_ankle_joint_type || afoFunctions.length));
 
   const hasBodyAreaSection = bodyParts.length > 0 && !skipOverviewSections;
   const n = startSectionNumber;
@@ -198,8 +202,8 @@ export default function MeasurementFields({
   const kLevelSectionNumber = residualSectionNumber + (hasCategorySection ? 2 : 1);
   const set = (patch: Partial<MeasurementFormValues>) => onChange({ ...value, ...patch });
   const toggleAfoFunction = (fn: string) => {
-    const has = value.afo_functions.includes(fn);
-    set({ afo_functions: has ? value.afo_functions.filter(f => f !== fn) : [...value.afo_functions, fn] });
+    const has = afoFunctions.includes(fn);
+    set({ afo_functions: has ? afoFunctions.filter(f => f !== fn) : [...afoFunctions, fn] });
   };
 
   return (
@@ -450,9 +454,9 @@ export default function MeasurementFields({
                       onClick={() => toggleAfoFunction(fn)}
                       style={{
                         padding: '7px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                        border: `2px solid ${value.afo_functions.includes(fn) ? 'var(--primary)' : 'var(--border-card)'}`,
-                        background: value.afo_functions.includes(fn) ? 'rgba(27,61,94,0.07)' : 'transparent',
-                        color: value.afo_functions.includes(fn) ? 'var(--primary)' : 'var(--text-body)',
+                        border: `2px solid ${afoFunctions.includes(fn) ? 'var(--primary)' : 'var(--border-card)'}`,
+                        background: afoFunctions.includes(fn) ? 'rgba(27,61,94,0.07)' : 'transparent',
+                        color: afoFunctions.includes(fn) ? 'var(--primary)' : 'var(--text-body)',
                       }}
                     >
                       {fn}
