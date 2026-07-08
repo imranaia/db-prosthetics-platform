@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Users, Stethoscope, CalendarDays, UserCheck, SkipForward } from 'lucide-react';
@@ -23,6 +24,7 @@ interface QueueEntry {
   patient_checked_in: number;
   queue_skipped: number;
   queue_skip_reason: string | null;
+  with_doctor: number;
   is_current: boolean;
 }
 
@@ -60,13 +62,14 @@ export default function DoctorPage() {
       .catch(() => setQueueLoading(false));
   };
 
-  useEffect(() => {
-    if (!user) return;
+  const loadStats = () => {
     fetch('/api/doctor/stats')
       .then(r => r.json())
       .then(data => { if (data.stats) setStats(data.stats); setDataLoading(false); })
       .catch(() => setDataLoading(false));
-    loadQueue();
+  };
+
+  const loadUpcoming = () => {
     fetch('/api/doctor/appointments')
       .then(r => r.json())
       .then(data => {
@@ -86,7 +89,22 @@ export default function DoctorPage() {
         setUpcomingLoading(false);
       })
       .catch(() => setUpcomingLoading(false));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    loadStats();
+    loadQueue();
+    loadUpcoming();
   }, [user]);
+
+  // The queue especially benefits from a tighter interval than the default
+  // 30s — a patient waiting to hear "you're up" shouldn't be stuck behind a
+  // slow poll, and this is cheap since it's a single small hospital-scoped
+  // query.
+  useAutoRefresh(loadQueue, 10000, !!user);
+  useAutoRefresh(loadStats, 30000, !!user);
+  useAutoRefresh(loadUpcoming, 30000, !!user);
 
   async function handleSkip(id: number) {
     if (!skipReason.trim()) return;
@@ -98,6 +116,17 @@ export default function DoctorPage() {
     });
     setSkippingId(null);
     setSkipReason('');
+    setQueueBusy(false);
+    loadQueue();
+  }
+
+  async function handleStart(id: number) {
+    setQueueBusy(true);
+    await fetch('/api/queue', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id, action: 'start' }),
+    });
     setQueueBusy(false);
     loadQueue();
   }
@@ -190,6 +219,9 @@ export default function DoctorPage() {
                       {q.is_current && (
                         <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: '#059669', color: '#fff', textTransform: 'uppercase' }}>Now Serving</span>
                       )}
+                      {!!q.with_doctor && (
+                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: '#2563eb', color: '#fff', textTransform: 'uppercase' }}>With Doctor</span>
+                      )}
                       {q.queue_skipped && !q.is_current && (
                         <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 600, background: 'rgba(220,38,38,0.12)', color: '#dc2626' }}>Skipped</span>
                       )}
@@ -204,20 +236,32 @@ export default function DoctorPage() {
                   </div>
                   {q.is_current && (
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => handleComplete(q.id)}
-                        disabled={queueBusy}
-                        style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                      >
-                        Seeing Patient
-                      </button>
-                      <button
-                        onClick={() => { setSkippingId(q.id); setSkipReason(''); }}
-                        disabled={queueBusy}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                      >
-                        <SkipForward size={13} /> Skip
-                      </button>
+                      {q.with_doctor ? (
+                        <button
+                          onClick={() => handleComplete(q.id)}
+                          disabled={queueBusy}
+                          style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                        >
+                          Mark Complete
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleStart(q.id)}
+                            disabled={queueBusy}
+                            style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                          >
+                            With Me
+                          </button>
+                          <button
+                            onClick={() => { setSkippingId(q.id); setSkipReason(''); }}
+                            disabled={queueBusy}
+                            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                          >
+                            <SkipForward size={13} /> Skip
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

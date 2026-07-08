@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -32,6 +33,7 @@ interface Appointment {
   preferred_date: string;
   created_at: string;
   hospital_name: string;
+  with_doctor: number;
 }
 
 interface OrderItem { product_name: string; quantity: number; }
@@ -62,8 +64,7 @@ export default function PatientPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
+  const load = () => {
     Promise.all([
       fetch('/api/patient/profile').then(r => r.json()),
       fetch('/api/patient/consultations').then(r => r.json()),
@@ -76,7 +77,14 @@ export default function PatientPage() {
       if (Array.isArray(ordersData)) setOrders(ordersData);
       setDataLoading(false);
     }).catch(() => setDataLoading(false));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    load();
   }, [user]);
+
+  useAutoRefresh(load, 15000, !!user);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -227,7 +235,7 @@ export default function PatientPage() {
                   {nextAppointment.hospital_name}
                 </div>
               )}
-              <div style={{ marginBottom: '12px' }}>
+              <div style={{ marginBottom: '12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{
                   display: 'inline-block',
                   padding: '3px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600,
@@ -236,6 +244,11 @@ export default function PatientPage() {
                 }}>
                   {nextAppointment.status.charAt(0).toUpperCase() + nextAppointment.status.slice(1)}
                 </span>
+                {!!nextAppointment.with_doctor && (
+                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+                    With the doctor now
+                  </span>
+                )}
               </div>
               {nextAppointment.preferred_date && (
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 12 }}>

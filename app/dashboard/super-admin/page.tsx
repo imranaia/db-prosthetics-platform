@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -78,13 +79,19 @@ export default function SuperAdminOverview() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [incomeRange, setIncomeRange] = useState<string>('month');
 
-  useEffect(() => {
-    if (!user) return;
+  const loadStats = () => {
     fetch(`/api/admin/stats?range=${incomeRange}`)
       .then(r => r.json())
       .then(data => { setStats(data); setStatsLoading(false); })
       .catch(() => setStatsLoading(false));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    loadStats();
   }, [user, incomeRange]);
+
+  useAutoRefresh(loadStats, 30000, !!user);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>

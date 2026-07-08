@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Users, Stethoscope, CalendarDays, Clock, Users2 } from 'lucide-react';
@@ -40,8 +41,7 @@ export default function HospitalAdminPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
+  const load = () => {
     Promise.all([
       fetch('/api/hospital-admin/stats').then(r => r.json()),
       fetch('/api/hospital-admin/consultations').then(r => r.json()),
@@ -51,7 +51,14 @@ export default function HospitalAdminPage() {
       if (consData.consultations) setConsultations(consData.consultations);
       setDataLoading(false);
     }).catch(() => setDataLoading(false));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    load();
   }, [user]);
+
+  useAutoRefresh(load, 30000, !!user);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

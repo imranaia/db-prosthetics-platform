@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const rows = db.prepare(`
     SELECT a.id, a.patient_id, a.scheduled_date, a.preferred_date, a.notes,
-           a.patient_checked_in, a.queue_skipped, a.queue_skip_reason,
+           a.patient_checked_in, a.queue_skipped, a.queue_skip_reason, a.with_doctor,
            p.full_name AS patient_name, p.patient_unique_id, p.phone AS patient_phone
     FROM appointments a
     LEFT JOIN patients p ON a.patient_id = p.id
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     ORDER BY COALESCE(a.scheduled_date, a.preferred_date) ASC, a.created_at ASC
   `).all(hospitalId) as Array<{
     id: number; patient_id: number; scheduled_date: string | null; preferred_date: string | null; notes: string | null;
-    patient_checked_in: number; queue_skipped: number; queue_skip_reason: string | null;
+    patient_checked_in: number; queue_skipped: number; queue_skip_reason: string | null; with_doctor: number;
     patient_name: string; patient_unique_id: string | null; patient_phone: string | null;
   }>;
 
@@ -96,11 +96,20 @@ export async function PATCH(req: NextRequest) {
     }
     if (!reason?.trim()) return NextResponse.json({ error: 'A reason is required to skip a patient.' }, { status: 400 });
     db.prepare('UPDATE appointments SET queue_skipped = 1, queue_skip_reason = ? WHERE id = ?').run(reason.trim(), appointment_id);
+  } else if (action === 'start') {
+    // Doctor/P&O specialist/hospital admin: the practitioner has actually
+    // called this patient in and is seeing them now — distinct from
+    // "completed" so the button has somewhere to go before the visit is
+    // fully done, and patients/reception can see "with the doctor" live.
+    if (user.role !== 'doctor' && user.role !== 'po_specialist' && user.role !== 'hospital_admin') {
+      return NextResponse.json({ error: 'Only the practitioner can start seeing this patient.' }, { status: 403 });
+    }
+    db.prepare('UPDATE appointments SET with_doctor = 1 WHERE id = ?').run(appointment_id);
   } else if (action === 'complete') {
     if (user.role !== 'doctor' && user.role !== 'po_specialist' && user.role !== 'hospital_admin') {
       return NextResponse.json({ error: 'Only the practitioner can complete this appointment.' }, { status: 403 });
     }
-    db.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?").run(appointment_id);
+    db.prepare("UPDATE appointments SET status = 'completed', with_doctor = 0 WHERE id = ?").run(appointment_id);
   } else {
     return NextResponse.json({ error: 'Invalid action.' }, { status: 400 });
   }

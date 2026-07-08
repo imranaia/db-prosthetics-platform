@@ -22,6 +22,7 @@ interface Appointment {
   assigned_doctor_name: string | null;
   requested_po_specialist_name: string | null;
   assigned_po_specialist_name: string | null;
+  with_doctor: number;
 }
 interface Doctor { id: number; full_name: string | null; specialization: string | null; state: string | null; hospital_name: string | null; }
 interface POSpecialist { id: number; full_name: string | null; specialization: string | null; state: string | null; hospital_name: string | null; }
@@ -89,7 +90,9 @@ export default function PatientAppointmentsPage() {
     fetch('/api/patient/hospitals').then(r => r.json()).then(d => setHospitalOptions(Array.isArray(d) ? d : [])).catch(() => {});
   }, [user]);
 
-  useAutoRefresh(load, 30000, !!user);
+  // Tighter than the default — a patient waiting on "am I with the doctor
+  // yet" shouldn't be stuck behind a slow poll.
+  useAutoRefresh(load, 10000, !!user);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
@@ -366,6 +369,11 @@ export default function PatientAppointmentsPage() {
                     {appt.type === 'home' ? 'Home Visit' : 'Hospital Visit'}
                   </span>
                   <StatusBadge status={appt.status} />
+                  {!!appt.with_doctor && (
+                    <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+                      With the doctor now
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{formatDate(appt.created_at)}</div>
               </div>

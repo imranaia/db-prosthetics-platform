@@ -36,6 +36,7 @@ interface Appointment {
   status: string;
   notes: string | null;
   patient_checked_in?: number;
+  with_doctor?: number;
 }
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
@@ -96,7 +97,10 @@ export default function ReceptionistAppointmentsPage() {
     load();
   }, [user, loading]);
 
-  useAutoRefresh(load, 30000, !!user && !loading);
+  // Tighter than the default 30s — reception needs to see "with doctor"
+  // status change promptly, since that's how they know when a patient's
+  // visit is actually finishing up.
+  useAutoRefresh(load, 10000, !!user && !loading);
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
@@ -293,7 +297,11 @@ export default function ReceptionistAppointmentsPage() {
                       <td>{a.scheduled_date ? new Date(a.scheduled_date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
                       <td><span className="status-badge" style={{ background: style.bg, color: style.color }}>{a.status}</span></td>
                       <td>
-                        {a.status !== 'confirmed' || !isToday ? '—' : a.patient_checked_in ? (
+                        {a.status !== 'confirmed' || !isToday ? '—' : a.with_doctor ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: '#2563eb', fontWeight: 600 }}>
+                            <UserCheck size={14} /> With Doctor
+                          </span>
+                        ) : a.patient_checked_in ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
                             <UserCheck size={14} /> Here
                           </span>
