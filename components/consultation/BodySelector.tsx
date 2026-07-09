@@ -17,11 +17,46 @@ interface Props {
   // regions are shown/clickable, and any previously-picked region from the
   // other side is dropped so the record can't end up self-contradictory.
   category?: string;
+  // Exact Device Type card (values from getDeviceSubtypeOptions in
+  // MeasurementFields.tsx, e.g. 'th', 'tf') — when it maps to one specific
+  // amputation level (see DEVICE_SUBTYPE_REGION below), the diagram narrows
+  // down to just that region instead of the whole category, so picking
+  // "Transhumeral (TH)" shows only the Above Elbow region. Subtypes that
+  // aren't a single level (orthoses, "Ortho-Prosthesis") fall back to
+  // showing the whole category, same as no subtype chosen.
+  deviceSubtype?: string;
   // Renders the diagram without click handlers/hover, for reviewers (e.g.
   // super admin viewing a submitted order) who should see what was marked
   // but not be able to change it.
   readOnly?: boolean;
 }
+
+// Maps each exact Device Type card to the one region it corresponds to.
+// Subtypes not listed here (orthoses, Ortho-Prosthesis) aren't a single
+// amputation level, so they intentionally show the whole category instead.
+// (Kept as a plain local lookup rather than importing from
+// MeasurementFields.tsx, which already type-imports from this file.)
+const DEVICE_SUBTYPE_REGION: Record<string, string> = {
+  th: 'above_elbow',            // Transhumeral
+  tr: 'below_elbow',            // Transradial
+  ad: 'ankle_level',            // Ankle Disarticulation
+  hd: 'hip_disarticulation',    // Hip Disarticulation
+  kd: 'knee_disarticulation',   // Knee Disarticulation
+  pf: 'partial_foot',           // Partial Foot
+  tf: 'above_knee',             // Transfemoral
+  tt: 'below_knee',             // Transtibial
+};
+
+const DEVICE_SUBTYPE_LABEL: Record<string, string> = {
+  th: 'Transhumeral (TH)',
+  tr: 'Transradial (TR)',
+  ad: 'Ankle Disarticulation (AD)',
+  hd: 'Hip Disarticulation (HD)',
+  kd: 'Knee Disarticulation (KD)',
+  pf: 'Partial Foot (PF)',
+  tf: 'Transfemoral (TF)',
+  tt: 'Transtibial (TT)',
+};
 
 /* ─── Region definitions ───
    Clinical amputation levels (per the reference chart), not generic body
@@ -239,7 +274,7 @@ function zoomTransform(regions: RegionDef[], view: ViewKey): string {
 }
 
 /* ─── Main component ─── */
-export default function BodySelector({ value, onChange, category, readOnly }: Props) {
+export default function BodySelector({ value, onChange, category, deviceSubtype, readOnly }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>('front');
   // Which side to focus the diagram on — only meaningful for upper/lower
@@ -287,13 +322,29 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restrictedSide]);
 
+  // A specific Device Type card (e.g. Transfemoral) names one exact level —
+  // a previously-marked region for a different level would contradict the
+  // declared card, so drop it the same way a Category change does.
+  const subtypeRegionBase = deviceSubtype ? DEVICE_SUBTYPE_REGION[deviceSubtype] : undefined;
+  useEffect(() => {
+    if (!subtypeRegionBase) return;
+    const filtered = value.filter(p => p.region === `right_${subtypeRegionBase}` || p.region === `left_${subtypeRegionBase}`);
+    if (filtered.length !== value.length) onChange(filtered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtypeRegionBase]);
+
   // Facial only ever shows when explicitly selected — the "no restriction"
   // fallback (category unset or 'other') must not leak eye/nose/ear
   // hotspots onto the body diagram.
   const categoryRegions = restrictedSide
     ? REGIONS.filter(def => def.limbSide === restrictedSide)
     : REGIONS.filter(def => def.limbSide !== 'facial');
-  const visibleRegions = side === 'both' ? categoryRegions : categoryRegions.filter(def => def.region.startsWith(`${side}_`));
+  // A specific Device Type card narrows further to just that one level
+  // (both sides — Left/Right/Both above still applies within it).
+  const subtypeRegions = subtypeRegionBase
+    ? categoryRegions.filter(def => def.region === `right_${subtypeRegionBase}` || def.region === `left_${subtypeRegionBase}`)
+    : categoryRegions;
+  const visibleRegions = side === 'both' ? subtypeRegions : subtypeRegions.filter(def => def.region.startsWith(`${side}_`));
   const zoomed = side !== 'both';
   // Ears only have a position on their own profile view, not front — only
   // render hotspots that actually exist on the view currently shown.
@@ -474,7 +525,11 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
       )}
       {restrictedSide && !readOnly && (
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
-          Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : restrictedSide === 'lower' ? 'lower limb (leg/foot)' : restrictedSide === 'spinal' ? 'spinal' : 'facial'} regions only, based on the Device Category above.
+          {subtypeRegionBase ? (
+            <>Showing only {DEVICE_SUBTYPE_LABEL[deviceSubtype!]}, based on the Device Type above.</>
+          ) : (
+            <>Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : restrictedSide === 'lower' ? 'lower limb (leg/foot)' : restrictedSide === 'spinal' ? 'spinal' : 'facial'} regions only, based on the Device Category above.</>
+          )}
         </div>
       )}
 

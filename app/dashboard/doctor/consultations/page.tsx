@@ -717,7 +717,7 @@ export default function DoctorConsultationsPage() {
             {/* Filtered/zoomed to the chosen Device Category, same as the
                 order forms — picking Upper Limb only shows upper-limb
                 regions (with Left/Right/Both), etc. */}
-            <BodyPartPicker value={bodyParts} onChange={setBodyParts} category={form.category} />
+            <BodyPartPicker value={bodyParts} onChange={setBodyParts} category={form.category} deviceSubtype={form.device_subtype} />
 
             {/* Section 3 — Physical Assessment */}
             <div style={{ marginTop: 24 }}>

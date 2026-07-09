@@ -39,14 +39,6 @@ interface Appointment {
   with_doctor?: number;
 }
 
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  confirmed: { bg: '#dbeafe', color: '#1d4ed8' },
-  completed: { bg: '#d1fae5', color: '#065f46' },
-  cancelled: { bg: 'rgba(220,38,38,0.12)', color: '#b91c1c' },
-  requested: { bg: '#fef3c7', color: '#b45309' },
-  quoted: { bg: '#f3e8ff', color: '#6d28d9' },
-};
-
 export default function ReceptionistAppointmentsPage() {
   const { user, loading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -274,60 +266,61 @@ export default function ReceptionistAppointmentsPage() {
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading…</div>
         ) : appointments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>No appointments yet.</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {appointments.map((a, i) => {
-              const style = STATUS_STYLE[a.status] || { bg: 'var(--bg-base)', color: 'var(--text-muted)' };
-              const isToday = a.scheduled_date && new Date(a.scheduled_date).toDateString() === new Date().toDateString();
-              const showCheckIn = a.status === 'confirmed' && isToday;
-              return (
-                <div key={a.id} style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--bg-base)', border: '1px solid var(--border-card)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        ) : (() => {
+          // "Next" = the first appointment that's confirmed for today and
+          // not already with the doctor — i.e. the next one actually
+          // waiting, not just whoever is first in the list overall.
+          const nextIdx = appointments.findIndex(a => {
+            const isToday = a.scheduled_date && new Date(a.scheduled_date).toDateString() === new Date().toDateString();
+            return a.status === 'confirmed' && isToday && !a.with_doctor;
+          });
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {appointments.map((a, i) => {
+                const isToday = a.scheduled_date && new Date(a.scheduled_date).toDateString() === new Date().toDateString();
+                const showCheckIn = a.status === 'confirmed' && isToday;
+                const isNext = i === nextIdx;
+                return (
+                  <div
+                    key={a.id}
+                    style={{
+                      padding: '10px 12px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10,
+                      background: isNext ? 'rgba(208,140,42,0.08)' : 'var(--bg-base)',
+                      border: isNext ? '1px solid rgba(208,140,42,0.35)' : '1px solid var(--border-card)',
+                    }}
+                  >
                     <div style={{
                       width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(27,61,94,0.1)', color: 'var(--primary)',
+                      background: isNext ? '#d08c2a' : 'rgba(27,61,94,0.1)', color: isNext ? '#fff' : 'var(--primary)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.76rem', fontWeight: 700,
                     }}>
                       {i + 1}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {a.patient_name}{a.patient_unique_id ? ` (${a.patient_unique_id})` : ''}
-                      </div>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {a.patient_name}
                     </div>
-                    <span className="status-badge" style={{ background: style.bg, color: style.color, flexShrink: 0 }}>{a.status}</span>
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6, marginLeft: 36 }}>
-                    {a.doctor_name || a.po_specialist_name || 'Any practitioner'}
-                    {a.scheduled_date && ` · ${new Date(a.scheduled_date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })}`}
-                  </div>
-                  {showCheckIn && (
-                    <div style={{ marginTop: 8, marginLeft: 36 }}>
-                      {a.with_doctor ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#2563eb', fontWeight: 600, width: 'fit-content' }}>
-                          <UserCheck size={13} /> With Doctor
-                        </span>
+                    {showCheckIn && (
+                      a.with_doctor ? (
+                        <UserCheck size={16} color="#2563eb" style={{ flexShrink: 0 }} />
                       ) : a.patient_checked_in ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#059669', fontWeight: 600, width: 'fit-content' }}>
-                          <UserCheck size={13} /> Patient Here
-                        </span>
+                        <UserCheck size={16} color="#059669" style={{ flexShrink: 0 }} />
                       ) : (
                         <button
                           onClick={() => handleCheckIn(a.id)}
                           disabled={checkingInId === a.id}
-                          style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(5,150,105,0.3)', background: 'rgba(5,150,105,0.08)', color: '#059669', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600 }}
+                          style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(5,150,105,0.3)', background: 'rgba(5,150,105,0.08)', color: '#059669', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}
                         >
-                          {checkingInId === a.id ? 'Checking in…' : 'Patient is here'}
+                          {checkingInId === a.id ? '…' : 'Here'}
                         </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                      )
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
