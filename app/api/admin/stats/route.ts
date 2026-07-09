@@ -37,23 +37,44 @@ export async function GET(req: NextRequest) {
   const days = rangeParam in RANGE_DAYS ? RANGE_DAYS[rangeParam] : null;
   const sinceClause = days === null ? '' : days === 0 ? "AND date(created_at) = date('now')" : `AND created_at >= date('now', '-${days} days')`;
 
-  const income = (db.prepare(
+  const standardIncome = (db.prepare(
     `SELECT COALESCE(SUM(total_amount - service_fee),0) as s FROM orders WHERE payment_status='paid' ${sinceClause}`
   ).get() as { s: number }).s;
 
-  // Potential income: value of everything currently in stock, if all of it sold.
+  // Custom orders have no service_fee split — quoted_price is the full
+  // amount charged, so it counts in full (unlike standard orders, which
+  // have the platform's cut subtracted above).
+  const customIncome = (db.prepare(
+    `SELECT COALESCE(SUM(quoted_price),0) as s FROM custom_orders WHERE payment_status='paid' ${sinceClause}`
+  ).get() as { s: number }).s;
+
+  const income = standardIncome + customIncome;
+
+  // Potential income: value of everything currently in stock, if all of it
+  // sold — price per unit times how many units are actually on hand.
   const potential_income = (db.prepare(
-    `SELECT COALESCE(SUM(price),0) as s FROM products WHERE in_stock = 1`
+    `SELECT COALESCE(SUM(price * quantity),0) as s FROM products WHERE in_stock = 1`
   ).get() as { s: number }).s;
 
   // Monthly revenue — last 6 months (in kobo, divide by 100 on client),
-  // also excluding the platform's service fee.
+  // combining standard orders (service fee excluded) and custom orders
+  // (quoted_price counts in full — no fee split on that table).
   const monthly_revenue = db.prepare(`
-    SELECT strftime('%Y-%m', created_at) as month,
-           COALESCE(SUM(total_amount - service_fee),0) as revenue
-    FROM orders
-    WHERE payment_status = 'paid'
-      AND created_at >= date('now', '-6 months')
+    SELECT month, SUM(revenue) as revenue FROM (
+      SELECT strftime('%Y-%m', created_at) as month,
+             COALESCE(SUM(total_amount - service_fee),0) as revenue
+      FROM orders
+      WHERE payment_status = 'paid'
+        AND created_at >= date('now', '-6 months')
+      GROUP BY month
+      UNION ALL
+      SELECT strftime('%Y-%m', created_at) as month,
+             COALESCE(SUM(quoted_price),0) as revenue
+      FROM custom_orders
+      WHERE payment_status = 'paid'
+        AND created_at >= date('now', '-6 months')
+      GROUP BY month
+    )
     GROUP BY month ORDER BY month ASC
   `).all() as { month: string; revenue: number }[];
 
