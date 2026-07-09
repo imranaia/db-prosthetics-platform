@@ -35,19 +35,25 @@ interface Props {
    same camera used to render the images, so a hotspot always lands on the
    correct real anatomy — not hand-placed/eyeballed.
 */
+type ViewKey = 'front' | 'back' | 'left' | 'right';
+
 interface RegionDef {
   region: string;
   label: string;
   abbr: string;
-  limbSide: 'upper' | 'lower' | 'spinal';
+  limbSide: 'upper' | 'lower' | 'spinal' | 'facial';
   subPartOptions?: string[];
   // Hand/foot digits are a multi-select (several fingers/toes can be
   // affected at once); knee/ankle variants are mutually exclusive.
   multiSubParts?: boolean;
-  // Percentage position of this region's hotspot within the body image,
-  // one for each camera angle.
-  front: { x: number; y: number };
-  back: { x: number; y: number };
+  // Percentage position of this region's hotspot, one per camera angle it
+  // appears in. Body/spinal regions define front+back; facial ears only
+  // appear in their own profile shot (left/right), not front — the hotspot
+  // simply isn't rendered on views where it has no position.
+  front?: { x: number; y: number };
+  back?: { x: number; y: number };
+  left?: { x: number; y: number };
+  right?: { x: number; y: number };
   // Hand/wrist regions sit close together on the real image, so they use
   // progressively smaller hotspots than the other (well-separated) joints.
   size?: 'wrist' | 'hand' | 'digit';
@@ -138,6 +144,15 @@ const REGIONS: RegionDef[] = [
   { region: 'thoracic_spine', label: 'Thoracic Spine (Upper Back)', abbr: 'T', limbSide: 'spinal', front: { x: 50, y: 29 }, back: { x: 50, y: 29 } },
   { region: 'lumbar_spine',   label: 'Lumbar Spine (Lower Back)',   abbr: 'L', limbSide: 'spinal', front: { x: 50, y: 39 }, back: { x: 50, y: 39 } },
   { region: 'sacral_spine',   label: 'Sacral Spine (Pelvis)',       abbr: 'S', limbSide: 'spinal', front: { x: 50, y: 46 }, back: { x: 50, y: 46 } },
+
+  /* ─ Facial — eyes/nose sit on the front view; each ear only appears in
+     its own profile shot (public/images/face-left.png / face-right.png),
+     not on the front view (barely visible there and much less precise). */
+  { region: 'right_eye', label: 'Right Eye',  abbr: 'R.Ey', limbSide: 'facial', front: { x: 32, y: 35 } },
+  { region: 'left_eye',  label: 'Left Eye',   abbr: 'L.Ey', limbSide: 'facial', front: { x: 68, y: 35 } },
+  { region: 'nose',      label: 'Nose',       abbr: 'N',    limbSide: 'facial', front: { x: 50, y: 57 } },
+  { region: 'left_ear',  label: 'Left Ear',   abbr: 'L.Er', limbSide: 'facial', left: { x: 65, y: 44 } },
+  { region: 'right_ear', label: 'Right Ear',  abbr: 'R.Er', limbSide: 'facial', right: { x: 32, y: 42 } },
 ];
 
 /* ─── Hotspot renderer ─── */
@@ -152,7 +167,7 @@ function RegionHotspot({
   onMouseLeave,
 }: {
   def: RegionDef;
-  view: 'front' | 'back';
+  view: ViewKey;
   selected: boolean;
   hovered: boolean;
   readOnly?: boolean;
@@ -160,7 +175,7 @@ function RegionHotspot({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
-  const pos = def[view];
+  const pos = def[view]!;
   const diameter = def.size === 'digit' ? 18 : def.size === 'hand' ? 22 : def.size === 'wrist' ? 27 : 32;
   const background = selected
     ? 'rgba(208,140,42,0.85)'
@@ -208,10 +223,10 @@ function RegionHotspot({
 // instead of sitting small on the full body — no separate cropped image
 // assets needed, since the hotspots are already percentage-positioned
 // within this same layer and zoom/pan with it.
-function zoomTransform(regions: RegionDef[], view: 'front' | 'back'): string {
+function zoomTransform(regions: RegionDef[], view: ViewKey): string {
   if (regions.length === 0) return 'none';
-  const xs = regions.map(r => r[view].x);
-  const ys = regions.map(r => r[view].y);
+  const xs = regions.map(r => r[view]!.x);
+  const ys = regions.map(r => r[view]!.y);
   const pad = 12; // percent padding around the bounding box, each side
   const w = Math.max(Math.max(...xs) - Math.min(...xs) + pad * 2, 20);
   const h = Math.max(Math.max(...ys) - Math.min(...ys) + pad * 2, 20);
@@ -226,14 +241,17 @@ function zoomTransform(regions: RegionDef[], view: 'front' | 'back'): string {
 /* ─── Main component ─── */
 export default function BodySelector({ value, onChange, category, readOnly }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const [view, setView] = useState<'front' | 'back'>('front');
+  const [view, setView] = useState<ViewKey>('front');
   // Which side to focus the diagram on — only meaningful for upper/lower
   // limb categories. Picking a specific side zooms in so the hotspots are
   // bigger and easier to tap; "Both" shows the full body, unzoomed.
   const [side, setSide] = useState<'both' | 'left' | 'right'>('both');
 
-  const restrictedSide: 'upper' | 'lower' | 'spinal' | null =
-    category === 'upper_limb' ? 'upper' : category === 'lower_limb' ? 'lower' : category === 'spinal' ? 'spinal' : null;
+  const isFacial = category === 'facial';
+  const viewOptions: ViewKey[] = isFacial ? ['front', 'left', 'right'] : ['front', 'back'];
+
+  const restrictedSide: 'upper' | 'lower' | 'spinal' | 'facial' | null =
+    category === 'upper_limb' ? 'upper' : category === 'lower_limb' ? 'lower' : category === 'spinal' ? 'spinal' : category === 'facial' ? 'facial' : null;
 
   const sideSelectable = restrictedSide === 'upper' || restrictedSide === 'lower';
 
@@ -243,6 +261,14 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
     if (!sideSelectable) setSide('both');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sideSelectable]);
+
+  // Facial uses Front/Left/Right instead of Front/Back — reset to Front
+  // when switching modes so the view toggle never lands on an option that
+  // doesn't exist for the current category.
+  useEffect(() => {
+    if (!viewOptions.includes(view)) setView('front');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFacial]);
 
   // If the Device Category changes to a limb side that contradicts an
   // already-marked region, drop that region rather than leave a diagram
@@ -258,6 +284,9 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
   const categoryRegions = restrictedSide ? REGIONS.filter(def => def.limbSide === restrictedSide) : REGIONS;
   const visibleRegions = side === 'both' ? categoryRegions : categoryRegions.filter(def => def.region.startsWith(`${side}_`));
   const zoomed = side !== 'both';
+  // Ears only have a position on their own profile view, not front — only
+  // render hotspots that actually exist on the view currently shown.
+  const onScreenRegions = visibleRegions.filter(def => def[view]);
 
   const selectedMap = new Map<string, BodyPart>(value.map(p => [p.region, p]));
 
@@ -295,10 +324,14 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
   );
 
   // Viewing from behind, the patient's right hand is on the viewer's right
-  // (both facing the same way); viewing from the front it's mirrored.
+  // (both facing the same way); viewing from the front it's mirrored. Only
+  // meaningful for the front/back body views — facial's left/right are
+  // profile shots, not a mirrored front, so the labels are hidden there.
   const rightLabelSide = view === 'front' ? 'left' : 'right';
 
   const transform = zoomed ? zoomTransform(visibleRegions, view) : 'none';
+  const imageSrc = isFacial ? `/images/face-${view}.png` : `/images/body-${view}.png`;
+  const viewLabel = (v: ViewKey) => (isFacial && v !== 'front' ? `${v} profile` : v);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
@@ -329,9 +362,9 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
         </div>
       )}
 
-      {/* Front/Back toggle */}
+      {/* Front/Back (or Front/Left/Right for facial) toggle */}
       <div style={{ display: 'flex', gap: '6px' }}>
-        {(['front', 'back'] as const).map(v => (
+        {viewOptions.map(v => (
           <button
             key={v}
             type="button"
@@ -348,7 +381,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
               textTransform: 'capitalize',
             }}
           >
-            {v}
+            {viewLabel(v)}
           </button>
         ))}
       </div>
@@ -377,15 +410,15 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
           }}
         >
           <Image
-            src={`/images/body-${view}.png`}
-            alt={`Human body diagram (${view} view)`}
+            src={imageSrc}
+            alt={isFacial ? `Face diagram (${view} view)` : `Human body diagram (${view} view)`}
             fill
             sizes="320px"
             style={{ objectFit: 'contain' }}
             priority
           />
 
-          {visibleRegions.map(def => (
+          {onScreenRegions.map(def => (
             <RegionHotspot
               key={def.region}
               def={def}
@@ -401,13 +434,18 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
         </div>
 
         {/* Side orientation labels — fixed to the container corners, not
-            part of the zoomed/panned layer */}
-        <span style={{ position: 'absolute', top: 6, [rightLabelSide]: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
-          Patient&apos;s Right
-        </span>
-        <span style={{ position: 'absolute', top: 6, [rightLabelSide === 'left' ? 'right' : 'left']: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
-          Patient&apos;s Left
-        </span>
+            part of the zoomed/panned layer. Only meaningful for the
+            mirrored front/back body views, not facial's profile shots. */}
+        {(view === 'front' || view === 'back') && (
+          <>
+            <span style={{ position: 'absolute', top: 6, [rightLabelSide]: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
+              Patient&apos;s Right
+            </span>
+            <span style={{ position: 'absolute', top: 6, [rightLabelSide === 'left' ? 'right' : 'left']: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
+              Patient&apos;s Left
+            </span>
+          </>
+        )}
       </div>
 
       {/* Legend */}
@@ -425,7 +463,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
       )}
       {restrictedSide && !readOnly && (
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
-          Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : restrictedSide === 'lower' ? 'lower limb (leg/foot)' : 'spinal'} levels only, based on the Device Category above.
+          Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : restrictedSide === 'lower' ? 'lower limb (leg/foot)' : restrictedSide === 'spinal' ? 'spinal' : 'facial'} regions only, based on the Device Category above.
         </div>
       )}
 
@@ -477,7 +515,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
       {value.length > 0 && (
         <div style={{ width: '100%' }}>
           <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted, #6b7280)', marginBottom: '8px' }}>
-            Selected Amputation Levels
+            {isFacial ? 'Selected Facial Regions' : 'Selected Amputation Levels'}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {value.map(part => {

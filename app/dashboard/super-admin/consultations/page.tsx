@@ -835,11 +835,10 @@ export default function ConsultationsPage() {
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10, marginTop: 0 }}>
               Click on the body diagram to mark the affected region(s). For hands/feet, select specific fingers or toes.
             </p>
-            {/* No category restriction here — this records the patient's
-                actual affected area (an independent clinical fact), not
-                "what the device order is for", so it shouldn't be cleared
-                just because Device Category (above) changes. */}
-            <BodyPartPicker value={bodyParts} onChange={setBodyParts} />
+            {/* Filtered/zoomed to the chosen Device Category, same as the
+                order forms — picking Upper Limb only shows upper-limb
+                regions (with Left/Right/Both), etc. */}
+            <BodyPartPicker value={bodyParts} onChange={setBodyParts} category={form.category} />
 
             {/* Section 3 — Physical Assessment */}
             <div style={{ marginTop: 24 }}>
