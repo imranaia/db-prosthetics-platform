@@ -32,6 +32,7 @@ interface DashboardShellProps {
 const DEFAULT_NAV: NavItem[] = [
   { label: 'Overview',        href: '/dashboard/super-admin',                icon: LayoutDashboard },
   { label: 'Hospitals',       href: '/dashboard/super-admin/hospitals',       icon: Building2 },
+  { label: 'Doctors',         href: '/dashboard/super-admin/doctors',         icon: Stethoscope },
   { label: 'Products',        href: '/dashboard/super-admin/products',        icon: Package },
   { label: 'Patients',        href: '/dashboard/super-admin/patients',        icon: Users },
   { label: 'P&O Specialists', href: '/dashboard/super-admin/specialists',     icon: Stethoscope },

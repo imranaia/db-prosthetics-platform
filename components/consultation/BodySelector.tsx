@@ -281,7 +281,12 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restrictedSide]);
 
-  const categoryRegions = restrictedSide ? REGIONS.filter(def => def.limbSide === restrictedSide) : REGIONS;
+  // Facial only ever shows when explicitly selected — the "no restriction"
+  // fallback (category unset or 'other') must not leak eye/nose/ear
+  // hotspots onto the body diagram.
+  const categoryRegions = restrictedSide
+    ? REGIONS.filter(def => def.limbSide === restrictedSide)
+    : REGIONS.filter(def => def.limbSide !== 'facial');
   const visibleRegions = side === 'both' ? categoryRegions : categoryRegions.filter(def => def.region.startsWith(`${side}_`));
   const zoomed = side !== 'both';
   // Ears only have a position on their own profile view, not front — only

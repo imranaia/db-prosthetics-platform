@@ -53,7 +53,10 @@ export default function HospitalsPage() {
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   if (!user) { if (typeof window !== 'undefined') window.location.href = '/login'; return null; }
 
-  const filteredStates = NIGERIA_STATES.filter(s => s.toLowerCase().includes(stateSearch.toLowerCase()));
+  // Only states that actually have a hospital registered — with 36+ states
+  // and often just a handful in use, listing every state (mostly "0
+  // hospitals") just crowds the page with nothing to act on.
+  const filteredStates = NIGERIA_STATES.filter(s => countByState[s] > 0 && s.toLowerCase().includes(stateSearch.toLowerCase()));
 
   const hospitalsInState = selectedState
     ? hospitals.filter(h => h.state === selectedState && h.name.toLowerCase().includes(hospitalSearch.toLowerCase()))

@@ -269,57 +269,63 @@ export default function ReceptionistAppointmentsPage() {
       </div>
 
       <div className="skeu-card" style={{ padding: 24 }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 16 }}>Upcoming at This Hospital</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 16 }}>Queue — Upcoming at This Hospital</h2>
         {dataLoading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading…</div>
         ) : appointments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>No appointments yet.</div>
         ) : (
-          <div className="table-scroll">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Practitioner</th>
-                  <th>Date &amp; Time</th>
-                  <th>Status</th>
-                  <th>Arrival</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map(a => {
-                  const style = STATUS_STYLE[a.status] || { bg: 'var(--bg-base)', color: 'var(--text-muted)' };
-                  const isToday = a.scheduled_date && new Date(a.scheduled_date).toDateString() === new Date().toDateString();
-                  return (
-                    <tr key={a.id}>
-                      <td>{a.patient_name}{a.patient_unique_id ? ` (${a.patient_unique_id})` : ''}</td>
-                      <td>{a.doctor_name || a.po_specialist_name || '—'}</td>
-                      <td>{a.scheduled_date ? new Date(a.scheduled_date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
-                      <td><span className="status-badge" style={{ background: style.bg, color: style.color }}>{a.status}</span></td>
-                      <td>
-                        {a.status !== 'confirmed' || !isToday ? '—' : a.with_doctor ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: '#2563eb', fontWeight: 600 }}>
-                            <UserCheck size={14} /> With Doctor
-                          </span>
-                        ) : a.patient_checked_in ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
-                            <UserCheck size={14} /> Here
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleCheckIn(a.id)}
-                            disabled={checkingInId === a.id}
-                            style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(5,150,105,0.3)', background: 'rgba(5,150,105,0.08)', color: '#059669', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap' }}
-                          >
-                            {checkingInId === a.id ? 'Checking in…' : 'Patient is here'}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {appointments.map((a, i) => {
+              const style = STATUS_STYLE[a.status] || { bg: 'var(--bg-base)', color: 'var(--text-muted)' };
+              const isToday = a.scheduled_date && new Date(a.scheduled_date).toDateString() === new Date().toDateString();
+              const showCheckIn = a.status === 'confirmed' && isToday;
+              return (
+                <div key={a.id} style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--bg-base)', border: '1px solid var(--border-card)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: 'rgba(27,61,94,0.1)', color: 'var(--primary)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.76rem', fontWeight: 700,
+                    }}>
+                      {i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-head)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.patient_name}{a.patient_unique_id ? ` (${a.patient_unique_id})` : ''}
+                      </div>
+                    </div>
+                    <span className="status-badge" style={{ background: style.bg, color: style.color, flexShrink: 0 }}>{a.status}</span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6, marginLeft: 36 }}>
+                    {a.doctor_name || a.po_specialist_name || 'Any practitioner'}
+                    {a.scheduled_date && ` · ${new Date(a.scheduled_date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })}`}
+                  </div>
+                  {showCheckIn && (
+                    <div style={{ marginTop: 8, marginLeft: 36 }}>
+                      {a.with_doctor ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#2563eb', fontWeight: 600, width: 'fit-content' }}>
+                          <UserCheck size={13} /> With Doctor
+                        </span>
+                      ) : a.patient_checked_in ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#059669', fontWeight: 600, width: 'fit-content' }}>
+                          <UserCheck size={13} /> Patient Here
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleCheckIn(a.id)}
+                          disabled={checkingInId === a.id}
+                          style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(5,150,105,0.3)', background: 'rgba(5,150,105,0.08)', color: '#059669', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600 }}
+                        >
+                          {checkingInId === a.id ? 'Checking in…' : 'Patient is here'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

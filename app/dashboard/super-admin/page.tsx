@@ -37,7 +37,7 @@ const INCOME_RANGES = [
 const STAT_CARDS = [
   { key: 'hospitals',            label: 'Hospitals',            icon: Building2,       color: '#1b3d5e', href: '/dashboard/super-admin/hospitals' },
   { key: 'patients',             label: 'Patients',             icon: Users,           color: '#2563eb', href: '/dashboard/super-admin/patients' },
-  { key: 'doctors',              label: 'Doctors',              icon: Stethoscope,     color: '#7c3aed', href: null },
+  { key: 'doctors',              label: 'Doctors',              icon: Stethoscope,     color: '#7c3aed', href: '/dashboard/super-admin/doctors' },
   { key: 'pending_orders',       label: 'Pending Orders',       icon: ShoppingCart,    color: '#b5751f', href: '/dashboard/super-admin/orders' },
   { key: 'pending_appointments', label: 'Pending Appts',        icon: CalendarDays,    color: '#dc2626', href: '/dashboard/super-admin/appointments' },
   { key: 'products',             label: 'Products',             icon: Package,         color: '#059669', href: '/dashboard/super-admin/inventory' },
