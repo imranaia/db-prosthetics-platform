@@ -119,124 +119,114 @@ export default function POSpecialistAppointmentsPage() {
         ))}
       </div>
 
-      <div className="skeu-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {dataLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading appointments...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            {appointments.length === 0 ? 'No appointments assigned to you yet.' : 'No appointments in this category.'}
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-base)' }}>
-                  {['Patient', 'Type', 'Status', 'Date', 'Payment', ''].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(a => {
-                  const isExp = expanded === a.id;
-                  return (
-                    <>
-                      <tr
-                        key={a.id}
-                        style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer', background: isExp ? 'rgba(27,61,94,0.04)' : undefined }}
-                        onClick={() => setExpanded(isExp ? null : a.id)}
-                      >
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-head)' }}>
-                          <div>{a.patient_name || '—'}</div>
-                          {a.patient_phone && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 400, marginTop: 2 }}>{a.patient_phone}</div>}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: a.type === 'home' ? '#05966918' : '#1b3d5e18', color: a.type === 'home' ? '#059669' : 'var(--primary)' }}>
-                            {a.type === 'home' ? 'Home' : 'Hospital'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}><StatusBadge status={a.status} /></td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                          {a.scheduled_date ? formatDate(a.scheduled_date) : formatDate(a.preferred_date)}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600, background: a.payment_status === 'paid' ? '#d1fae5' : '#f3f4f6', color: a.payment_status === 'paid' ? '#065f46' : '#374151' }}>
-                            {a.payment_status === 'not_required' ? 'N/A' : (a.payment_status || '—')}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
-                        </td>
-                      </tr>
-                      {isExp && (
-                        <tr key={`${a.id}-exp`} style={{ borderBottom: '1px solid var(--border-card)' }}>
-                          <td colSpan={6} style={{ padding: '20px 24px', background: 'rgba(27,61,94,0.02)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem', marginBottom: 20 }}>
-                              {[
-                                { label: 'Patient', value: a.patient_name || '—' },
-                                { label: 'Phone', value: a.patient_phone || '—' },
-                                { label: 'Type', value: a.type === 'home' ? 'Home Visit' : 'Hospital Visit' },
-                                { label: 'Preferred Date', value: a.preferred_date ? formatDate(a.preferred_date) : '—' },
-                                { label: 'Scheduled Date', value: a.scheduled_date ? formatDate(a.scheduled_date) : '—' },
-                                { label: 'Payment Status', value: a.payment_status === 'not_required' ? 'Not Required' : (a.payment_status || '—') },
-                                ...(a.quoted_price != null ? [{ label: 'Quoted Price', value: `₦${(a.quoted_price / 100).toLocaleString('en-NG')}` }] : []),
-                              ].map(f => (
-                                <div key={f.label}>
-                                  <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 2 }}>{f.label}</div>
-                                  <div style={{ color: 'var(--text-body)' }}>{f.value}</div>
-                                </div>
-                              ))}
-                            </div>
-                            {a.notes && (
-                              <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Notes</div>
-                                <div style={{ fontSize: '0.88rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{a.notes}</div>
-                              </div>
-                            )}
+      {dataLoading ? (
+        <div className="skeu-card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading appointments...</div>
+      ) : filtered.length === 0 ? (
+        <div className="skeu-card" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+          {appointments.length === 0 ? 'No appointments assigned to you yet.' : 'No appointments in this category.'}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, alignItems: 'start' }}>
+          {filtered.map(a => {
+            const isExp = expanded === a.id;
+            return (
+              <div
+                key={a.id}
+                className="skeu-card"
+                style={{ padding: 16, gridColumn: isExp ? '1 / -1' : undefined, cursor: 'pointer' }}
+                onClick={() => setExpanded(isExp ? null : a.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-head)', fontSize: '0.92rem' }}>{a.patient_name || '—'}</div>
+                    {a.patient_phone && <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>{a.patient_phone}</div>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <StatusBadge status={a.status} />
+                    {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                  </div>
+                </div>
 
-                            {/* Status actions */}
-                            {a.status !== 'completed' && a.status !== 'cancelled' && (
-                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {a.status === 'confirmed' && (
-                                  <button
-                                    className="skeu-btn-primary"
-                                    style={{ fontSize: '0.82rem', padding: '7px 16px' }}
-                                    disabled={updating === a.id}
-                                    onClick={e => { e.stopPropagation(); updateStatus(a.id, 'completed'); }}
-                                  >
-                                    {updating === a.id ? 'Updating…' : 'Mark as Completed'}
-                                  </button>
-                                )}
-                                {a.status === 'requested' && (
-                                  <button
-                                    className="skeu-btn-primary"
-                                    style={{ fontSize: '0.82rem', padding: '7px 16px' }}
-                                    disabled={updating === a.id}
-                                    onClick={e => { e.stopPropagation(); updateStatus(a.id, 'confirmed'); }}
-                                  >
-                                    {updating === a.id ? 'Updating…' : 'Confirm Appointment'}
-                                  </button>
-                                )}
-                                <button
-                                  style={{ fontSize: '0.82rem', padding: '7px 14px', borderRadius: 8, border: '1px solid #fca5a5', background: 'transparent', color: '#b91c1c', cursor: 'pointer' }}
-                                  disabled={updating === a.id}
-                                  onClick={e => { e.stopPropagation(); updateStatus(a.id, 'cancelled'); }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                  <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: a.type === 'home' ? '#05966918' : '#1b3d5e18', color: a.type === 'home' ? '#059669' : 'var(--primary)' }}>
+                    {a.type === 'home' ? 'Home' : 'Hospital'}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    {a.scheduled_date ? formatDate(a.scheduled_date) : formatDate(a.preferred_date)}
+                  </span>
+                  <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600, background: a.payment_status === 'paid' ? '#d1fae5' : '#f3f4f6', color: a.payment_status === 'paid' ? '#065f46' : '#374151' }}>
+                    {a.payment_status === 'not_required' ? 'N/A' : (a.payment_status || '—')}
+                  </span>
+                </div>
+
+                {a.notes && !isExp && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-body)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.notes}</div>
+                )}
+
+                {isExp && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem' }}>
+                      {[
+                        { label: 'Patient', value: a.patient_name || '—' },
+                        { label: 'Phone', value: a.patient_phone || '—' },
+                        { label: 'Type', value: a.type === 'home' ? 'Home Visit' : 'Hospital Visit' },
+                        { label: 'Preferred Date', value: a.preferred_date ? formatDate(a.preferred_date) : '—' },
+                        { label: 'Scheduled Date', value: a.scheduled_date ? formatDate(a.scheduled_date) : '—' },
+                        { label: 'Payment Status', value: a.payment_status === 'not_required' ? 'Not Required' : (a.payment_status || '—') },
+                        ...(a.quoted_price != null ? [{ label: 'Quoted Price', value: `₦${(a.quoted_price / 100).toLocaleString('en-NG')}` }] : []),
+                      ].map(f => (
+                        <div key={f.label}>
+                          <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 2 }}>{f.label}</div>
+                          <div style={{ color: 'var(--text-body)' }}>{f.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {a.notes && (
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Notes</div>
+                        <div style={{ fontSize: '0.88rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{a.notes}</div>
+                      </div>
+                    )}
+
+                    {/* Status actions */}
+                    {a.status !== 'completed' && a.status !== 'cancelled' && (
+                      <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+                        {a.status === 'confirmed' && (
+                          <button
+                            className="skeu-btn-primary"
+                            style={{ fontSize: '0.82rem', padding: '7px 16px' }}
+                            disabled={updating === a.id}
+                            onClick={() => updateStatus(a.id, 'completed')}
+                          >
+                            {updating === a.id ? 'Updating…' : 'Mark as Completed'}
+                          </button>
+                        )}
+                        {a.status === 'requested' && (
+                          <button
+                            className="skeu-btn-primary"
+                            style={{ fontSize: '0.82rem', padding: '7px 16px' }}
+                            disabled={updating === a.id}
+                            onClick={() => updateStatus(a.id, 'confirmed')}
+                          >
+                            {updating === a.id ? 'Updating…' : 'Confirm Appointment'}
+                          </button>
+                        )}
+                        <button
+                          style={{ fontSize: '0.82rem', padding: '7px 14px', borderRadius: 8, border: '1px solid #fca5a5', background: 'transparent', color: '#b91c1c', cursor: 'pointer' }}
+                          disabled={updating === a.id}
+                          onClick={() => updateStatus(a.id, 'cancelled')}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

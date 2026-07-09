@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
-import { Stethoscope, Plus, X, Search, Building2 } from 'lucide-react';
+import { Stethoscope, Plus, X, Search, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 
 interface Doctor {
@@ -12,7 +12,20 @@ interface Doctor {
   full_name: string | null;
   specialization: string | null;
   state: string | null;
+  lga: string | null;
+  address: string | null;
   phone: string | null;
+  years_experience: number | null;
+  qualifications: string | null;
+  dob: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  occupation: string | null;
+  religion: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_relationship: string | null;
+  next_of_kin_phone: string | null;
+  profile_completed_at: string | null;
   email: string;
   hospital_name: string | null;
 }
@@ -24,6 +37,20 @@ interface Hospital {
 
 const emptyForm = { full_name: '', email: '', password: '', hospital_id: '', specialization: '' };
 
+function formatDate(dt: string | null) {
+  if (!dt) return '—';
+  return new Date(dt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <div style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: '0.85rem', color: 'var(--text-body)' }}>{value || '—'}</div>
+    </div>
+  );
+}
+
 export default function DoctorsPage() {
   const { user, loading } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -33,6 +60,7 @@ export default function DoctorsPage() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const { dialog } = useConfirmDialog();
 
   async function fetchDoctors() {
@@ -151,23 +179,77 @@ export default function DoctorsPage() {
           {doctors.length === 0 ? 'No doctors yet. Add the first one above.' : 'No doctors match your search.'}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-          {filteredDoctors.map(d => (
-            <div key={d.id} className="skeu-card" style={{ padding: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Stethoscope size={15} color="#7c3aed" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-head)' }}>{d.full_name || '—'}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {filteredDoctors.map(d => {
+            const isExp = expandedId === d.id;
+            return (
+              <div key={d.id} className="skeu-card" style={{ padding: 18 }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer', flexWrap: 'wrap' }}
+                  onClick={() => setExpandedId(isExp ? null : d.id)}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Stethoscope size={15} color="#7c3aed" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-head)' }}>{d.full_name || '—'}</span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>{d.email}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    {d.specialization && <span style={{ fontSize: '0.78rem', color: 'var(--text-body)' }}>{d.specialization}</span>}
+                    {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '6px 10px', borderRadius: 8, background: d.hospital_name ? 'rgba(27,61,94,0.06)' : 'rgba(107,114,128,0.08)', width: 'fit-content' }}>
+                  <Building2 size={13} color={d.hospital_name ? 'var(--primary)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.78rem', color: d.hospital_name ? 'var(--text-body)' : 'var(--text-muted)', fontStyle: d.hospital_name ? 'normal' : 'italic' }}>
+                    {d.hospital_name || 'Independent — no hospital'}
+                  </span>
+                </div>
+
+                {isExp && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-card)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 10 }}>
+                      Professional
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px 20px', marginBottom: 18 }}>
+                      <Field label="Phone" value={d.phone} />
+                      <Field label="Years of Experience" value={d.years_experience != null ? String(d.years_experience) : null} />
+                      <Field label="State" value={d.state} />
+                      <Field label="LGA" value={d.lga} />
+                      <Field label="Address" value={d.address} />
+                      <Field label="Qualifications" value={d.qualifications} />
+                    </div>
+
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 10 }}>
+                      Personal
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px 20px', marginBottom: 18 }}>
+                      <Field label="Date of Birth" value={formatDate(d.dob)} />
+                      <Field label="Gender" value={d.gender} />
+                      <Field label="Marital Status" value={d.marital_status} />
+                      <Field label="Occupation" value={d.occupation} />
+                      <Field label="Religion" value={d.religion} />
+                    </div>
+
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 10 }}>
+                      Next of Kin
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px 20px', marginBottom: 18 }}>
+                      <Field label="Full Name" value={d.next_of_kin_name} />
+                      <Field label="Relationship" value={d.next_of_kin_relationship} />
+                      <Field label="Phone" value={d.next_of_kin_phone} />
+                    </div>
+
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {d.profile_completed_at ? `Profile completed ${formatDate(d.profile_completed_at)}` : 'Profile not yet completed'}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>{d.email}</div>
-              {d.specialization && <div style={{ fontSize: '0.78rem', color: 'var(--text-body)', marginBottom: 4 }}>{d.specialization}</div>}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '6px 10px', borderRadius: 8, background: d.hospital_name ? 'rgba(27,61,94,0.06)' : 'rgba(107,114,128,0.08)' }}>
-                <Building2 size={13} color={d.hospital_name ? 'var(--primary)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '0.78rem', color: d.hospital_name ? 'var(--text-body)' : 'var(--text-muted)', fontStyle: d.hospital_name ? 'normal' : 'italic' }}>
-                  {d.hospital_name || 'Independent — no hospital'}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

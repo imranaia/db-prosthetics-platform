@@ -413,46 +413,41 @@ export default function DischargePage() {
           <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Create the first form using the button above.</div>
         </div>
       ) : (
-        <div className="skeu-card" style={{ overflow: 'hidden' }}>
-          <div className="table-scroll">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: 'rgba(27,61,94,0.04)', borderBottom: '1px solid var(--border-card)' }}>
-                {['Patient', 'Hospital', 'Discharge Date', 'Follow-up', 'Prosthetist', 'Date Created', ''].map(h => (
-                  <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {dischargeForms.map(df => (
-                <>
-                  <tr key={df.id} style={{ borderBottom: '1px solid var(--border-card)', cursor: 'pointer' }} onClick={() => setExpandedId(expandedId === df.id ? null : df.id)}>
-                    <td style={{ padding: '12px 14px', fontSize: '0.88rem', fontWeight: 500, color: 'var(--text-head)' }}>{df.patient_name || '—'}</td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-body)' }}>{df.hospital_name || '—'}</td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-body)' }}>{formatDate(df.discharge_date)}</td>
-                    <td style={{ padding: '12px 14px' }}>
-                      <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: df.followup_recommended ? '#d1fae5' : '#f3f4f6', color: df.followup_recommended ? '#065f46' : '#374151' }}>
-                        {df.followup_recommended ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: 'var(--text-body)' }}>{df.prosthetist_name || '—'}</td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{formatDate(df.created_at)}</td>
-                    <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                      {expandedId === df.id ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
-                    </td>
-                  </tr>
-                  {expandedId === df.id && (
-                    <tr key={`${df.id}-expanded`}>
-                      <td colSpan={7} style={{ padding: '20px 24px', background: 'rgba(27,61,94,0.02)', borderBottom: '1px solid var(--border-card)' }}>
-                        <ReadOnlyDischargeView form={df} />
-                      </td>
-                    </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {dischargeForms.map(df => {
+            const isExp = expandedId === df.id;
+            return (
+              <div key={df.id} className="skeu-card" style={{ padding: '18px 20px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer', flexWrap: 'wrap' }}
+                  onClick={() => setExpandedId(isExp ? null : df.id)}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-head)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {df.patient_name || '—'}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {df.hospital_name || 'No hospital'} · Discharged {formatDate(df.discharge_date)}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: df.followup_recommended ? '#d1fae5' : '#f3f4f6', color: df.followup_recommended ? '#065f46' : '#374151', whiteSpace: 'nowrap' }}>
+                      Follow-up: {df.followup_recommended ? 'Yes' : 'No'}
+                    </span>
+                    {isExp ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                  Prosthetist: {df.prosthetist_name || '—'} · Created {formatDate(df.created_at)}
+                </div>
+                {isExp && (
+                  <div style={{ marginTop: 16, borderTop: '1px solid var(--border-card)', paddingTop: 4 }}>
+                    <ReadOnlyDischargeView form={df} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

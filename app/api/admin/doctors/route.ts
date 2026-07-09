@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
   const doctors = db.prepare(`
-    SELECT d.id, d.full_name, d.specialization, d.state, d.phone,
+    SELECT d.id, d.full_name, d.specialization, d.state, d.lga, d.address, d.phone,
+           d.years_experience, d.qualifications, d.dob, d.gender, d.marital_status,
+           d.occupation, d.religion, d.next_of_kin_name, d.next_of_kin_relationship,
+           d.next_of_kin_phone, d.profile_completed_at,
            u.email, h.name AS hospital_name
     FROM doctors d
     JOIN users u ON d.user_id = u.id
