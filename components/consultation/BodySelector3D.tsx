@@ -175,6 +175,12 @@ function Figure({
 
 export default function BodySelector3D({ value, onChange, category, readOnly }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+  // Fixed front/back views instead of free rotation — dragging to an
+  // arbitrary angle made it hard to click a region precisely, since a
+  // marker's on-screen position shifts as the camera orbits. Two locked
+  // camera presets behave like the old 2D diagram (a fixed image with
+  // precise click targets) while still showing the real sculpted body.
+  const [view, setView] = useState<'front' | 'back'>('front');
   const selectedMap = useMemo(() => new Map<string, BodyPart>(value.map(p => [p.region, p])), [value]);
 
   const restrictedSide: 'upper' | 'lower' | null =
@@ -224,19 +230,38 @@ export default function BodySelector3D({ value, onChange, category, readOnly }: 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-      <div style={{ width: '100%', maxWidth: 360, height: 420, borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(180deg, #f5f2ea 0%, #e9e2d2 100%)', border: '1px solid var(--border-card, #e2e8f0)' }}>
-        <Canvas camera={{ position: [0, 91, 340], fov: 38 }}>
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[60, 200, 150]} intensity={0.9} color="#fff6e8" />
-          <directionalLight position={[-60, -40, -100]} intensity={0.3} color="#e8eef5" />
-          <Figure regions={visibleRegions} selectedMap={selectedMap} hovered={hovered} onToggle={toggleRegion} setHovered={setHovered} readOnly={readOnly} />
-          <OrbitControls enablePan={false} minDistance={130} maxDistance={420} target={[0, 91, 0]} />
-        </Canvas>
+      <div style={{ width: '100%', maxWidth: 360, position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+          {(['front', 'back'] as const).map(v => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              style={{
+                padding: '4px 14px', borderRadius: 20, fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer',
+                border: view === v ? '1.5px solid #d08c2a' : '1.5px solid rgba(37,79,122,0.25)',
+                background: view === v ? 'rgba(208,140,42,0.14)' : 'transparent',
+                color: view === v ? '#8a5d00' : 'var(--text-muted, #6b7280)',
+              }}
+            >
+              {v === 'front' ? 'Front' : 'Back'}
+            </button>
+          ))}
+        </div>
+        <div style={{ width: '100%', height: 420, borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(180deg, #f5f2ea 0%, #e9e2d2 100%)', border: '1px solid var(--border-card, #e2e8f0)' }}>
+          <Canvas key={view} camera={{ position: [0, 91, view === 'front' ? 340 : -340], fov: 38 }}>
+            <ambientLight intensity={0.8} />
+            <directionalLight position={[60, 200, 150]} intensity={0.9} color="#fff6e8" />
+            <directionalLight position={[-60, -40, -100]} intensity={0.3} color="#e8eef5" />
+            <Figure regions={visibleRegions} selectedMap={selectedMap} hovered={hovered} onToggle={toggleRegion} setHovered={setHovered} readOnly={readOnly} />
+            <OrbitControls enablePan={false} enableRotate={false} minDistance={130} maxDistance={420} target={[0, 91, 0]} />
+          </Canvas>
+        </div>
       </div>
 
       {!readOnly && (
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
-          Drag to rotate, scroll/pinch to zoom. Tap a region to select it.
+          Scroll/pinch to zoom. Tap a region to select it — switch Front/Back above for the other side.
         </div>
       )}
 
