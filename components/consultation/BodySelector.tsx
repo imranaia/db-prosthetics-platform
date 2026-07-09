@@ -249,6 +249,12 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
 
   const isFacial = category === 'facial';
   const viewOptions: ViewKey[] = isFacial ? ['front', 'left', 'right'] : ['front', 'back'];
+  // Category can switch (e.g. to 'facial') in the same render that `view`
+  // still holds a value from the previous mode (e.g. 'back') — the
+  // useEffect below fixes the *state* on the next render, but rendering
+  // this pass with the raw, possibly-invalid `view` would request a
+  // nonexistent image (e.g. face-back.png). Clamp synchronously instead.
+  const effectiveView: ViewKey = viewOptions.includes(view) ? view : 'front';
 
   const restrictedSide: 'upper' | 'lower' | 'spinal' | 'facial' | null =
     category === 'upper_limb' ? 'upper' : category === 'lower_limb' ? 'lower' : category === 'spinal' ? 'spinal' : category === 'facial' ? 'facial' : null;
@@ -291,7 +297,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
   const zoomed = side !== 'both';
   // Ears only have a position on their own profile view, not front — only
   // render hotspots that actually exist on the view currently shown.
-  const onScreenRegions = visibleRegions.filter(def => def[view]);
+  const onScreenRegions = visibleRegions.filter(def => def[effectiveView]);
 
   const selectedMap = new Map<string, BodyPart>(value.map(p => [p.region, p]));
 
@@ -332,10 +338,10 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
   // (both facing the same way); viewing from the front it's mirrored. Only
   // meaningful for the front/back body views — facial's left/right are
   // profile shots, not a mirrored front, so the labels are hidden there.
-  const rightLabelSide = view === 'front' ? 'left' : 'right';
+  const rightLabelSide = effectiveView === 'front' ? 'left' : 'right';
 
-  const transform = zoomed ? zoomTransform(visibleRegions, view) : 'none';
-  const imageSrc = isFacial ? `/images/face-${view}.png` : `/images/body-${view}.png`;
+  const transform = zoomed ? zoomTransform(visibleRegions, effectiveView) : 'none';
+  const imageSrc = isFacial ? `/images/face-${effectiveView}.png` : `/images/body-${effectiveView}.png`;
   const viewLabel = (v: ViewKey) => (isFacial && v !== 'front' ? `${v} profile` : v);
 
   return (
@@ -377,11 +383,11 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
             style={{
               padding: '5px 16px',
               borderRadius: 20,
-              border: view === v ? '1.5px solid #d08c2a' : '1.5px solid rgba(37,79,122,0.3)',
-              background: view === v ? 'rgba(208,140,42,0.15)' : 'transparent',
-              color: view === v ? '#8a5d00' : '#254f7a',
+              border: effectiveView === v ? '1.5px solid #d08c2a' : '1.5px solid rgba(37,79,122,0.3)',
+              background: effectiveView === v ? 'rgba(208,140,42,0.15)' : 'transparent',
+              color: effectiveView === v ? '#8a5d00' : '#254f7a',
               fontSize: '0.78rem',
-              fontWeight: view === v ? 600 : 500,
+              fontWeight: effectiveView === v ? 600 : 500,
               cursor: 'pointer',
               textTransform: 'capitalize',
             }}
@@ -416,7 +422,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
         >
           <Image
             src={imageSrc}
-            alt={isFacial ? `Face diagram (${view} view)` : `Human body diagram (${view} view)`}
+            alt={isFacial ? `Face diagram (${effectiveView} view)` : `Human body diagram (${effectiveView} view)`}
             fill
             sizes="320px"
             style={{ objectFit: 'contain' }}
@@ -427,7 +433,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
             <RegionHotspot
               key={def.region}
               def={def}
-              view={view}
+              view={effectiveView}
               selected={selectedMap.has(def.region)}
               hovered={hovered === def.region}
               readOnly={readOnly}
@@ -441,7 +447,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
         {/* Side orientation labels — fixed to the container corners, not
             part of the zoomed/panned layer. Only meaningful for the
             mirrored front/back body views, not facial's profile shots. */}
-        {(view === 'front' || view === 'back') && (
+        {(effectiveView === 'front' || effectiveView === 'back') && (
           <>
             <span style={{ position: 'absolute', top: 6, [rightLabelSide]: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
               Patient&apos;s Right
