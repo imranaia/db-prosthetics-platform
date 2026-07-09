@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react';
 import { ShoppingCart, Package, ChevronDown, ChevronUp, Plus, X, Upload } from 'lucide-react';
 import { BodyPart } from '@/components/consultation/BodySelector';
 import BodyPartPicker from '@/components/consultation/BodyPartPicker';
+import DiagramModal from '@/components/consultation/DiagramModal';
 import ConsentCaptureInline, { ConsentValue, EMPTY_CONSENT } from '@/components/forms/ConsentCaptureInline';
 import SignaturePad from '@/components/forms/SignaturePad';
 
@@ -146,6 +147,7 @@ export default function DoctorOrdersPage() {
   const [custMsg, setCustMsg] = useState('');
   const [custErr, setCustErr] = useState('');
   const [expandedCust, setExpandedCust] = useState<number | null>(null);
+  const [diagramOpenId, setDiagramOpenId] = useState<number | null>(null);
 
   const photoAffectedRef = useRef<HTMLInputElement>(null);
   const photoUnaffectedRef = useRef<HTMLInputElement>(null);
@@ -351,8 +353,17 @@ export default function DoctorOrdersPage() {
     setCustSubmitting(false);
   }
 
+  const diagramOrder = diagramOpenId ? customOrders.find(o => o.id === diagramOpenId) : null;
+  let diagramParts: BodyPart[] = [];
+  if (diagramOrder?.body_parts) {
+    try { diagramParts = JSON.parse(diagramOrder.body_parts); } catch { diagramParts = []; }
+  }
+
   return (
     <div className="dash-content">
+      {diagramOrder && (
+        <DiagramModal bodyParts={diagramParts} category={diagramOrder.category || ''} onClose={() => setDiagramOpenId(null)} />
+      )}
       {/* Header */}
       <div className="dash-page-header" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <div style={{ width: 46, height: 46, borderRadius: 12, background: '#1b3d5e18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -718,13 +729,20 @@ export default function DoctorOrdersPage() {
                           {bodyPartsArr.length > 0 && (
                             <div style={{ marginBottom: 10 }}>
                               <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 6 }}>Affected Parts</div>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                                 {bodyPartsArr.map((bp, i) => (
                                   <span key={i} style={{ padding: '2px 10px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8', fontSize: '0.78rem', fontWeight: 600 }}>
                                     {bp.label}{bp.subParts?.length > 0 ? ` (${bp.subParts.join(', ')})` : ''}
                                   </span>
                                 ))}
                               </div>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setDiagramOpenId(o.id); }}
+                                style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.05)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600 }}
+                              >
+                                View Affected Area Diagram
+                              </button>
                             </div>
                           )}
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>{o.description}</div>

@@ -39,7 +39,7 @@ interface RegionDef {
   region: string;
   label: string;
   abbr: string;
-  limbSide: 'upper' | 'lower';
+  limbSide: 'upper' | 'lower' | 'spinal';
   subPartOptions?: string[];
   // Hand/foot digits are a multi-select (several fingers/toes can be
   // affected at once); knee/ankle variants are mutually exclusive.
@@ -130,6 +130,14 @@ const REGIONS: RegionDef[] = [
     subPartOptions: FOOT_DIGIT_OPTIONS, multiSubParts: true, size: 'digit',
     front: { x: 64.31, y: 88.30 }, back: { x: 35.90, y: 88.30 },
   },
+
+  /* ─ Spinal — single midline markers (not left/right paired). Positions
+     sit on the visible spine groove in the back view and the equivalent
+     torso height on the front view. */
+  { region: 'cervical_spine', label: 'Cervical Spine (Neck)',      abbr: 'C', limbSide: 'spinal', front: { x: 50, y: 18 }, back: { x: 50, y: 18 } },
+  { region: 'thoracic_spine', label: 'Thoracic Spine (Upper Back)', abbr: 'T', limbSide: 'spinal', front: { x: 50, y: 29 }, back: { x: 50, y: 29 } },
+  { region: 'lumbar_spine',   label: 'Lumbar Spine (Lower Back)',   abbr: 'L', limbSide: 'spinal', front: { x: 50, y: 39 }, back: { x: 50, y: 39 } },
+  { region: 'sacral_spine',   label: 'Sacral Spine (Pelvis)',       abbr: 'S', limbSide: 'spinal', front: { x: 50, y: 46 }, back: { x: 50, y: 46 } },
 ];
 
 /* ─── Hotspot renderer ─── */
@@ -195,13 +203,46 @@ function RegionHotspot({
   );
 }
 
+// Computes a CSS transform that zooms the image+hotspot layer into the
+// bounding box of the given regions, so a single limb fills the frame
+// instead of sitting small on the full body — no separate cropped image
+// assets needed, since the hotspots are already percentage-positioned
+// within this same layer and zoom/pan with it.
+function zoomTransform(regions: RegionDef[], view: 'front' | 'back'): string {
+  if (regions.length === 0) return 'none';
+  const xs = regions.map(r => r[view].x);
+  const ys = regions.map(r => r[view].y);
+  const pad = 12; // percent padding around the bounding box, each side
+  const w = Math.max(Math.max(...xs) - Math.min(...xs) + pad * 2, 20);
+  const h = Math.max(Math.max(...ys) - Math.min(...ys) + pad * 2, 20);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const scale = Math.max(1, Math.min(100 / w, 100 / h, 3));
+  const tx = 50 / scale - cx;
+  const ty = 50 / scale - cy;
+  return `scale(${scale}) translate(${tx}%, ${ty}%)`;
+}
+
 /* ─── Main component ─── */
 export default function BodySelector({ value, onChange, category, readOnly }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [view, setView] = useState<'front' | 'back'>('front');
+  // Which side to focus the diagram on — only meaningful for upper/lower
+  // limb categories. Picking a specific side zooms in so the hotspots are
+  // bigger and easier to tap; "Both" shows the full body, unzoomed.
+  const [side, setSide] = useState<'both' | 'left' | 'right'>('both');
 
-  const restrictedSide: 'upper' | 'lower' | null =
-    category === 'upper_limb' ? 'upper' : category === 'lower_limb' ? 'lower' : null;
+  const restrictedSide: 'upper' | 'lower' | 'spinal' | null =
+    category === 'upper_limb' ? 'upper' : category === 'lower_limb' ? 'lower' : category === 'spinal' ? 'spinal' : null;
+
+  const sideSelectable = restrictedSide === 'upper' || restrictedSide === 'lower';
+
+  // Reset to "Both" if the category changes away from a limb side — the
+  // selector disappears in that case, so its state shouldn't linger.
+  useEffect(() => {
+    if (!sideSelectable) setSide('both');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sideSelectable]);
 
   // If the Device Category changes to a limb side that contradicts an
   // already-marked region, drop that region rather than leave a diagram
@@ -214,7 +255,9 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restrictedSide]);
 
-  const visibleRegions = restrictedSide ? REGIONS.filter(def => def.limbSide === restrictedSide) : REGIONS;
+  const categoryRegions = restrictedSide ? REGIONS.filter(def => def.limbSide === restrictedSide) : REGIONS;
+  const visibleRegions = side === 'both' ? categoryRegions : categoryRegions.filter(def => def.region.startsWith(`${side}_`));
+  const zoomed = side !== 'both';
 
   const selectedMap = new Map<string, BodyPart>(value.map(p => [p.region, p]));
 
@@ -255,8 +298,36 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
   // (both facing the same way); viewing from the front it's mirrored.
   const rightLabelSide = view === 'front' ? 'left' : 'right';
 
+  const transform = zoomed ? zoomTransform(visibleRegions, view) : 'none';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+
+      {/* Left/Right/Both side selector — only for upper/lower limb categories */}
+      {sideSelectable && (
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {(['left', 'right', 'both'] as const).map(s => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSide(s)}
+              style={{
+                padding: '5px 16px',
+                borderRadius: 20,
+                border: side === s ? '1.5px solid #d08c2a' : '1.5px solid rgba(37,79,122,0.3)',
+                background: side === s ? 'rgba(208,140,42,0.15)' : 'transparent',
+                color: side === s ? '#8a5d00' : '#254f7a',
+                fontSize: '0.78rem',
+                fontWeight: side === s ? 600 : 500,
+                cursor: 'pointer',
+                textTransform: 'capitalize',
+              }}
+            >
+              {s === 'both' ? 'Both / Complete' : s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Front/Back toggle */}
       <div style={{ display: 'flex', gap: '6px' }}>
@@ -295,36 +366,48 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
           background: 'linear-gradient(180deg, #f5f2ea 0%, #e9e2d2 100%)',
         }}
       >
-        <Image
-          src={`/images/body-${view}.png`}
-          alt={`Human body diagram (${view} view)`}
-          fill
-          sizes="320px"
-          style={{ objectFit: 'contain' }}
-          priority
-        />
+        {/* Zoomable/pannable layer — image and hotspots move together since
+            hotspots are positioned as percentages of this same box. */}
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            transformOrigin: '0 0',
+            transform,
+            transition: 'transform 0.25s ease',
+          }}
+        >
+          <Image
+            src={`/images/body-${view}.png`}
+            alt={`Human body diagram (${view} view)`}
+            fill
+            sizes="320px"
+            style={{ objectFit: 'contain' }}
+            priority
+          />
 
-        {/* Side orientation labels */}
+          {visibleRegions.map(def => (
+            <RegionHotspot
+              key={def.region}
+              def={def}
+              view={view}
+              selected={selectedMap.has(def.region)}
+              hovered={hovered === def.region}
+              readOnly={readOnly}
+              onClick={() => toggleRegion(def)}
+              onMouseEnter={() => setHovered(def.region)}
+              onMouseLeave={() => setHovered(null)}
+            />
+          ))}
+        </div>
+
+        {/* Side orientation labels — fixed to the container corners, not
+            part of the zoomed/panned layer */}
         <span style={{ position: 'absolute', top: 6, [rightLabelSide]: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
           Patient&apos;s Right
         </span>
         <span style={{ position: 'absolute', top: 6, [rightLabelSide === 'left' ? 'right' : 'left']: 8, fontSize: '0.62rem', color: 'rgba(0,0,0,0.45)', fontWeight: 600 }}>
           Patient&apos;s Left
         </span>
-
-        {visibleRegions.map(def => (
-          <RegionHotspot
-            key={def.region}
-            def={def}
-            view={view}
-            selected={selectedMap.has(def.region)}
-            hovered={hovered === def.region}
-            readOnly={readOnly}
-            onClick={() => toggleRegion(def)}
-            onMouseEnter={() => setHovered(def.region)}
-            onMouseLeave={() => setHovered(null)}
-          />
-        ))}
       </div>
 
       {/* Legend */}
@@ -342,7 +425,7 @@ export default function BodySelector({ value, onChange, category, readOnly }: Pr
       )}
       {restrictedSide && !readOnly && (
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
-          Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : 'lower limb (leg/foot)'} levels only, based on the Device Category above.
+          Showing {restrictedSide === 'upper' ? 'upper limb (arm/hand)' : restrictedSide === 'lower' ? 'lower limb (leg/foot)' : 'spinal'} levels only, based on the Device Category above.
         </div>
       )}
 

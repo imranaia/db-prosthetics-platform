@@ -6,7 +6,7 @@ import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
 import { ShoppingCart, Package } from 'lucide-react';
 import { BodyPart } from '@/components/consultation/BodySelector';
-import BodyPartPicker from '@/components/consultation/BodyPartPicker';
+import DiagramModal from '@/components/consultation/DiagramModal';
 
 interface OrderItem { product_name: string; quantity: number; price_at_order: number; }
 interface Order {
@@ -158,9 +158,18 @@ export default function OrdersPage() {
     return 'Patient';
   }
 
+  const diagramOrder = diagramOpenId ? customOrders.find(o => o.id === diagramOpenId) : null;
+  let diagramParts: BodyPart[] = [];
+  if (diagramOrder?.body_parts) {
+    try { diagramParts = JSON.parse(diagramOrder.body_parts); } catch { diagramParts = []; }
+  }
+
   return (
     <div className="dash-content">
       {dialog}
+      {diagramOrder && (
+        <DiagramModal bodyParts={diagramParts} category={diagramOrder.category || ''} onClose={() => setDiagramOpenId(null)} />
+      )}
       <div className="dash-page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: '#b5751f18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -296,20 +305,11 @@ export default function OrdersPage() {
                   {o.body_parts && (
                     <div style={{ marginBottom: 10 }}>
                       <button
-                        onClick={() => setDiagramOpenId(diagramOpenId === o.id ? null : o.id)}
+                        onClick={() => setDiagramOpenId(o.id)}
                         style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(27,61,94,0.25)', background: 'rgba(27,61,94,0.05)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600 }}
                       >
-                        {diagramOpenId === o.id ? 'Hide Diagram' : 'View Affected Area Diagram'}
+                        View Affected Area Diagram
                       </button>
-                      {diagramOpenId === o.id && (() => {
-                        let parts: BodyPart[] = [];
-                        try { parts = JSON.parse(o.body_parts!); } catch { parts = []; }
-                        return (
-                          <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: 'rgba(27,61,94,0.03)', border: '1px solid var(--border-card)' }}>
-                            <BodyPartPicker value={parts} onChange={() => {}} category={o.category || ''} readOnly />
-                          </div>
-                        );
-                      })()}
                     </div>
                   )}
 

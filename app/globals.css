@@ -636,6 +636,12 @@ img { max-width: 100%; }
 @media (min-width: 1024px) {
   .stat-grid { gap: 24px; }
 }
+/* Grid items default to min-width:auto, so a card whose content can't
+   shrink below its intrinsic width forces the whole grid past the
+   container instead of the column shrinking — override the floor. */
+.stat-grid > * {
+  min-width: 0;
+}
 
 /* Responsive chart grid */
 .chart-grid {
