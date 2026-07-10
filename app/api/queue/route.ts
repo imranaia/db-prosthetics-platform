@@ -78,7 +78,8 @@ export async function PATCH(req: NextRequest) {
   const { appointment_id, action, reason } = await req.json() as { appointment_id: number; action: string; reason?: string };
   if (!appointment_id || !action) return NextResponse.json({ error: 'appointment_id and action are required.' }, { status: 400 });
 
-  const appointment = db.prepare('SELECT id FROM appointments WHERE id = ? AND assigned_hospital_id = ?').get(appointment_id, hospitalId);
+  const appointment = db.prepare('SELECT id, payment_status FROM appointments WHERE id = ? AND assigned_hospital_id = ?')
+    .get(appointment_id, hospitalId) as { id: number; payment_status: string } | undefined;
   if (!appointment) return NextResponse.json({ error: 'Appointment not found at this hospital.' }, { status: 404 });
 
   if (action === 'check_in') {
@@ -108,6 +109,11 @@ export async function PATCH(req: NextRequest) {
   } else if (action === 'complete') {
     if (user.role !== 'doctor' && user.role !== 'po_specialist' && user.role !== 'hospital_admin') {
       return NextResponse.json({ error: 'Only the practitioner can complete this appointment.' }, { status: 403 });
+    }
+    // Same rule as the super-admin completion path — a hospital visit can't
+    // be closed out with an outstanding bill.
+    if (appointment.payment_status === 'unpaid') {
+      return NextResponse.json({ error: 'This appointment has an unpaid bill. It must be paid before it can be marked complete.' }, { status: 400 });
     }
     db.prepare("UPDATE appointments SET status = 'completed', with_doctor = 0 WHERE id = ?").run(appointment_id);
   } else {
