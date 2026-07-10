@@ -22,24 +22,38 @@ function getPractitioner(db: ReturnType<typeof getDb>, userId: number, role: str
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user || !['doctor', 'po_specialist', 'super_admin'].includes(user.role)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const consultationId = req.nextUrl.searchParams.get('consultation_id');
   if (!consultationId) return NextResponse.json({ error: 'consultation_id is required.' }, { status: 400 });
 
   const db = getDb();
+  const practitioner = getPractitioner(db, user.id, user.role);
+  if (!practitioner) return NextResponse.json({ error: 'Practitioner record not found' }, { status: 404 });
 
   // Pull the consultation's own body-part selections (Section 2 equivalent)
   // and patient identity, so the measurement form doesn't re-ask for either.
   const consultation = db.prepare(`
     SELECT c.id, c.body_parts, c.assessor_name, c.patient_id, c.category, c.device_subtype,
+           c.doctor_id, c.po_specialist_id,
            p.full_name AS patient_name, p.dob AS patient_dob, p.amputation_date AS patient_amputation_date
     FROM consultations c
     LEFT JOIN patients p ON c.patient_id = p.id
     WHERE c.id = ?
-  `).get(consultationId);
+  `).get(consultationId) as { doctor_id: number | null; po_specialist_id: number | null } | undefined;
 
   if (!consultation) return NextResponse.json({ error: 'Consultation not found.' }, { status: 404 });
+
+  // Doctors/P&O specialists can only view consultations they themselves
+  // conducted — only super_admin can view any patient's records here.
+  if (practitioner.role === 'doctor' && consultation.doctor_id !== practitioner.id) {
+    return NextResponse.json({ error: 'Consultation not found.' }, { status: 404 });
+  }
+  if (practitioner.role === 'po_specialist' && consultation.po_specialist_id !== practitioner.id) {
+    return NextResponse.json({ error: 'Consultation not found.' }, { status: 404 });
+  }
 
   const existing = db.prepare('SELECT * FROM prosthetic_measurements WHERE consultation_id = ?').get(consultationId);
 
@@ -110,8 +124,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'consultation_id and patient_id are required.' }, { status: 400 });
   }
 
-  const consultation = db.prepare('SELECT id FROM consultations WHERE id = ? AND patient_id = ?').get(body.consultation_id, body.patient_id);
+  const consultation = db.prepare('SELECT id, doctor_id, po_specialist_id FROM consultations WHERE id = ? AND patient_id = ?')
+    .get(body.consultation_id, body.patient_id) as { id: number; doctor_id: number | null; po_specialist_id: number | null } | undefined;
   if (!consultation) return NextResponse.json({ error: 'Consultation not found for this patient.' }, { status: 404 });
+
+  // Same ownership rule as GET — a doctor/P&O specialist may only record
+  // measurements for consultations they themselves conducted.
+  if (practitioner.role === 'doctor' && consultation.doctor_id !== practitioner.id) {
+    return NextResponse.json({ error: 'Consultation not found for this patient.' }, { status: 404 });
+  }
+  if (practitioner.role === 'po_specialist' && consultation.po_specialist_id !== practitioner.id) {
+    return NextResponse.json({ error: 'Consultation not found for this patient.' }, { status: 404 });
+  }
 
   const doctorId = practitioner.role === 'doctor' ? practitioner.id : null;
   const poSpecialistId = practitioner.role === 'po_specialist' ? practitioner.id : null;

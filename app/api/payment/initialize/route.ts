@@ -15,9 +15,22 @@ export async function POST(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!['patient', 'doctor', 'po_specialist', 'super_admin'].includes(user.role)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const body = await req.json() as { appointment_id?: number; order_id?: number; custom_order_id?: number };
   const db = getDb();
+
+  // A patient may only pay their own bills — staff (doctor/po_specialist/
+  // super_admin) can initiate payment on a patient's behalf, matching how
+  // they can already create orders/consultations for any patient elsewhere.
+  let callerPatientId: number | null = null;
+  if (user.role === 'patient') {
+    const p = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(user.id) as { id: number } | undefined;
+    if (!p) return NextResponse.json({ error: 'Patient record not found' }, { status: 404 });
+    callerPatientId = p.id;
+  }
 
   let type: PaymentType;
   let recordId: number;
@@ -79,6 +92,10 @@ export async function POST(req: NextRequest) {
     patientId = custom.patient_id;
   } else {
     return NextResponse.json({ error: 'appointment_id, order_id, or custom_order_id is required' }, { status: 400 });
+  }
+
+  if (callerPatientId !== null && patientId !== callerPatientId) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';

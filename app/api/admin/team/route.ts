@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 
+// GET is intentionally public — it backs the "About/Team" section on the
+// public marketing site (mirrors /api/team). Writes are super_admin-only.
 export async function GET() {
   const db = getDb();
   const members = db
@@ -9,7 +12,14 @@ export async function GET() {
   return NextResponse.json({ members });
 }
 
+async function requireSuperAdmin(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const user = token ? await verifyToken(token) : null;
+  return user && user.role === 'super_admin';
+}
+
 export async function POST(req: NextRequest) {
+  if (!(await requireSuperAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { name, position, bio, photo_url, display_order } = await req.json();
   if (!name || !position) {
     return NextResponse.json({ error: 'name and position required' }, { status: 400 });
@@ -22,6 +32,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!(await requireSuperAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id, name, position, bio, photo_url, display_order } = await req.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   const db = getDb();
@@ -31,6 +42,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!(await requireSuperAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   const db = getDb();
