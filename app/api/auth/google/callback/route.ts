@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { signToken, cookieOptions } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import { formatPatientId } from '@/lib/patient-id';
+import { OAUTH_STATE_COOKIE } from '@/lib/oauth';
 
 const ROLE_PATHS: Record<string, string> = {
   super_admin:    '/dashboard/super-admin',
@@ -14,11 +15,17 @@ const ROLE_PATHS: Record<string, string> = {
 
 export async function GET(req: NextRequest) {
   const code    = req.nextUrl.searchParams.get('code');
+  const state   = req.nextUrl.searchParams.get('state');
   const error   = req.nextUrl.searchParams.get('error');
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 
   if (error || !code) {
     return NextResponse.redirect(`${baseUrl}/login?error=google_cancelled`);
+  }
+
+  const expectedState = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
+  if (!state || !expectedState || state !== expectedState) {
+    return NextResponse.redirect(`${baseUrl}/login?error=google_failed`);
   }
 
   try {
@@ -73,6 +80,7 @@ export async function GET(req: NextRequest) {
     const dest  = ROLE_PATHS[row.role] || '/dashboard/patient';
     const res   = NextResponse.redirect(`${baseUrl}${dest}`);
     res.cookies.set(opts);
+    res.cookies.delete(OAUTH_STATE_COOKIE);
     return res;
 
   } catch (err) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import getDb from '@/lib/db';
 import { sendLockoutResetComplete } from '@/lib/email';
+import { generateTempPassword } from '@/lib/temp-password';
 
 export async function POST(req: NextRequest) {
   const { token } = await req.json() as { token?: string };
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'This reset link has expired. Try signing in again to request a new one.' }, { status: 400 });
   }
 
-  const tempPassword = randomTempPassword();
+  const tempPassword = generateTempPassword();
   const hash = await bcrypt.hash(tempPassword, 12);
 
   db.prepare(`UPDATE users SET password_hash = ?, must_change_password = 1, failed_login_attempts = 0, locked_at = NULL WHERE id = ?`)
@@ -47,6 +48,3 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true });
 }
 
-function randomTempPassword(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
-}

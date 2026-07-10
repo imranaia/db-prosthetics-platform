@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import getDb from './db';
 import { sendPasswordReset } from './email';
+import { generateTempPassword } from './temp-password';
 
 /**
  * Generates a new temp password for a user account, forces a password
@@ -13,7 +14,7 @@ export async function resetUserPassword(userId: number, fullName?: string | null
   const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(userId) as { id: number; email: string } | undefined;
   if (!user) return { error: 'User not found' };
 
-  const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+  const tempPassword = generateTempPassword();
   const hash = await bcrypt.hash(tempPassword, 12);
 
   db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, userId);

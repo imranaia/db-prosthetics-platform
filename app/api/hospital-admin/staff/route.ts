@@ -4,6 +4,7 @@ import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { isPasswordValid, PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/password';
 import { sendWelcomeStaffMember } from '@/lib/email';
+import { generateTempPassword } from '@/lib/temp-password';
 
 async function getHospital(userId: number) {
   const db = getDb();
@@ -188,7 +189,7 @@ export async function PATCH(req: NextRequest) {
     if (clash) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
     const current = db.prepare('SELECT email FROM users WHERE id = ?').get(staffRow.user_id) as { email: string } | undefined;
     if (current && current.email !== newEmail) {
-      const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+      const tempPassword = generateTempPassword();
       const hash = await bcrypt.hash(tempPassword, 12);
       db.prepare('UPDATE users SET email = ?, password_hash = ?, must_change_password = 1 WHERE id = ?')
         .run(newEmail, hash, staffRow.user_id);

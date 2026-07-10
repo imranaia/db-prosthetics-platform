@@ -3,6 +3,7 @@ import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { formatPatientId } from '@/lib/patient-id';
+import { generateTempPassword } from '@/lib/temp-password';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
   if (existing) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
 
   // Generate a random temporary password
-  const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+  const tempPassword = generateTempPassword();
   const hash = await bcrypt.hash(tempPassword, 12);
 
   const result = db.transaction(() => {

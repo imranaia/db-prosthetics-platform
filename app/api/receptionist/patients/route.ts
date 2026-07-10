@@ -3,6 +3,7 @@ import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { formatPatientId } from '@/lib/patient-id';
+import { generateTempPassword } from '@/lib/temp-password';
 
 async function getHospital(userId: number) {
   const db = getDb();
@@ -32,9 +33,9 @@ export async function GET(req: NextRequest) {
     ? db.prepare(
         `SELECT p.id, p.full_name, p.phone, p.patient_unique_id, u.email
          FROM patients p LEFT JOIN users u ON p.user_id = u.id
-         WHERE p.full_name LIKE ? OR p.patient_unique_id LIKE ? OR p.phone LIKE ?
+         WHERE p.registering_hospital_id = ? AND (p.full_name LIKE ? OR p.patient_unique_id LIKE ? OR p.phone LIKE ?)
          ORDER BY p.created_at DESC LIMIT 30`
-      ).all(`%${q}%`, `%${q}%`, `%${q}%`)
+      ).all(hospital.id, `%${q}%`, `%${q}%`, `%${q}%`)
     : db.prepare(
         `SELECT p.id, p.full_name, p.phone, p.patient_unique_id, u.email
          FROM patients p LEFT JOIN users u ON p.user_id = u.id
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
   // Every patient gets a real temporary password now, whether or not they
   // have an email — Patient ID login checks the same password_hash as
   // Email login, so there's one credential per patient, not two.
-  const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+  const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
   const result = db.transaction(() => {
