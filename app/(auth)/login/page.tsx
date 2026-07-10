@@ -18,10 +18,11 @@ export default function LoginPage() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [patientId, setPatientId] = useState('');
-  const [pin,       setPin]       = useState('');
+  const [idPassword, setIdPassword] = useState('');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [showIdPass, setShowIdPass] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function LoginPage() {
     try {
       const body = mode === 'email'
         ? { email: email.trim().toLowerCase(), password }
-        : { patient_id: patientId.trim().toUpperCase(), pin };
+        : { patient_id: patientId.trim().toUpperCase(), password: idPassword };
 
       const res = await fetch('/api/auth/login', {
         method:  'POST',
@@ -49,7 +50,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || (mode === 'email' ? 'Incorrect email or password. Please try again.' : 'Incorrect Patient ID or PIN. Please try again.'));
+        setError(data.error || (mode === 'email' ? 'Incorrect email or password. Please try again.' : 'Incorrect Patient ID or password. Please try again.'));
         setLoading(false);
         return;
       }
@@ -192,15 +193,27 @@ export default function LoginPage() {
               </div>
 
               <div style={{ marginBottom: '28px' }}>
-                <label className="skeu-label" htmlFor="pin">PIN</label>
-                <input
-                  id="pin" type="password" inputMode="numeric" className="skeu-input"
-                  placeholder="Enter your PIN"
-                  value={pin} onChange={e => setPin(e.target.value)}
-                  required autoComplete="current-password" disabled={loading}
-                />
+                <label className="skeu-label" htmlFor="id_password">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="id_password" type={showIdPass ? 'text' : 'password'} className="skeu-input"
+                    placeholder="Enter your password"
+                    value={idPassword} onChange={e => setIdPassword(e.target.value)}
+                    required autoComplete="current-password" disabled={loading}
+                    style={{ paddingRight: '44px' }}
+                  />
+                  <button type="button" onClick={() => setShowIdPass(p => !p)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', display: 'flex' }}
+                    aria-label={showIdPass ? 'Hide password' : 'Show password'}
+                  >
+                    {showIdPass
+                      ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    }
+                  </button>
+                </div>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                  Forgotten your PIN? Visit your hospital&apos;s reception to have it reset.
+                  Forgotten your password? Visit your hospital&apos;s reception to have it reset.
                 </p>
               </div>
             </>

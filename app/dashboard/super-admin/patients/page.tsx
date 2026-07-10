@@ -143,14 +143,22 @@ export default function PatientsPage() {
   }
 
   async function handleResetPassword(p: Patient) {
-    if (!p.portal_email) return;
-    const ok = await confirm(`Reset the password for ${p.portal_email}? They'll be emailed a new temporary password and must set a new one on next login.`, { title: 'Reset Password', confirmLabel: 'Reset Password' });
+    const message = p.portal_email
+      ? `Reset the password for ${p.portal_email}? They'll be emailed a new temporary password and must set a new one on next login.`
+      : `Reset ${p.full_name}'s password? They have no email on file, so you'll need to give them the new password directly.`;
+    const ok = await confirm(message, { title: 'Reset Password', confirmLabel: 'Reset Password' });
     if (!ok) return;
     setResettingId(p.id);
     const res = await fetch(`/api/admin/patients/${p.id}/reset-password`, { method: 'POST' });
     setResettingId(null);
-    if (res.ok) await alertUser(`A new temporary password has been emailed to ${p.portal_email}.`, { title: 'Password Reset' });
-    else { const d = await res.json(); await alertUser(d.error || 'Failed to reset password.', { title: 'Could Not Reset Password' }); }
+    if (res.ok) {
+      const data = await res.json();
+      if (data.password) await alertUser(`New password for ${p.full_name} (${p.patient_unique_id || 'no ID'}):\n\n${data.password}\n\nWrite this down — it won't be shown again.`, { title: 'Password Reset' });
+      else await alertUser(`A new temporary password has been emailed to ${p.portal_email}.`, { title: 'Password Reset' });
+    } else {
+      const d = await res.json();
+      await alertUser(d.error || 'Failed to reset password.', { title: 'Could Not Reset Password' });
+    }
   }
 
   const statesInUse = Array.from(new Set(patients.map(p => p.state).filter(Boolean))).sort();
@@ -374,11 +382,9 @@ export default function PatientsPage() {
                           <button onClick={() => startEdit(p)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '7px', border: '1px solid rgba(27,61,94,0.2)', background: 'rgba(27,61,94,0.07)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500 }}>
                             <Pencil size={13} /> Edit Patient
                           </button>
-                          {p.portal_email && (
-                            <button onClick={() => handleResetPassword(p)} disabled={resettingId === p.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '7px', border: '1px solid rgba(180,117,31,0.3)', background: 'rgba(180,117,31,0.08)', color: '#b45719', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500 }}>
-                              <KeyRound size={13} /> {resettingId === p.id ? 'Resetting…' : 'Reset Password'}
-                            </button>
-                          )}
+                          <button onClick={() => handleResetPassword(p)} disabled={resettingId === p.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '7px', border: '1px solid rgba(180,117,31,0.3)', background: 'rgba(180,117,31,0.08)', color: '#b45719', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500 }}>
+                            <KeyRound size={13} /> {resettingId === p.id ? 'Resetting…' : 'Reset Password'}
+                          </button>
                         </div>
                       )}
                     </div>

@@ -21,15 +21,18 @@ type LoginUser = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, patient_id, pin } = await req.json();
+    const { email, password, patient_id } = await req.json();
 
     const db = getDb();
     let user: LoginUser | undefined;
     let secret: string | undefined;
     let secretHashColumn: 'password_hash' | 'pin_hash';
 
-    if (patient_id && pin) {
-      // ID + PIN login — for patients with no email on file.
+    if (patient_id && password) {
+      // ID + password login — every patient now gets a real password
+      // (including walk-ins with no email), same as the email path. A
+      // patient created before this only has pin_hash set — fall back to
+      // checking that instead, until their password is reset.
       user = db
         .prepare(
           `SELECT u.id, u.email, u.password_hash, u.pin_hash, u.role,
@@ -38,8 +41,8 @@ export async function POST(req: NextRequest) {
            WHERE p.patient_unique_id = ? AND u.role = 'patient'`
         )
         .get(String(patient_id).trim().toUpperCase()) as LoginUser | undefined;
-      secret = pin;
-      secretHashColumn = 'pin_hash';
+      secret = password;
+      secretHashColumn = user?.password_hash ? 'password_hash' : 'pin_hash';
     } else if (email && password) {
       user = db
         .prepare(
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest) {
       secret = password;
       secretHashColumn = 'password_hash';
     } else {
-      return NextResponse.json({ error: 'Email and password, or Patient ID and PIN, are required.' }, { status: 400 });
+      return NextResponse.json({ error: 'Email and password, or Patient ID and password, are required.' }, { status: 400 });
     }
 
     if (!user || !user[secretHashColumn] || !secret) {
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (user.locked_at) {
       const message = user.email
         ? 'This account is locked after too many failed sign-in attempts. Check your email for a link to confirm and reset your password.'
-        : 'This account is locked after too many failed sign-in attempts. Please visit your hospital to have your PIN reset.';
+        : 'This account is locked after too many failed sign-in attempts. Please visit your hospital to have your password reset.';
       return NextResponse.json({ error: message }, { status: 423 });
     }
 
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json(
-          { error: 'Too many failed attempts. Your account has been locked — please visit your hospital to have your PIN reset.' },
+          { error: 'Too many failed attempts. Your account has been locked — please visit your hospital to have your password reset.' },
           { status: 423 }
         );
       }

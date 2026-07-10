@@ -32,7 +32,7 @@ export default function ReceptionistAddPatientPage() {
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState<{ patient_unique_id: string; pin?: string } | null>(null);
+  const [success, setSuccess] = useState<{ patient_unique_id: string; password?: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const [query, setQuery] = useState('');
@@ -75,7 +75,7 @@ export default function ReceptionistAddPatientPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to register patient.'); setSubmitting(false); return; }
-      setSuccess({ patient_unique_id: data.patient_unique_id, pin: data.pin });
+      setSuccess({ patient_unique_id: data.patient_unique_id, password: data.password });
       setForm(INITIAL);
       setSignature(null);
       clearDraft();
@@ -87,8 +87,8 @@ export default function ReceptionistAddPatientPage() {
 
   function copyToClipboard() {
     if (!success) return;
-    const text = success.pin
-      ? `Patient ID: ${success.patient_unique_id}\nPIN: ${success.pin}`
+    const text = success.password
+      ? `Patient ID: ${success.patient_unique_id}\nPassword: ${success.password}`
       : `Patient ID: ${success.patient_unique_id}`;
     navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   }
@@ -102,17 +102,17 @@ export default function ReceptionistAddPatientPage() {
           </div>
           <h2 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-head)', marginBottom: 8 }}>Patient Registered</h2>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: 24 }}>
-            {success.pin
-              ? "Give the patient this ID and PIN — it's how they'll log in since no email was provided. Write it down or print this screen."
+            {success.password
+              ? "Give the patient this ID and password — it's how they'll log in since no email was provided. Write it down or print this screen."
               : 'A welcome email with login details has been sent to the patient.'}
           </p>
           <div style={{ background: 'var(--bg-base)', borderRadius: 12, padding: '20px 24px', marginBottom: 20 }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Patient ID</div>
             <div className="font-display" style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.04em' }}>{success.patient_unique_id}</div>
-            {success.pin && (
+            {success.password && (
               <>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 16, marginBottom: 4 }}>PIN</div>
-                <div className="font-display" style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.1em' }}>{success.pin}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 16, marginBottom: 4 }}>Password</div>
+                <div className="font-display" style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.1em' }}>{success.password}</div>
               </>
             )}
           </div>
@@ -188,7 +188,7 @@ export default function ReceptionistAddPatientPage() {
           <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: -8, marginBottom: 16 }}>
             {form.email.trim()
               ? 'A welcome email with login details will be sent.'
-              : "No email — a Patient ID and PIN will be generated for this patient to log in with."}
+              : "No email — a Patient ID and password will be generated for this patient to log in with."}
           </p>
           <div className="form-grid-2" style={{ marginBottom: 16 }}>
             <div>

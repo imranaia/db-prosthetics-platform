@@ -21,5 +21,8 @@ export async function POST(
   const result = await resetUserPassword(patient.user_id, patient.full_name);
   if ('error' in result) return NextResponse.json(result, { status: 404 });
 
-  return NextResponse.json({ success: true });
+  // Patients with no email can't be emailed the new password — hand it
+  // back so the admin can give it to them directly.
+  const hasEmail = db.prepare('SELECT email FROM users WHERE id = ?').get(patient.user_id) as { email: string | null } | undefined;
+  return NextResponse.json({ success: true, password: hasEmail?.email ? undefined : result.tempPassword });
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, SESSION_COOKIE } from '@/lib/jwt';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { formatPatientId, generatePin } from '@/lib/patient-id';
+import { formatPatientId } from '@/lib/patient-id';
 
 async function getHospital(userId: number) {
   const db = getDb();
@@ -77,19 +77,17 @@ export async function POST(req: NextRequest) {
     if (existing) return NextResponse.json({ error: 'A patient with this email already exists.' }, { status: 409 });
   }
 
-  const tempPassword = normalizedEmail
-    ? Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100)
-    : null;
-  const pin = normalizedEmail ? null : generatePin();
-
-  const passwordHash = tempPassword ? await bcrypt.hash(tempPassword, 12) : null;
-  const pinHash = pin ? await bcrypt.hash(pin, 12) : null;
+  // Every patient gets a real temporary password now, whether or not they
+  // have an email — Patient ID login checks the same password_hash as
+  // Email login, so there's one credential per patient, not two.
+  const tempPassword = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+  const passwordHash = await bcrypt.hash(tempPassword, 12);
 
   const result = db.transaction(() => {
     const userResult = db.prepare(
-      `INSERT INTO users (email, password_hash, pin_hash, role, must_change_password)
-       VALUES (?, ?, ?, 'patient', ?)`
-    ).run(normalizedEmail, passwordHash, pinHash, normalizedEmail ? 1 : 0);
+      `INSERT INTO users (email, password_hash, role, must_change_password)
+       VALUES (?, ?, 'patient', 1)`
+    ).run(normalizedEmail, passwordHash);
 
     const userId = userResult.lastInsertRowid;
 
@@ -119,7 +117,7 @@ export async function POST(req: NextRequest) {
     return { patientUniqueId };
   })();
 
-  if (normalizedEmail && tempPassword) {
+  if (normalizedEmail) {
     try {
       const { sendWelcomePatient } = await import('@/lib/email');
       await sendWelcomePatient({
@@ -136,6 +134,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     success: true,
     patient_unique_id: result.patientUniqueId,
-    pin: pin || undefined,
+    // No email on file — nothing was emailed, so hand the password back
+    // for the receptionist to give the patient directly.
+    password: normalizedEmail ? undefined : tempPassword,
   }, { status: 201 });
 }
