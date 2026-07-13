@@ -29,13 +29,19 @@ export async function GET(req: NextRequest) {
   const db = getDb();
   const q = req.nextUrl.searchParams.get('q')?.trim();
 
+  // An exact Patient ID match (e.g. from the physical card) works across
+  // every hospital — the receptionist already had to know the precise ID,
+  // so this isn't a discovery/enumeration risk. Fuzzy name/phone/partial-ID
+  // search stays scoped to her own hospital to prevent browsing other
+  // hospitals' patient rosters.
   const patients = q
     ? db.prepare(
         `SELECT p.id, p.full_name, p.phone, p.patient_unique_id, u.email
          FROM patients p LEFT JOIN users u ON p.user_id = u.id
-         WHERE p.registering_hospital_id = ? AND (p.full_name LIKE ? OR p.patient_unique_id LIKE ? OR p.phone LIKE ?)
+         WHERE p.patient_unique_id = ?
+            OR (p.registering_hospital_id = ? AND (p.full_name LIKE ? OR p.patient_unique_id LIKE ? OR p.phone LIKE ?))
          ORDER BY p.created_at DESC LIMIT 30`
-      ).all(hospital.id, `%${q}%`, `%${q}%`, `%${q}%`)
+      ).all(q.toUpperCase(), hospital.id, `%${q}%`, `%${q}%`, `%${q}%`)
     : db.prepare(
         `SELECT p.id, p.full_name, p.phone, p.patient_unique_id, u.email
          FROM patients p LEFT JOIN users u ON p.user_id = u.id

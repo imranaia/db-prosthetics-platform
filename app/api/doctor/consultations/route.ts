@@ -50,23 +50,42 @@ export async function GET(req: NextRequest) {
     .all(practitioner.id);
 
   // Patients for the new-consultation form dropdown. If a hospital is picked
-  // in the form, scope to patients associated with that hospital; if
-  // Personal (no hospital_id param), show every patient.
+  // in the form, scope to that doctor/specialist's own queue for TODAY —
+  // the patients actually allocated to them right now — rather than every
+  // patient who's ever passed through that hospital. Position numbers stay
+  // fixed even if a patient is skipped, matching the queue's own ordering,
+  // so "1st/2nd/3rd" never gets confusing. Personal (no hospital_id) has no
+  // queue concept, so it still lists every patient.
   const hospitalIdParam = req.nextUrl.searchParams.get('hospital_id');
   const hospitalId = hospitalIdParam ? parseInt(hospitalIdParam) : null;
+  const assignedColumn = practitioner.role === 'doctor' ? 'assigned_doctor_id' : 'assigned_po_specialist_id';
 
-  const patients = hospitalId
-    ? db
-        .prepare(
-          `SELECT DISTINCT p.id, p.full_name, p.patient_unique_id
-           FROM patients p
-           LEFT JOIN consultations c ON p.id = c.patient_id
-           LEFT JOIN appointments a ON p.id = a.patient_id
-           WHERE c.hospital_id = ? OR a.assigned_hospital_id = ?
-           ORDER BY p.full_name ASC`
-        )
-        .all(hospitalId, hospitalId)
-    : db.prepare(`SELECT id, full_name, patient_unique_id FROM patients ORDER BY full_name ASC`).all();
+  let patients: unknown[];
+  if (hospitalId) {
+    const queueRows = db.prepare(`
+      SELECT p.id, p.full_name, p.patient_unique_id, a.queue_skipped
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.id
+      WHERE a.assigned_hospital_id = ?
+        AND a.${assignedColumn} = ?
+        AND a.type = 'hospital'
+        AND a.status = 'confirmed'
+        AND date(COALESCE(a.scheduled_date, a.preferred_date)) = date('now')
+      ORDER BY COALESCE(a.scheduled_date, a.preferred_date) ASC, a.created_at ASC
+    `).all(hospitalId, practitioner.id) as Array<{ id: number; full_name: string; patient_unique_id: string | null; queue_skipped: number }>;
+
+    const currentIndex = queueRows.findIndex(r => !r.queue_skipped);
+    patients = queueRows.map((r, i) => ({
+      id: r.id,
+      full_name: r.full_name,
+      patient_unique_id: r.patient_unique_id,
+      queue_position: i + 1,
+      is_current: i === currentIndex,
+      queue_skipped: !!r.queue_skipped,
+    }));
+  } else {
+    patients = db.prepare(`SELECT id, full_name, patient_unique_id FROM patients ORDER BY full_name ASC`).all();
+  }
 
   const hospitals = db.prepare('SELECT id, name FROM hospitals ORDER BY name ASC').all();
 

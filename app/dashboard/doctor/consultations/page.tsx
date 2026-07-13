@@ -39,7 +39,7 @@ const PA_ROWS: { key: keyof PhysicalAssessment; label: string }[] = [
   { key: 'functional_mobility', label: 'Functional Mobility (e.g., Transfers, Balance)' },
 ];
 
-interface Patient { id: number; full_name: string; patient_unique_id?: string | null; }
+interface Patient { id: number; full_name: string; patient_unique_id?: string | null; queue_position?: number; is_current?: boolean; }
 interface Hospital { id: number; name: string; }
 
 interface Consultation {
@@ -297,7 +297,14 @@ export default function DoctorConsultationsPage() {
     const qs = value ? `?hospital_id=${value}` : '';
     try {
       const data = await fetch(`/api/doctor/consultations${qs}`).then(r => r.json());
-      if (data.patients) setPatients(data.patients);
+      if (data.patients) {
+        setPatients(data.patients);
+        // Today's queue for this hospital — if there's only one patient
+        // allocated right now, skip the picker entirely.
+        if (value && data.patients.length === 1) {
+          setForm(prev => ({ ...prev, patient_id: String(data.patients[0].id) }));
+        }
+      }
     } catch { /* keep existing patient list on failure */ }
   }
 

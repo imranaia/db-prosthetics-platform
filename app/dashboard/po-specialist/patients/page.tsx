@@ -3,7 +3,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useEffect, useState } from 'react';
-import { Users, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Users, ChevronDown, ChevronUp, User, Search, History } from 'lucide-react';
 
 interface POPatient {
   id: number;
@@ -121,7 +122,7 @@ export default function POPatientsPage() {
 
                 {isExp && (
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.85rem', marginBottom: 16 }}>
                       {[
                         { label: 'Date of Birth', value: formatDate(p.dob) },
                         { label: 'LGA', value: p.lga || '—' },
@@ -134,6 +135,13 @@ export default function POPatientsPage() {
                         </div>
                       ))}
                     </div>
+                    <Link
+                      href={`/dashboard/po-specialist/patients/${p.id}`}
+                      onClick={e => e.stopPropagation()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}
+                    >
+                      <History size={14} /> View full history — past consultations &amp; orders
+                    </Link>
                   </div>
                 )}
               </div>
